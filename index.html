@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tarang — Agentic AI Marine Intelligence Platform</title>
+<meta name="description" content="A sovereign, voice-first, multi-agent decision-support system for India's coastal communities. INDRADHANU International Grand Challenge 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --deep: #071B26;
+    --deep2: #0B2733;
+    --panel: #0E3040;
+    --line: #234655;
+    --teal: #2C8C9E;
+    --foam: #EAF6F2;
+    --foam-dim: #9FC3BC;
+    --amber: #E8A33D;
+    --green: #45B48A;
+    --coral: #E8735A;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--deep);
+    color: var(--foam);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+  ::selection { background: var(--teal); color: var(--deep); }
+  h1, h2, h3 { font-family: 'Fraunces', serif; font-weight: 500; letter-spacing: -0.01em; }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 32px; }
+
+  .depth-lines {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      repeating-linear-gradient(180deg, transparent 0, transparent 79px, rgba(44, 140, 158, 0.07) 80px),
+      repeating-linear-gradient(90deg, transparent 0, transparent 79px, rgba(44, 140, 158, 0.05) 80px);
+  }
+
+  header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    background: rgba(7, 27, 38, 0.85);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .navbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 32px; max-width: 1180px; margin: 0 auto;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Fraunces', serif; font-size: 20px; font-weight: 500;
+  }
+  .brand-mark {
+    width: 10px; height: 10px; border-radius: 50%; background: var(--green);
+    box-shadow: 0 0 0 3px rgba(69, 180, 138, 0.2);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  nav ul { display: flex; gap: 32px; list-style: none; }
+  nav a { font-size: 14px; color: var(--foam-dim); transition: color 0.2s; }
+  nav a:hover { color: var(--foam); }
+  .nav-cta { font-size: 13px; padding: 8px 16px; border: 1px solid var(--teal); border-radius: 2px; color: var(--foam); letter-spacing: 0.02em; }
+  @media (max-width: 760px) { nav ul { display: none; } }
+
+  .hero {
+    position: relative; z-index: 1; min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: center;
+    padding-top: 100px; padding-bottom: 60px;
+  }
+  .hero-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 60px; align-items: center; }
+  @media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--green);
+    letter-spacing: 0.06em; margin-bottom: 22px; display: flex; align-items: center; gap: 10px;
+  }
+  .eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--green); }
+  .hero h1 { font-size: clamp(38px, 5.4vw, 64px); line-height: 1.06; color: var(--foam); margin-bottom: 24px; }
+  .hero h1 em { font-style: italic; color: var(--teal); }
+  .hero p.lead { font-size: 18px; color: var(--foam-dim); max-width: 480px; margin-bottom: 34px; }
+  .hero-actions { display: flex; gap: 16px; flex-wrap: wrap; }
+  .btn {
+    padding: 13px 26px; font-size: 14px; font-weight: 500; border-radius: 2px;
+    display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--green); color: var(--deep); }
+  .btn-primary:hover { background: #5cc99b; }
+  .btn-ghost { border: 1px solid var(--line); color: var(--foam); }
+  .btn-ghost:hover { border-color: var(--teal); }
+
+  .radar-panel {
+    position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 4px;
+    padding: 24px; aspect-ratio: 1 / 1; max-width: 420px; justify-self: end;
+  }
+  @media (max-width: 900px) { .radar-panel { justify-self: start; margin: 0 auto; } }
+  .radar-head {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--foam-dim);
+    margin-bottom: 14px; letter-spacing: 0.04em;
+  }
+  .radar-scope {
+    position: relative; width: 100%; aspect-ratio: 1 / 1; border-radius: 50%;
+    background: radial-gradient(circle, rgba(44, 140, 158, 0.08) 0%, transparent 70%);
+    border: 1px solid var(--line); overflow: hidden;
+  }
+  .radar-scope::before, .radar-scope::after { content: ''; position: absolute; border: 1px solid rgba(44, 140, 158, 0.25); border-radius: 50%; }
+  .radar-scope::before { inset: 16%; }
+  .radar-scope::after { inset: 34%; }
+  .radar-ring-inner { position: absolute; inset: 52%; border: 1px solid rgba(44, 140, 158, 0.25); border-radius: 50%; }
+  .radar-cross-v, .radar-cross-h { position: absolute; background: rgba(44, 140, 158, 0.2); }
+  .radar-cross-v { left: 50%; top: 0; bottom: 0; width: 1px; }
+  .radar-cross-h { top: 50%; left: 0; right: 0; height: 1px; }
+  .radar-sweep {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: conic-gradient(from 0deg, rgba(69, 180, 138, 0.45), transparent 26%);
+    animation: sweep 4s linear infinite;
+  }
+  @keyframes sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .radar-dot { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: var(--amber); }
+  .radar-dot::after { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 1px solid var(--amber); opacity: 0.5; }
+  .radar-readout {
+    margin-top: 16px; display: flex; justify-content: space-between;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--foam-dim);
+  }
+  .radar-readout span:first-child { color: var(--green); }
+
+  section { position: relative; z-index: 1; padding: 110px 0; }
+  .section-head { margin-bottom: 56px; max-width: 640px; }
+  .section-head .eyebrow { margin-bottom: 16px; }
+  .section-head h2 { font-size: clamp(28px, 3.4vw, 40px); color: var(--foam); margin-bottom: 16px; }
+  .section-head p { color: var(--foam-dim); font-size: 16px; }
+  .divider { height: 1px; background: var(--line); }
+
+  .problem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; }
+  @media (max-width: 840px) { .problem-grid { grid-template-columns: 1fr; } }
+  .stat-block { border-left: 2px solid var(--teal); padding-left: 20px; margin-bottom: 32px; }
+  .stat-block .num { font-family: 'Fraunces', serif; font-size: 42px; color: var(--foam); line-height: 1; }
+  .stat-block .label { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--foam-dim); margin-top: 8px; }
+  .case-study { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 28px; }
+  .case-study .tag { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--coral); letter-spacing: 0.04em; margin-bottom: 12px; display: block; }
+  .case-study p { color: var(--foam-dim); font-size: 15px; }
+  .case-study strong { color: var(--foam); font-weight: 500; }
+
+  .query-list { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+  .query-row { display: grid; grid-template-columns: 40px 1fr auto; gap: 20px; align-items: center; padding: 22px 0; border-bottom: 1px solid var(--line); }
+  .query-row .qnum { font-family: 'IBM Plex Mono', monospace; color: var(--teal); font-size: 13px; }
+  .query-row .qtext { font-size: 17px; color: var(--foam); }
+  .query-row .qtag { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--foam-dim); border: 1px solid var(--line); padding: 4px 10px; border-radius: 2px; white-space: nowrap; }
+  @media (max-width: 640px) { .query-row { grid-template-columns: 24px 1fr; } .query-row .qtag { grid-column: 2; justify-self: start; } }
+
+  .agent-map { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 48px 32px; }
+  .planner { text-align: center; margin-bottom: 44px; }
+  .planner-node { display: inline-block; padding: 16px 28px; border: 1px solid var(--green); border-radius: 2px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--green); letter-spacing: 0.03em; background: rgba(69, 180, 138, 0.06); }
+  .agent-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  @media (max-width: 900px) { .agent-grid { grid-template-columns: repeat(2, 1fr); } }
+  .agent-node { border: 1px solid var(--line); border-radius: 2px; padding: 18px 16px; transition: border-color 0.2s; }
+  .agent-node:hover { border-color: var(--teal); }
+  .agent-node .anum { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--teal); margin-bottom: 8px; display: block; }
+  .agent-node .aname { font-size: 15px; color: var(--foam); margin-bottom: 6px; font-weight: 500; }
+  .agent-node .adesc { font-size: 13px; color: var(--foam-dim); }
+
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.data-table th { text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--foam-dim); padding: 12px 16px; border-bottom: 1px solid var(--line); letter-spacing: 0.04em; font-weight: 500; }
+  table.data-table td { padding: 16px; border-bottom: 1px solid var(--line); color: var(--foam-dim); vertical-align: top; }
+  table.data-table td:first-child { color: var(--foam); font-weight: 500; }
+  table.data-table .cost-free { color: var(--green); font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+  table.data-table .cost-auth { color: var(--amber); font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+  .table-scroll { overflow-x: auto; }
+
+  .impact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  @media (max-width: 760px) { .impact-grid { grid-template-columns: 1fr; } }
+  .impact-cell { background: var(--deep); padding: 36px 28px; }
+  .impact-cell .big { font-family: 'Fraunces', serif; font-size: 40px; color: var(--foam); line-height: 1; }
+  .impact-cell .arrow { color: var(--green); font-size: 20px; margin: 0 8px; }
+  .impact-cell .sub { margin-top: 12px; font-size: 14px; color: var(--foam-dim); }
+
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+  @media (max-width: 760px) { .compare { grid-template-columns: 1fr; } }
+  .compare-col { padding: 32px; }
+  .compare-col:first-child { border-right: 1px solid var(--line); }
+  @media (max-width: 760px) { .compare-col:first-child { border-right: none; border-bottom: 1px solid var(--line); } }
+  .compare-col.chosen { background: rgba(69, 180, 138, 0.05); }
+  .compare-col h3 { font-size: 19px; color: var(--foam); margin-bottom: 6px; }
+  .compare-col .tag2 { font-family: 'IBM Plex Mono', monospace; font-size: 11px; margin-bottom: 16px; display: block; }
+  .compare-col.chosen .tag2 { color: var(--green); }
+  .compare-col:not(.chosen) .tag2 { color: var(--foam-dim); }
+  .compare-col p { color: var(--foam-dim); font-size: 14px; }
+
+  footer { position: relative; z-index: 1; padding: 80px 0 40px; border-top: 1px solid var(--line); }
+  .footer-top { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 30px; margin-bottom: 60px; }
+  .footer-top h2 { font-size: clamp(28px, 3.6vw, 44px); max-width: 520px; }
+  .footer-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--foam-dim); padding-top: 24px; border-top: 1px solid var(--line); }
+  .badge-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; margin-bottom: 60px; }
+  .badge { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--foam-dim); border: 1px solid var(--line); padding: 5px 12px; border-radius: 20px; }
+
+  @media (max-width: 640px) {
+    .wrap { padding-left: 20px; padding-right: 20px; }
+    .navbar { padding-left: 20px; padding-right: 20px; }
+    section { padding: 78px 0; }
+    .radar-panel { width: 100%; }
+    .planner-node { max-width: 100%; padding: 14px 16px; }
+    .agent-map { padding: 28px 16px; }
+    table.data-table { min-width: 700px; }
+  }
+</style>
+</head>
+<body>
+<div class="depth-lines" aria-hidden="true"></div>
+
+<header>
+  <div class="navbar">
+    <a class="brand" href="#top" aria-label="Tarang home"><span class="brand-mark"></span>TARANG</a>
+    <nav aria-label="Primary navigation">
+      <ul>
+        <li><a href="#problem">Problem</a></li>
+        <li><a href="#queries">Queries</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#data">Data</a></li>
+        <li><a href="#impact">Impact</a></li>
+      </ul>
+    </nav>
+    <a href="#contact" class="nav-cta">Team &amp; Ask</a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero wrap">
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow">INDRADHANU · INTERNATIONAL GRAND CHALLENGE 2026 · PCCOE PUNE</div>
+        <h1>Marine intelligence,<br><em>spoken</em> in every coastal tongue.</h1>
+        <p class="lead">A sovereign, voice-first, multi-agent decision-support platform that turns fragmented satellite and ocean data into safe, explainable answers for India's fishing communities.</p>
+        <div class="hero-actions">
+          <a href="#queries" class="btn btn-primary">See sample queries →</a>
+          <a href="#architecture" class="btn btn-ghost">View architecture</a>
+        </div>
+      </div>
+      <div class="radar-panel" aria-label="Live Arabian Sea sector readout">
+        <div class="radar-head"><span>ARABIAN SEA · SECTOR 14</span><span style="color: var(--green);">● LIVE</span></div>
+        <div class="radar-scope" aria-hidden="true">
+          <div class="radar-ring-inner"></div><div class="radar-cross-v"></div><div class="radar-cross-h"></div><div class="radar-sweep"></div>
+          <div class="radar-dot" style="top: 28%; left: 62%;"></div><div class="radar-dot" style="top: 58%; left: 38%;"></div><div class="radar-dot" style="top: 70%; left: 66%;"></div>
+        </div>
+        <div class="radar-readout"><span>PFZ: 3 ACTIVE</span><span>SST 28.4°C</span><span>WAVE 1.2M</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider wrap"></div>
+
+  <section id="problem" class="wrap">
+    <div class="section-head"><div class="eyebrow">THE PROBLEM</div><h2>Not a data shortage. A synthesis failure.</h2><p>Every day, agencies publish vast oceanographic data. Almost none of it reaches the person deciding whether to leave harbor at dawn.</p></div>
+    <div class="problem-grid">
+      <div>
+        <div class="stat-block"><div class="num">8,041 km</div><div class="label">COASTLINE, MILLIONS OF ARTISANAL &amp; COMMERCIAL FISHERS DEPENDENT ON IT</div></div>
+        <div class="stat-block"><div class="num">2M+ sq km</div><div class="label">EXCLUSIVE ECONOMIC ZONE TO MONITOR FOR SAFETY AND BOUNDARY COMPLIANCE</div></div>
+      </div>
+      <div class="case-study"><span class="tag">CASE STUDY — CYCLONE OCKHI, NOV 2017</span><p>Advisories were issued. But rapid storm intensification and short lead time meant warnings never reached deep-sea fishers already at sea. <strong>A last-mile communication failure — not a data failure.</strong></p></div>
+    </div>
+  </section>
+
+  <div class="divider wrap"></div>
+
+  <section id="queries" class="wrap">
+    <div class="section-head"><div class="eyebrow">SCOPED FOR STAGE I</div><h2>What a fisher can ask it, today</h2><p>Four concrete queries, chosen for feasibility against verified data access — not all eight from the brief at once.</p></div>
+    <div class="query-list">
+      <div class="query-row"><span class="qnum mono">01</span><span class="qtext">“Where is the nearest Potential Fishing Zone today?”</span><span class="qtag">INCOIS · SCRAPED BULLETIN</span></div>
+      <div class="query-row"><span class="qnum mono">02</span><span class="qtext">“Is it safe to venture into the sea tomorrow morning?”</span><span class="qtag">IMD THRESHOLDS · OPEN-METEO</span></div>
+      <div class="query-row"><span class="qnum mono">03</span><span class="qtext">“What are the tide, weather, and sea conditions near my location?”</span><span class="qtag">OPEN-METEO MARINE</span></div>
+      <div class="query-row"><span class="qnum mono">04</span><span class="qtext">“Which zones should I avoid due to hazards or geofencing?”</span><span class="qtag">BHUVAN NRSC · EEZ/IMBL</span></div>
+    </div>
+  </section>
+
+  <div class="divider wrap"></div>
+
+  <section id="architecture" class="wrap">
+    <div class="section-head"><div class="eyebrow">MULTI-AGENT ARCHITECTURE</div><h2>Eight specialists, one auditable state machine</h2><p>Built on LangGraph — agents as nodes in an explicit DAG, not a black box. Every tool call and routing decision is traceable.</p></div>
+    <div class="agent-map">
+      <div class="planner"><div class="planner-node">PLANNER AGENT — decomposes intent, routes to specialists</div></div>
+      <div class="agent-grid">
+        <div class="agent-node"><span class="anum">01</span><div class="aname">User Interaction</div><div class="adesc">Language detection, BHASHINI voice, multi-turn context</div></div>
+        <div class="agent-node"><span class="anum">02</span><div class="aname">Marine Data</div><div class="adesc">Copernicus SDK, INCOIS ocean parameters</div></div>
+        <div class="agent-node"><span class="anum">03</span><div class="aname">Weather Intelligence</div><div class="adesc">Open-Meteo forecasts, IMD warning bulletins</div></div>
+        <div class="agent-node"><span class="anum">04</span><div class="aname">Geospatial / Geofencing</div><div class="adesc">Point-in-polygon checks on Bhuvan shapefiles</div></div>
+        <div class="agent-node"><span class="anum">05</span><div class="aname">Ocean Analytics</div><div class="adesc">Route optimization, alternate-PFZ discovery</div></div>
+        <div class="agent-node"><span class="anum">06</span><div class="aname">Risk Assessment</div><div class="adesc">Safety verdicts against IMD threshold matrices</div></div>
+        <div class="agent-node"><span class="anum">07</span><div class="aname">Reporting</div><div class="adesc">Tool-grounded synthesis with citations</div></div>
+        <div class="agent-node"><span class="anum">08</span><div class="aname">Visualization</div><div class="adesc">Maps, charts, geospatial overlays</div></div>
+      </div>
+    </div>
+    <div style="height: 44px;"></div>
+    <div class="compare">
+      <div class="compare-col chosen"><span class="tag2">CHOSEN</span><h3>LangGraph</h3><p>Agents as nodes/edges in an explicit, auditable state machine. Every tool call and routing decision is deterministic, with durable checkpointing (AsyncPostgresSaver) — sessions survive dropped connections on low-bandwidth links.</p></div>
+      <div class="compare-col"><span class="tag2">EVALUATED, REJECTED</span><h3>CrewAI</h3><p>Faster to prototype, but abstracts away error tracing. Too risky for a system issuing safety-critical sea advisories where a wrong answer has real consequences.</p></div>
+    </div>
+  </section>
+
+  <div class="divider wrap"></div>
+
+  <section id="data" class="wrap">
+    <div class="section-head"><div class="eyebrow">DATA ECOSYSTEM</div><h2>Every number is tool-grounded</h2><p>No recommendation comes from the model's own memory. Each source below is verified for access, cost, and what it actually returns.</p></div>
+    <div class="table-scroll"><table class="data-table"><thead><tr><th>Source</th><th>Access</th><th>Cost / Auth</th><th>Provides</th></tr></thead><tbody>
+      <tr><td>Open-Meteo Marine</td><td>REST, no key</td><td class="cost-free">FREE · 10K/DAY</td><td>Wave height, swell, sea surface temperature, ocean current</td></tr>
+      <tr><td>Open-Meteo Weather</td><td>REST, no key</td><td class="cost-free">FREE · 10K/DAY</td><td>Wind, pressure, visibility, 16-day forecast</td></tr>
+      <tr><td>Copernicus Marine Service</td><td>Python SDK</td><td class="cost-auth">FREE · ACCOUNT</td><td>Global SST, chlorophyll-a, currents, salinity</td></tr>
+      <tr><td>MOSDAC (ISRO)</td><td>Web / API</td><td class="cost-auth">FREE · SIGNUP</td><td>Indian Ocean currents, eddies, coastal products</td></tr>
+      <tr><td>INCOIS PFZ Advisory</td><td>WebGIS / bulletin</td><td class="cost-free">FREE · PUBLIC</td><td>Potential Fishing Zone boundaries — no REST API, scraped</td></tr>
+      <tr><td>Bhuvan (NRSC/ISRO)</td><td>Geoportal shapefiles</td><td class="cost-free">FREE</td><td>EEZ / IMBL boundaries, marine protected areas</td></tr>
+    </tbody></table></div>
+  </section>
+
+  <div class="divider wrap"></div>
+
+  <section id="impact" class="wrap">
+    <div class="section-head"><div class="eyebrow">QUANTIFIED IMPACT</div><h2>What guided fishing actually saves</h2></div>
+    <div class="impact-grid">
+      <div class="impact-cell"><div class="big">360 <span class="arrow">→</span> 61</div><div class="sub">Litres of diesel per tonne of catch, unguided vs. PFZ-guided — an 83% reduction</div></div>
+      <div class="impact-cell"><div class="big">0.96 <span class="arrow">→</span> 0.16</div><div class="sub">Tonnes of CO₂ emitted per tonne of catch</div></div>
+      <div class="impact-cell"><div class="big">₹34–50K cr</div><div class="sub">Estimated national net economic benefit at full uptake</div></div>
+    </div>
+  </section>
+</main>
+
+<footer id="contact">
+  <div class="wrap">
+    <div class="footer-top"><h2>Guiding vessels toward productive water, safely around every hazard.</h2><a href="#top" class="btn btn-primary">Back to top ↑</a></div>
+    <div class="badge-row"><span class="badge">UN SDG 13 · CLIMATE ACTION</span><span class="badge">BIODIVERSITY &amp; OCEAN PROTECTION</span><span class="badge">LANGGRAPH</span><span class="badge">BHASHINI</span></div>
+    <div class="footer-meta"><span>TARANG — AGENTIC AI MARINE INTELLIGENCE PLATFORM</span><span>INDRADHANU IGC 2026 · STAGE I SUBMISSION</span></div>
+  </div>
+</footer>
+</body>
+</html>
