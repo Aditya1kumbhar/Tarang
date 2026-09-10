@@ -2,6 +2,8 @@
 
 Tarang is a static presentation page for an agentic AI marine intelligence platform.
 
+Live site: https://aditya1kumbhar.github.io/Tarang/
+
 ## Preview locally
 
 From the repository root, run:
