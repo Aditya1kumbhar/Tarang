@@ -171,8 +171,3 @@ Verify the frontend production bundle:
 cd frontend
 npm run build
 ```
-
----
-
-## 7. License & Compliance
-This software is developed for the **Smart India Hackathon 2026 (PS #20 / ID 26176)** in collaboration with ISRO and Indian maritime agencies. All spatial boundaries comply with the Ministry of External Affairs territorial baselines and international maritime agreements.
