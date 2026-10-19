@@ -1,0 +1,110 @@
+{
+  "type": "FeatureCollection",
+  "name": "India_Marine_Protected_Areas_MPA",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "mpa_gulf_of_mannar",
+        "name": "Gulf of Mannar Marine National Park",
+        "state": "Tamil Nadu",
+        "designation": "Marine National Park & Biosphere Reserve",
+        "restriction": "Strict No-Take Fishing Zone / Coral Reef Protection Area",
+        "risk_level": "CRITICAL"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [79.22, 9.22],
+            [79.35, 9.27],
+            [79.28, 9.15],
+            [79.05, 9.0],
+            [78.85, 8.85],
+            [78.7, 8.7],
+            [78.75, 8.65],
+            [78.95, 8.8],
+            [79.15, 8.95],
+            [79.35, 9.12],
+            [79.22, 9.22]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "mpa_malvan",
+        "name": "Malvan Marine Sanctuary",
+        "state": "Maharashtra",
+        "designation": "Marine Sanctuary (Sindhudurg)",
+        "restriction": "Restricted Commercial Trawling / Coral & Pearl Oyster Sanctuary",
+        "risk_level": "CRITICAL"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [73.43, 16.03],
+            [73.49, 16.03],
+            [73.49, 16.08],
+            [73.43, 16.08],
+            [73.43, 16.03]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "mpa_coringa",
+        "name": "Coringa Wildlife Sanctuary & Marine Estuary",
+        "state": "Andhra Pradesh",
+        "designation": "Marine Wildlife Sanctuary (Godavari Delta)",
+        "restriction": "Estuarine Mangrove & Breeding Sanctuary / Motorized Craft Restricted",
+        "risk_level": "CRITICAL"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [82.25, 16.7],
+            [82.35, 16.7],
+            [82.38, 16.85],
+            [82.26, 16.85],
+            [82.25, 16.7]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "mpa_gahirmatha",
+        "name": "Gahirmatha Marine Sanctuary (Bhitarkanika)",
+        "state": "Odisha",
+        "designation": "Marine Sanctuary (Olive Ridley Nesting Core)",
+        "restriction": "Complete Trawling Ban within 20 km offshore November-May",
+        "risk_level": "CRITICAL"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [86.75, 20.65],
+            [87.1, 20.65],
+            [87.1, 20.85],
+            [86.85, 20.85],
+            [86.75, 20.65]
+          ]
+        ]
+      }
+    }
+  ]
+}

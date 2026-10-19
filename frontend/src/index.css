@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', 'Inter', sans-serif;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(10, 19, 36, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(30, 58, 110, 0.7);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.6);
+}
+
+/* Leaflet Custom Overrides for Oceanic Dark Theme */
+.leaflet-container {
+  background-color: #070e1c !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: #0f1a30 !important;
+  color: #f1f5f9 !important;
+  border: 1px solid rgba(6, 182, 212, 0.3) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 15px rgba(6, 182, 212, 0.2) !important;
+  backdrop-filter: blur(8px) !important;
+  padding: 0 !important;
+}
+
+.leaflet-popup-content {
+  margin: 12px 14px !important;
+  line-height: 1.4 !important;
+}
+
+.leaflet-popup-tip {
+  background: #0f1a30 !important;
+  border: 1px solid rgba(6, 182, 212, 0.3) !important;
+}
+
+.leaflet-bar a {
+  background-color: #0f1a30 !important;
+  color: #38bdf8 !important;
+  border-bottom: 1px solid #1e293b !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: #1a2a4b !important;
+  color: #7dd3fc !important;
+}
+
+/* Pulsing and Radar Animations */
+@keyframes radar-sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-radar {
+  animation: radar-sweep 4s linear infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.4); opacity: 0.2; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+.pfz-pulse-glow {
+  animation: pulse-ring 2.5s ease-in-out infinite;
+}

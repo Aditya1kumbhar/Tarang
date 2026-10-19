@@ -1,0 +1,277 @@
+{
+  "dataset_provenance": "ISRO EOS-06 (Oceansat-3) OCM-3 Chlorophyll-a + SCAT-3 Radar Wind Vectors fused with INSAT-3DS Imager & MODIS-Aqua Sea Surface Temperature (Accounting for EOS-06 SSTM scan mechanism anomaly)",
+  "generated_at_utc": "2026-10-19T00:00:00Z",
+  "grid_resolution_km": 5.0,
+  "points": [
+    {
+      "sector": "rameswaram_palk_bay",
+      "lat": 9.38,
+      "lon": 79.45,
+      "sst_c": 28.2,
+      "chla_mg_m3": 1.45,
+      "sst_gradient_c_per_km": 0.18,
+      "depth_m": 18.0
+    },
+    {
+      "sector": "rameswaram_gulf_of_mannar",
+      "lat": 9.18,
+      "lon": 79.38,
+      "sst_c": 27.8,
+      "chla_mg_m3": 1.85,
+      "sst_gradient_c_per_km": 0.22,
+      "depth_m": 24.0
+    },
+    {
+      "sector": "rameswaram_deep_south",
+      "lat": 9.05,
+      "lon": 79.25,
+      "sst_c": 27.4,
+      "chla_mg_m3": 2.1,
+      "sst_gradient_c_per_km": 0.24,
+      "depth_m": 35.0
+    },
+    {
+      "sector": "rameswaram_near_imbl",
+      "lat": 9.335,
+      "lon": 79.40,
+      "sst_c": 28.0,
+      "chla_mg_m3": 1.6,
+      "sst_gradient_c_per_km": 0.19,
+      "depth_m": 20.0
+    },
+    {
+      "sector": "nagapattinam_offshore",
+      "lat": 10.75,
+      "lon": 80.05,
+      "sst_c": 28.4,
+      "chla_mg_m3": 1.3,
+      "sst_gradient_c_per_km": 0.16,
+      "depth_m": 28.0
+    },
+    {
+      "sector": "nagapattinam_shelf_edge",
+      "lat": 10.78,
+      "lon": 80.22,
+      "sst_c": 27.9,
+      "chla_mg_m3": 1.75,
+      "sst_gradient_c_per_km": 0.21,
+      "depth_m": 55.0
+    },
+    {
+      "sector": "nagapattinam_slope",
+      "lat": 10.65,
+      "lon": 80.18,
+      "sst_c": 28.1,
+      "chla_mg_m3": 1.5,
+      "sst_gradient_c_per_km": 0.17,
+      "depth_m": 48.0
+    },
+    {
+      "sector": "chennai_inner_shelf",
+      "lat": 13.15,
+      "lon": 80.45,
+      "sst_c": 28.6,
+      "chla_mg_m3": 1.15,
+      "sst_gradient_c_per_km": 0.14,
+      "depth_m": 32.0
+    },
+    {
+      "sector": "chennai_thermal_front",
+      "lat": 13.2,
+      "lon": 80.62,
+      "sst_c": 27.8,
+      "chla_mg_m3": 1.95,
+      "sst_gradient_c_per_km": 0.26,
+      "depth_m": 68.0
+    },
+    {
+      "sector": "chennai_deep_offshore",
+      "lat": 13.08,
+      "lon": 80.7,
+      "sst_c": 27.5,
+      "chla_mg_m3": 1.8,
+      "sst_gradient_c_per_km": 0.2,
+      "depth_m": 85.0
+    },
+    {
+      "sector": "kochi_coastal_upwelling",
+      "lat": 9.92,
+      "lon": 76.05,
+      "sst_c": 27.1,
+      "chla_mg_m3": 2.65,
+      "sst_gradient_c_per_km": 0.25,
+      "depth_m": 30.0
+    },
+    {
+      "sector": "kochi_shelf_pfz",
+      "lat": 9.98,
+      "lon": 75.88,
+      "sst_c": 26.8,
+      "chla_mg_m3": 2.4,
+      "sst_gradient_c_per_km": 0.28,
+      "depth_m": 50.0
+    },
+    {
+      "sector": "kochi_deep_arabian",
+      "lat": 9.85,
+      "lon": 75.75,
+      "sst_c": 26.5,
+      "chla_mg_m3": 2.1,
+      "sst_gradient_c_per_km": 0.22,
+      "depth_m": 75.0
+    },
+    {
+      "sector": "vizhinjam_coastal",
+      "lat": 8.35,
+      "lon": 76.82,
+      "sst_c": 27.3,
+      "chla_mg_m3": 1.9,
+      "sst_gradient_c_per_km": 0.19,
+      "depth_m": 40.0
+    },
+    {
+      "sector": "vizhinjam_shelf_dropoff",
+      "lat": 8.28,
+      "lon": 76.68,
+      "sst_c": 26.9,
+      "chla_mg_m3": 2.3,
+      "sst_gradient_c_per_km": 0.27,
+      "depth_m": 80.0
+    },
+    {
+      "sector": "mangaluru_upwelling_front",
+      "lat": 12.88,
+      "lon": 74.55,
+      "sst_c": 27.5,
+      "chla_mg_m3": 2.2,
+      "sst_gradient_c_per_km": 0.23,
+      "depth_m": 38.0
+    },
+    {
+      "sector": "mangaluru_outer_bank",
+      "lat": 12.92,
+      "lon": 74.35,
+      "sst_c": 27.1,
+      "chla_mg_m3": 2.45,
+      "sst_gradient_c_per_km": 0.26,
+      "depth_m": 60.0
+    },
+    {
+      "sector": "mangaluru_thermal_stratification_anomaly",
+      "lat": 12.82,
+      "lon": 74.62,
+      "sst_c": 30.6,
+      "chla_mg_m3": 0.12,
+      "sst_gradient_c_per_km": 0.04,
+      "depth_m": 35.0
+    },
+    {
+      "sector": "malvan_shelf",
+      "lat": 16.08,
+      "lon": 73.25,
+      "sst_c": 27.8,
+      "chla_mg_m3": 1.7,
+      "sst_gradient_c_per_km": 0.18,
+      "depth_m": 35.0
+    },
+    {
+      "sector": "malvan_deep_front",
+      "lat": 16.12,
+      "lon": 73.05,
+      "sst_c": 27.2,
+      "chla_mg_m3": 2.15,
+      "sst_gradient_c_per_km": 0.24,
+      "depth_m": 62.0
+    },
+    {
+      "sector": "mumbai_outer_basin",
+      "lat": 18.88,
+      "lon": 72.5,
+      "sst_c": 28.1,
+      "chla_mg_m3": 1.6,
+      "sst_gradient_c_per_km": 0.17,
+      "depth_m": 42.0
+    },
+    {
+      "sector": "mumbai_high_shelf",
+      "lat": 18.95,
+      "lon": 72.2,
+      "sst_c": 27.6,
+      "chla_mg_m3": 2.05,
+      "sst_gradient_c_per_km": 0.22,
+      "depth_m": 72.0
+    },
+    {
+      "sector": "veraval_coastal_bank",
+      "lat": 20.82,
+      "lon": 70.15,
+      "sst_c": 26.8,
+      "chla_mg_m3": 2.35,
+      "sst_gradient_c_per_km": 0.24,
+      "depth_m": 32.0
+    },
+    {
+      "sector": "veraval_trawler_ground",
+      "lat": 20.72,
+      "lon": 69.88,
+      "sst_c": 26.4,
+      "chla_mg_m3": 2.7,
+      "sst_gradient_c_per_km": 0.29,
+      "depth_m": 58.0
+    },
+    {
+      "sector": "visakhapatnam_canyon_front",
+      "lat": 17.65,
+      "lon": 83.55,
+      "sst_c": 28.0,
+      "chla_mg_m3": 1.8,
+      "sst_gradient_c_per_km": 0.22,
+      "depth_m": 65.0
+    },
+    {
+      "sector": "visakhapatnam_deep_shelf",
+      "lat": 17.58,
+      "lon": 83.75,
+      "sst_c": 27.6,
+      "chla_mg_m3": 2.05,
+      "sst_gradient_c_per_km": 0.25,
+      "depth_m": 95.0
+    },
+    {
+      "sector": "kakinada_shelf_edge",
+      "lat": 16.92,
+      "lon": 82.48,
+      "sst_c": 28.2,
+      "chla_mg_m3": 1.9,
+      "sst_gradient_c_per_km": 0.2,
+      "depth_m": 45.0
+    },
+    {
+      "sector": "kakinada_outer_bay",
+      "lat": 16.85,
+      "lon": 82.68,
+      "sst_c": 27.7,
+      "chla_mg_m3": 2.2,
+      "sst_gradient_c_per_km": 0.26,
+      "depth_m": 78.0
+    },
+    {
+      "sector": "paradip_plume_front",
+      "lat": 20.15,
+      "lon": 86.9,
+      "sst_c": 28.4,
+      "chla_mg_m3": 2.1,
+      "sst_gradient_c_per_km": 0.21,
+      "depth_m": 35.0
+    },
+    {
+      "sector": "paradip_shelf_break",
+      "lat": 20.05,
+      "lon": 87.15,
+      "sst_c": 27.9,
+      "chla_mg_m3": 2.4,
+      "sst_gradient_c_per_km": 0.27,
+      "depth_m": 68.0
+    }
+  ]
+}

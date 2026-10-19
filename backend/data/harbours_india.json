@@ -1,0 +1,122 @@
+[
+  {
+    "id": "rameswaram",
+    "name": "Rameswaram Fishing Jetty",
+    "local_name": "ராமேஸ்வரம் மீன்பிடி தளம்",
+    "state": "Tamil Nadu",
+    "lat": 9.2876,
+    "lon": 79.3129,
+    "primary_language": "ta",
+    "description": "Crucial Palk Bay and Gulf of Mannar artisanal and trawler landing hub bordering Sri Lanka IMBL."
+  },
+  {
+    "id": "nagapattinam",
+    "name": "Nagapattinam Fishing Harbour",
+    "local_name": "நாகப்பட்டினம் துறைமுகம்",
+    "state": "Tamil Nadu",
+    "lat": 10.7672,
+    "lon": 79.8449,
+    "primary_language": "ta",
+    "description": "Coromandel coast hub for mechanized gillnet and trawling operations."
+  },
+  {
+    "id": "chennai",
+    "name": "Kasimedu Fishing Harbour (Chennai)",
+    "local_name": "காசிமேடு மீன்பிடி துறைமுகம்",
+    "state": "Tamil Nadu",
+    "lat": 13.1259,
+    "lon": 80.2982,
+    "primary_language": "ta",
+    "description": "Northern Tamil Nadu's largest deep-sea trawler landing harbour."
+  },
+  {
+    "id": "kochi",
+    "name": "Cochin Fishing Harbour (Thoppumpady)",
+    "local_name": "കൊച്ചി ഫിഷിംഗ് ഹാർബർ",
+    "state": "Kerala",
+    "lat": 9.9312,
+    "lon": 76.2673,
+    "primary_language": "ml",
+    "description": "Major Arabian Sea tuna, pelagic sardine, and motorized vallam craft centre."
+  },
+  {
+    "id": "vizhinjam",
+    "name": "Vizhinjam Fishing Harbour",
+    "local_name": "വിഴിഞ്ഞം തുറമുഖം",
+    "state": "Kerala",
+    "lat": 8.3789,
+    "lon": 76.9945,
+    "primary_language": "ml",
+    "description": "High-energy southern tip coast sensitive to Kallakkadal swell surges."
+  },
+  {
+    "id": "mangaluru",
+    "name": "Mangaluru Old Port (Dakke)",
+    "local_name": "ಮಂಗಳೂರು ಧಕ್ಕೆ",
+    "state": "Karnataka",
+    "lat": 12.8611,
+    "lon": 74.834,
+    "primary_language": "kn",
+    "description": "Prominent Karnataka purse-seine and trawler hub with seasonal upwelling shifts."
+  },
+  {
+    "id": "malvan",
+    "name": "Malvan Fishing Harbour",
+    "local_name": "मालवण बंदर",
+    "state": "Maharashtra",
+    "lat": 16.0617,
+    "lon": 73.4667,
+    "primary_language": "mr",
+    "description": "Konkan coast artisanal fishing hub adjacent to Malvan Marine Sanctuary."
+  },
+  {
+    "id": "mumbai",
+    "name": "Sassoon Dock (Mumbai)",
+    "local_name": "ससून डॉक (मुंबई)",
+    "state": "Maharashtra",
+    "lat": 18.91,
+    "lon": 72.8258,
+    "primary_language": "mr",
+    "description": "Historic deep-water fish landing facility in Maharashtra."
+  },
+  {
+    "id": "veraval",
+    "name": "Veraval Fishing Harbour",
+    "local_name": "વેરાવળ બંદર",
+    "state": "Gujarat",
+    "lat": 20.9077,
+    "lon": 70.3678,
+    "primary_language": "gu",
+    "description": "India's highest catch-volume mechanized trawler port in the northern Arabian Sea."
+  },
+  {
+    "id": "visakhapatnam",
+    "name": "Visakhapatnam Fishing Harbour",
+    "local_name": "విశాఖపట్నం ఫిషింగ్ హార్బర్",
+    "state": "Andhra Pradesh",
+    "lat": 17.6974,
+    "lon": 83.3032,
+    "primary_language": "te",
+    "description": "Deep-water port in Bay of Bengal with extensive offshore shrimp and pelagic grounds."
+  },
+  {
+    "id": "kakinada",
+    "name": "Kakinada Fishing Harbour",
+    "local_name": "కాకినాడ ఫిషింగ్ హార్బర్",
+    "state": "Andhra Pradesh",
+    "lat": 16.9891,
+    "lon": 82.2475,
+    "primary_language": "te",
+    "description": "Godavari estuarine landing centre adjacent to Coringa mangrove sanctuary."
+  },
+  {
+    "id": "paradip",
+    "name": "Paradip Fishing Harbour",
+    "local_name": "ପାରାଦୀପ ମତ୍ସ୍ୟ ବନ୍ଦର",
+    "state": "Odisha",
+    "lat": 20.2644,
+    "lon": 86.6713,
+    "primary_language": "or",
+    "description": "Northern Bay of Bengal hub prone to pre/post-monsoon cyclonic disturbances."
+  }
+]
