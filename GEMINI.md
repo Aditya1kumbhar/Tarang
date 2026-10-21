@@ -1,3 +1,16 @@
+@[State](PROJECT_STATE.md)
+
+## TOKEN-SAVING CONTEXT & ZERO-SCAN INVARIANTS (STRICT ENFORCEMENT)
+1. **NEVER SCAN THE FULL CODEBASE ON STARTUP:**
+   - On starting a new session or resuming work, DO NOT run commands that scan, find, or list the full codebase.
+   - Read ONLY `GEMINI.md`, `PROJECT_STATE.md`, and `CODEMAP.md` to establish context.
+2. **LINE-RANGE READS ONLY:**
+   - Read only targeted 30-60 line ranges of specific files. Never load full files over 150 lines unless strictly required.
+3. **AUTO-UPDATE `PROJECT_STATE.md`:**
+   - After completing any task, adding a file, creating a route, or changing architecture, automatically update `PROJECT_STATE.md` in place to reflect the new state.
+
+---
+
 # GEMINI.md — ORCA: Marine Ecosystem Reasoning with Collaborative Agents (SIH 2026 PS #20 / ID 26176)
 
 ## 1. SYSTEM IDENTITY & CORE OBJECTIVE

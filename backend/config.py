@@ -5,7 +5,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 
-@dataclass(slots=True)
+@dataclass
 class VesselThresholds:
     max_wave_height_amber: float
     max_wave_height_red: float
