@@ -110,7 +110,6 @@ export default function ChatPanel({
   messages = [],
   isLoading = false,
   onSendMessage = () => {},
-  onOpenTraceDrawer = () => {},
   liveWeather = null,
   safetyStatus = 'GREEN',
   theme = 'chart',

@@ -12,14 +12,13 @@ import json
 import logging
 from pathlib import Path
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 from fastapi import FastAPI, HTTPException, Query, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
@@ -31,7 +30,6 @@ from backend.config import (
     AI_DAILY_BUDGET,
     AI_TIMEOUT_SECONDS,
     ALLOWED_ORIGINS,
-    DEFAULT_HARBOUR_ID,
     ENVIRONMENT,
     IMBL_FILE,
     IS_PRODUCTION,

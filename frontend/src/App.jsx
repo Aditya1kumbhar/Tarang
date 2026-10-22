@@ -33,12 +33,9 @@ export default function App() {
   const [safetyOverrideBanner, setSafetyOverrideBanner] = useState(null);
   const [mapPayload, setMapPayload] = useState({ type: 'FeatureCollection', features: [] });
 
-  // Chat & Traces State
+  // Chat State
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [agentTraces, setAgentTraces] = useState([]);
-  const [provenanceList, setProvenanceList] = useState([]);
-  const [evidenceLedger, setEvidenceLedger] = useState([]);
 
   // Sync Tailwind dark mode class on root document
   useEffect(() => {
@@ -88,9 +85,6 @@ export default function App() {
             if (data.map_payload && data.map_payload.features) {
               setMapPayload(data.map_payload);
             }
-            if (data.agent_traces) setAgentTraces(data.agent_traces);
-            if (data.provenance_list) setProvenanceList(data.provenance_list);
-            if (data.evidence_ledger) setEvidenceLedger(data.evidence_ledger);
 
             const scenarioQueryMap = {
               safe: 'Is it safe for a small motorized boat to venture into the sea tomorrow morning off the coast?',
@@ -137,9 +131,6 @@ export default function App() {
         setSafetyOverrideBanner(data.safety_override_banner);
         if (data.map_payload && data.map_payload.features) {
           setMapPayload(data.map_payload);
-        }
-        if (data.evidence_ledger) {
-          setEvidenceLedger(data.evidence_ledger);
         }
       }
     } catch (err) {
@@ -194,10 +185,6 @@ export default function App() {
       if (data.map_payload && data.map_payload.features && data.map_payload.features.length > 0) {
         setMapPayload(data.map_payload);
       }
-
-      if (data.agent_traces) setAgentTraces(data.agent_traces);
-      if (data.provenance_list) setProvenanceList(data.provenance_list);
-      if (data.evidence_ledger) setEvidenceLedger(data.evidence_ledger);
     } catch (err) {
       console.error('Chat error:', err);
       setMessages((prev) => [
