@@ -229,3 +229,4 @@ def create_rate_limiter() -> Limiter:
 
 # Singleton instance for import across application
 limiter = create_rate_limiter()
+

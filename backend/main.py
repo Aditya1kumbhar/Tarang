@@ -7,10 +7,12 @@ dashboard summaries, and maritime safety overrides with strict security guardrai
 import asyncio
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+import hashlib
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List
+import time
+from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import FastAPI, HTTPException, Query, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -25,6 +27,8 @@ from backend.rate_limiter import get_real_client_ip, limiter
 from backend.agents.orchestrator import run_orchestrator
 from backend.agents.prompts import get_safety_override_banner
 from backend.config import (
+    AI_CACHE_TTL_SECONDS,
+    AI_DAILY_BUDGET,
     AI_TIMEOUT_SECONDS,
     ALLOWED_ORIGINS,
     DEFAULT_HARBOUR_ID,
@@ -106,32 +110,49 @@ app.add_middleware(
 
 
 # ==============================================================================
-# SECURITY HEADERS & SERVER DISCLOSURE MIDDLEWARE (SECURITY_HEADERS & SERVER_HEADER)
+# SECURITY HEADERS, CACHE CONTROL & OBSERVABILITY MIDDLEWARE
 # ==============================================================================
 @app.middleware("http")
-async def add_security_headers_middleware(request: Request, call_next):
+async def add_security_headers_and_observability_middleware(request: Request, call_next):
     """
-    Applies strict Content-Security-Policy, anti-framing, HSTS, and referrer headers
-    while stripping server stack disclosure headers and unauthorized CORS on every response.
+    Applies strict CSP, anti-framing, HSTS, referrer, and cache-control headers
+    while recording structured observability logs for every incoming request.
     """
     origin = request.headers.get("origin")
-    response = await call_next(request)
+    client_ip = get_real_client_ip(request)
+    t_start = time.perf_counter()
 
-    # Enforce strict CORS allowlist: Never reflect arbitrary Origin or leak credentials
+    # Enforce Content-Type robustness on POST /api/v1/chat (CONTENT_TYPE_ROBUSTNESS Requirement)
+    if request.method == "POST" and request.url.path == "/api/v1/chat":
+        ct = request.headers.get("content-type", "")
+        if not ct or not ct.startswith("application/json"):
+            return JSONResponse(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                content={
+                    "detail": "Unsupported Media Type: Content-Type must be 'application/json'.",
+                    "error": "unsupported_media_type",
+                },
+                headers={"Cache-Control": "no-store"},
+            )
+
+    response = await call_next(request)
+    latency_ms = round((time.perf_counter() - t_start) * 1000.0, 2)
+
+    # 1. Enforce strict CORS allowlist: Never reflect arbitrary Origin or leak credentials
     if origin and origin not in ALLOWED_ORIGINS:
         if "access-control-allow-origin" in response.headers:
             del response.headers["access-control-allow-origin"]
         if "access-control-allow-credentials" in response.headers:
             del response.headers["access-control-allow-credentials"]
 
-    # Remove or genericize server header (SERVER_HEADER Requirement)
+    # 2. Cloak server stack disclosure (SERVER_HEADER Requirement)
     if "server" in response.headers:
         del response.headers["server"]
     if "x-powered-by" in response.headers:
         del response.headers["x-powered-by"]
     response.headers["server"] = "webserver"
 
-    # Strict Security Headers (SECURITY_HEADERS Requirement)
+    # 3. Strict Security Headers (SECURITY_HEADERS Requirement)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; script-src 'self'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; "
@@ -144,21 +165,38 @@ async def add_security_headers_middleware(request: Request, call_next):
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
+    # 4. Response Hygiene: Cache-Control: no-store on all /api endpoints (RESPONSE_HYGIENE Requirement)
+    if request.url.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+
+    # 5. Observability: Structured request logging with abuse detection (OBSERVABILITY Requirement)
+    status_code = response.status_code
+    log_line = f"{request.method} {request.url.path} -> {status_code} [{client_ip}] ({latency_ms}ms)"
+    if status_code == 429 or status_code >= 500:
+        logger.warning("OBSERVABILITY_ALERT: %s", log_line)
+    else:
+        logger.info("OBSERVABILITY: %s", log_line)
+
     return response
 
 
 # ==============================================================================
-# GLOBAL EXCEPTION HANDLERS (ERROR_HANDLING, CHAT_INPUT_VALIDATION & RATE_LIMITING)
+# GLOBAL EXCEPTION HANDLERS (RESPONSE_HYGIENE & ERROR_HANDLING)
+# Standardizes all error responses into {"detail": string, "error": machine_code}
 # ==============================================================================
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
     """Returns clean JSON error with HTTP 429 when rate limit is exceeded."""
+    client_ip = get_real_client_ip(request)
+    logger.warning("RATE_LIMIT_BREACH: 429 Too Many Requests for %s on %s", client_ip, request.url.path)
     return JSONResponse(
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
         content={
             "detail": f"Rate limit exceeded: {exc.detail}",
             "error": "rate_limit_exceeded",
         },
+        headers={"Cache-Control": "no-store"} if request.url.path.startswith("/api/") else None,
     )
 
 
@@ -166,7 +204,7 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """
     Rejects empty or oversized chat message payloads with HTTP 413,
-    and returns HTTP 422 for other schema validation errors.
+    and returns HTTP 422 for other schema validation errors without leaking raw bytes.
     """
     if request.url.path.endswith("/chat"):
         for error in exc.errors():
@@ -175,12 +213,43 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
                 return JSONResponse(
                     status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                     content={
-                        "detail": "Payload too large or empty: 'message' is required and must not exceed 2000 characters."
+                        "detail": "Payload too large or empty: 'message' is required and must not exceed 2000 characters.",
+                        "error": "payload_too_large",
                     },
+                    headers={"Cache-Control": "no-store"},
                 )
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": exc.errors()},
+        content={
+            "detail": "Invalid request parameters or payload shape.",
+            "error": "validation_error",
+        },
+        headers={"Cache-Control": "no-store"} if request.url.path.startswith("/api/") else None,
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Standardizes all HTTPExceptions into the unified JSON error envelope."""
+    code_map = {
+        400: "bad_request",
+        403: "forbidden",
+        404: "not_found",
+        405: "method_not_allowed",
+        413: "payload_too_large",
+        415: "unsupported_media_type",
+        422: "validation_error",
+        429: "rate_limit_exceeded",
+        500: "internal_server_error",
+        503: "service_unavailable",
+        504: "gateway_timeout",
+    }
+    err_code = code_map.get(exc.status_code, "http_error")
+    headers = {"Cache-Control": "no-store"} if request.url.path.startswith("/api/") else None
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "error": err_code},
+        headers=headers,
     )
 
 
@@ -188,14 +257,13 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 async def global_unhandled_exception_handler(request: Request, exc: Exception):
     """Logs full trace internally but returns clean generic JSON to client in production."""
     logger.exception("Unhandled server error processing %s: %s", request.url.path, exc)
-    if IS_PRODUCTION:
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"detail": "Internal server error"},
-        )
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": str(exc)},
+        content={
+            "detail": "Internal server error",
+            "error": "internal_server_error",
+        },
+        headers={"Cache-Control": "no-store"} if request.url.path.startswith("/api/") else None,
     )
 
 
@@ -457,6 +525,10 @@ async def get_mpa_geofence(request: Request) -> Dict[str, Any]:
         return json.load(f)
 
 
+# In-memory 5-minute response cache for identical queries (AI_COST_GUARDRAILS Requirement)
+_CHAT_CACHE: Dict[str, Tuple[float, ChatResponse]] = {}
+
+
 @app.post(
     "/api/v1/chat",
     response_model=ChatResponse,
@@ -467,15 +539,51 @@ async def get_mpa_geofence(request: Request) -> Dict[str, Any]:
 async def chat_endpoint(request: Request, chat_request: ChatRequest) -> ChatResponse:
     """
     Main conversational agent endpoint for SIH 2026 Problem Statement #20.
-    - Rate limited to 10 requests/minute per IP (RATE_LIMITING).
-    - Rejects empty/whitespace or oversized message (>2000 chars) with HTTP 413 (CHAT_INPUT_VALIDATION).
-    - Enforces server-side timeout with generic error on failure (never leaks stack traces).
+    - Content-Type validation: requires application/json (HTTP 415 on mismatch).
+    - Rate limited to 10 requests/minute per IP across all uvicorn workers.
+    - Rejects empty/whitespace or oversized message (>2000 chars) with HTTP 413.
+    - Global daily AI budget limit (HTTP 503 when exhausted).
+    - 5-minute request caching for identical queries.
+    - Server-side execution timeout with sanitized errors.
     """
-    # Enforce non-empty and length bounds with HTTP 413
+    # 1. Content-Type Robustness (CONTENT_TYPE_ROBUSTNESS Requirement)
+    content_type = request.headers.get("content-type", "")
+    if not content_type or not content_type.startswith("application/json"):
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Unsupported Media Type: Content-Type must be 'application/json'.",
+        )
+
+    # 2. Input Length Bounds (CHAT_INPUT_VALIDATION Requirement)
     if not chat_request.message or not chat_request.message.strip() or len(chat_request.message) > 2000:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail="Payload too large: 'message' is required and must not exceed 2000 characters.",
+        )
+
+    # 3. 5-Minute Request Caching (AI_COST_GUARDRAILS Requirement)
+    h_val = chat_request.harbour_id.value if chat_request.harbour_id else "rameswaram"
+    v_val = chat_request.vessel_type.value if chat_request.vessel_type else "country_craft"
+    lang_val = chat_request.language or "en"
+    cache_key = hashlib.sha256(
+        f"{chat_request.message.strip().lower()}|{h_val}|{v_val}|{lang_val}".encode("utf-8")
+    ).hexdigest()
+
+    now = time.time()
+    cached = _CHAT_CACHE.get(cache_key)
+    if cached and (now - cached[0]) < AI_CACHE_TTL_SECONDS:
+        logger.info("Serving 5-minute cached AI chat response for key %s", cache_key[:8])
+        return cached[1]
+
+    # 4. Daily AI-Call Budget Enforcement (AI_COST_GUARDRAILS Requirement)
+    today_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    budget_key = f"AI_DAILY_BUDGET:{today_utc}"
+    daily_ai_calls = limiter._storage.get(budget_key)
+    if daily_ai_calls >= AI_DAILY_BUDGET:
+        logger.warning("AI DAILY BUDGET EXHAUSTED: %s/%s calls used for %s", daily_ai_calls, AI_DAILY_BUDGET, today_utc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Daily AI reasoning budget reached ({AI_DAILY_BUDGET} queries/day). System remains available for deterministic safety and harbour queries. Resets at 00:00 UTC.",
         )
 
     try:
@@ -484,6 +592,9 @@ async def chat_endpoint(request: Request, chat_request: ChatRequest) -> ChatResp
             run_orchestrator(chat_request),
             timeout=AI_TIMEOUT_SECONDS,
         )
+        # Record successful AI query in budget & cache
+        limiter._storage.incr(budget_key, expiry=86400 * 2)
+        _CHAT_CACHE[cache_key] = (now, response)
         return response
     except asyncio.TimeoutError:
         logger.error("Chat orchestrator timed out after %s seconds", AI_TIMEOUT_SECONDS)
@@ -503,28 +614,55 @@ async def chat_endpoint(request: Request, chat_request: ChatRequest) -> ChatResp
 
 # ==============================================================================
 # SPA FALLBACK HANDLER (Serves index.html for frontend client-side routes)
+# Enforces strict API 404 hygiene (API_404_HYGIENE Requirement)
 # ==============================================================================
 @app.get("/{full_path:path}", include_in_schema=False)
 @limiter.exempt
 async def serve_spa_fallback(full_path: str, request: Request):
     """
-    Serves static files or index.html for single-page application routing
-    when frontend/dist is built in production. Exempted from API rate limits.
+    Serves static files or index.html for single-page application routing.
+    Enforces strict API 404 hygiene:
+    - Any request to /api/* returns a JSON 404, never index.html.
+    - In production, /docs, /redoc, /openapi.json return JSON 404.
+    - Missing static files return JSON 404.
+    - Only non-API client-side SPA navigation paths receive index.html.
     """
-    # Return 404 for API blueprint routes when disabled in production (DOCS_DISABLED_IN_PROD)
-    if IS_PRODUCTION and full_path.strip("/") in ["docs", "redoc", "openapi.json"]:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
+    clean_path = full_path.strip("/")
 
+    # 1. API 404 Hygiene: Never serve HTML on unknown API routes
+    if clean_path == "api" or clean_path.startswith("api/"):
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"detail": "Not found", "error": "not_found"},
+            headers={"Cache-Control": "no-store"},
+        )
+
+    # 2. Return 404 for API blueprint routes when disabled in production (DOCS_DISABLED_IN_PROD)
+    if IS_PRODUCTION and clean_path in ["docs", "redoc", "openapi.json"]:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"detail": "Not found", "error": "not_found"},
+            headers={"Cache-Control": "no-store"},
+        )
+
+    # 3. Static Files & SPA index.html
     if _DIST_DIR.exists():
         target_file = _DIST_DIR / full_path
         if full_path and target_file.exists() and target_file.is_file():
             return FileResponse(target_file)
+
+        # Asset requests with extensions that don't exist return a real 404
+        if "." in Path(clean_path).name and not clean_path.endswith(".html"):
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={"detail": "Not found", "error": "not_found"},
+            )
+
         index_file = _DIST_DIR / "index.html"
         if index_file.exists():
             return FileResponse(index_file)
-    return {
-        "status": "online",
-        "service": "ORCA Multi-Agent Backend",
-        "message": "Frontend build not detected. Access API docs at /docs",
-        "api_health": "/api/v1/health",
-    }
+
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"detail": "Not found", "error": "not_found"},
+    )

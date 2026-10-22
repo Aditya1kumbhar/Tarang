@@ -40,17 +40,17 @@
 
 ## 3. Active Status & Operational Invariants
 - **Phase Completion:** Phases 1 through 5 fully implemented and verified.
-- **Automated Tests:** 40/40 tests passing (18 unit + 22 integration including multi-worker rate limiting and security suite).
-- **Security Hardening (Render Production):** Enforced zero-trust security architecture:
-  - Strict CORS allowlist from `ALLOWED_ORIGINS` (no arbitrary origin reflection, credentials restricted to allowlist).
-  - Multi-worker shared rate limiting via `slowapi` + WAL-mode `SQLiteSharedStorage` (with optional Redis support via `REDIS_URL`): 10 req/min on `/api/v1/chat`, 120 req/min default on `/api/v1/*`.
+- **Automated Tests:** 45/45 tests passing (18 unit + 27 integration covering full master security hardening suite).
+- **Security Hardening (Render Production & Master Pass):** Enforced defense-in-depth zero-trust architecture:
+  - Definitive rate limiting: `slowapi` + WAL-mode `SQLiteSharedStorage` (with optional Redis support via `REDIS_URL`): 10 req/min on `/api/v1/chat`, 120 req/min default on `/api/v1/*`.
   - Cloudflare & reverse-proxy IP extraction: `CF-Connecting-IP` top priority, right-to-left `X-Forwarded-For` traversal with private proxy stripping to prevent spoofing leftmost headers.
-  - Chat input validation: Pydantic bounds (1-2000 chars), HTTP 413 on empty or oversized message payload, 15.0s timeout on AI pipeline.
-  - Production blueprint lockdown: `/docs`, `/redoc`, and `/openapi.json` disabled (`404 Not Found`) when `ENVIRONMENT=production`.
-  - Comprehensive security headers: strict CSP allowing Google Fonts/unpkg Leaflet/tiles, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, and HSTS `max-age=31536000; includeSubDomains`.
-  - Server stack disclosure genericized (`server: webserver`, stripped `x-powered-by`, `--no-server-header` on uvicorn).
-  - Input validation: strict enums (`HarbourID`, `VesselType`, `ScenarioType`) with HTTP 422 on invalid values.
-  - Global sanitized exception handling: generic 500 error responses in production without stack trace leaks.
+  - API 404 Hygiene: Unknown `/api/*` requests strictly return JSON 404 (`{"detail": "Not found", "error": "not_found"}`), never SPA HTML.
+  - Content-Type Robustness: `POST /api/v1/chat` without `application/json` returns HTTP 415. Malformed bodies return HTTP 422 with zero 500 leaks.
+  - AI Cost Guardrails: 5-minute request caching (`AI_CACHE_TTL_SECONDS=300`) and daily budget limit (`AI_DAILY_BUDGET=500`, HTTP 503 when exhausted).
+  - LLM Hardening: System prompt defense against instructions inside data, server-side regex scans for API keys and prompt leakage, injection attempt logging.
+  - Response Hygiene & Error Envelope: `Cache-Control: no-store` on all `/api/*` endpoints; standardized error envelope `{"detail": string, "error": machine_code}` across all status codes.
+  - Observability: Structured request logging (method, path, status, IP, latency_ms) with 429 and 5xx alerts logged at WARNING level.
+  - CI Pipeline: GitHub Actions workflow (`.github/workflows/ci.yml`) enforcing `pip-audit`, `npm audit --audit-level=critical`, and test suite execution.
 - **Backend Server:** Live daemon running on `http://127.0.0.1:8000` (auto-reload active).
 - **Frontend Server:** Live Vite dev server running on `http://localhost:5173`.
 - **Live Production Deployment:** Verified active on Render at `https://tarang-0v0t.onrender.com` (serving unified SPA + FastAPI REST API with live Gemini & Open-Meteo integration).

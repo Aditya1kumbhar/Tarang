@@ -93,6 +93,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
 DEFAULT_HARBOUR_ID = "rameswaram"
 AI_TIMEOUT_SECONDS = 15.0
+AI_DAILY_BUDGET = int(os.getenv("AI_DAILY_BUDGET", "500"))
+AI_CACHE_TTL_SECONDS = int(os.getenv("AI_CACHE_TTL_SECONDS", "300"))
 
 # Security & Environment Configuration
 # Controlled by ENVIRONMENT (or legacy ENV) with production-safe defaults
