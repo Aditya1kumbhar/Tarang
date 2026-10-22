@@ -2,20 +2,24 @@ import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { Layers, Eye, Compass, Anchor, Shield, AlertOctagon, Navigation, Crosshair, Map as MapIcon } from 'lucide-react';
 
-const CARTO_API_KEY = import.meta.env.VITE_CARTO_API_KEY || 'cb1_4rt7_1_a83e32e8ca2ed0fb24dced5f';
+const CARTO_API_KEY = import.meta.env.VITE_CARTO_API_KEY || '';
 
 const BASEMAP_CONFIGS = {
   voyager: {
     id: 'voyager',
     name: 'CARTO Voyager',
-    url: `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=${CARTO_API_KEY}`,
+    url: CARTO_API_KEY
+      ? `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=${CARTO_API_KEY}`
+      : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">CARTO</a>',
     maxZoom: 19,
   },
   dark: {
     id: 'dark',
     name: 'CARTO Dark',
-    url: `https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=${CARTO_API_KEY}`,
+    url: CARTO_API_KEY
+      ? `https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=${CARTO_API_KEY}`
+      : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">CARTO</a>',
     maxZoom: 19,
   },
