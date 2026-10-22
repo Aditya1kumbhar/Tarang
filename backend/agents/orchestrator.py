@@ -9,13 +9,10 @@ Coordinates:
 
 import asyncio
 from datetime import datetime, timezone
-import json
 import logging
 import re
 import time
-from typing import Any, Dict, List, Optional, Tuple
-
-import pyproj
+from typing import Dict, List
 
 from backend.agents.prompts import (
     detect_language,
@@ -23,11 +20,7 @@ from backend.agents.prompts import (
 )
 from backend.agents.state import OrchestratorState
 from backend.config import (
-    DATA_DIR,
     DEFAULT_HARBOUR_ID,
-    GEOFENCE_CRITICAL_NM,
-    GEOFENCE_WARNING_NM,
-    HARBOURS_FILE,
     NM_TO_M,
 )
 from backend.schemas.models import (
@@ -35,8 +28,6 @@ from backend.schemas.models import (
     ChatRequest,
     ChatResponse,
     EvidenceLedgerEntry,
-    HarbourInfo,
-    ProvenanceMetadata,
     SafetyLevel,
     VesselType,
 )
@@ -44,8 +35,6 @@ from backend.tools.geospatial_tool import (
     GEOD_WGS84,
     check_geofence,
     compute_safe_route,
-    load_imbl_features,
-    load_mpa_features,
 )
 from backend.tools.ocean_pfz_tool import (
     compute_pfz_zones,

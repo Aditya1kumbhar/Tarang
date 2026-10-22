@@ -10,13 +10,12 @@ from datetime import datetime, timezone
 import functools
 import json
 import logging
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import networkx as nx
 import numpy as np
 import pyproj
-from shapely.geometry import LineString, Point, Polygon, shape
+from shapely.geometry import LineString, Point, shape
 import shapely
 
 from backend.config import (

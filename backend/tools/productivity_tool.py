@@ -8,7 +8,6 @@ Identifies physical oceanographic causes of fish catch collapse:
 
 from datetime import datetime, timezone
 import logging
-from typing import Any, Dict, Optional
 
 from backend.config import (
     PFZ_HAB_EUTROPHICATION_CHLA,

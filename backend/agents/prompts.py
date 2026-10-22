@@ -5,7 +5,7 @@ Marathi (mr), Gujarati (gu), Odia (or), Hindi (hi), and English (en).
 Strictly enforces evidence citations and deterministic safety overrides without emojis.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Dict, Optional
 
 # ==============================================================================
 # 1. LANGUAGE AND SCRIPT DETECTION

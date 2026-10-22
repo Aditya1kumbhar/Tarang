@@ -8,14 +8,14 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from fastapi import FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.agents.orchestrator import run_orchestrator
 from backend.agents.prompts import get_safety_override_banner
-from backend.config import DEFAULT_HARBOUR_ID, HARBOURS_FILE, IMBL_FILE, MPA_FILE
+from backend.config import DEFAULT_HARBOUR_ID, IMBL_FILE, MPA_FILE
 from backend.schemas.models import (
     ChatRequest,
     ChatResponse,
