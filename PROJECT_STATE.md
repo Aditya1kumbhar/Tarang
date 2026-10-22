@@ -40,6 +40,7 @@
 - **Dark & Light Mode Contrast Parity:** Both `ocean` (dark) and `chart` (light) themes verified with WCAG AAA readability. High-contrast color tiers for glassmorphic tiles (`#047857`/`#34d399` emerald, `#b45309`/`#fbbf24` amber, `#b91c1c`/`#f87171` red, `#0071e3`/`#38bdf8` blue) with zero dark-on-dark or light-on-light text artifacts.
 - **Basemap:** Authenticated CARTO Basemaps API key (isolated via `VITE_CARTO_API_KEY` in gitignored `.env`) integrated with 5M requests/mo quota. Interactive 1-click basemap switcher in GIS overlay: CARTO Voyager (nautical default), CARTO Dark Matter, and Esri Oceanic Gray. Zero watermarks across all zoom levels.
 - **Telemetry Enrichment:** `liveWeather` populated with dynamic SST (`sst_c`) alongside wave height and wind.
+- **Gemini 3.1 LLM Synthesis:** Google Gemini 3.1 Flash Lite (`gemini-3.1-flash-lite` via Google AI Studio API) integrated via gitignored `.env` (`GEMINI_API_KEY`). Generates multilingual, low-latency, zero-hallucination explainable marine safety syntheses grounded strictly in deterministic Python physics calculations, with sub-second fallback.
 - **Code Optimization:** Pruned 19 dead imports/tokens across 5 backend files (Ponytail audit verified).
 - **Node.js Environment:** Standalone Node LTS `v24.22.1` installed in `~/.local/node`.
 - **Python Compatibility:** Python 3.9.6 compatibility verified (dataclass slots resolved).

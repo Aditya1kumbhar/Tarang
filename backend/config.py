@@ -5,6 +5,22 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 
+# Automatically load .env if present (Zero-dependency standard library)
+_ENV_FILE = BASE_DIR.parent / ".env"
+if _ENV_FILE.exists():
+    try:
+        with open(_ENV_FILE, "r", encoding="utf-8") as _f:
+            for _line in _f:
+                _line = _line.strip()
+                if _line and not _line.startswith("#") and "=" in _line:
+                    _k, _v = _line.split("=", 1)
+                    _k = _k.strip()
+                    _v = _v.strip().strip("'\"")
+                    if _k not in os.environ:
+                        os.environ[_k] = _v
+    except Exception:
+        pass
+
 @dataclass
 class VesselThresholds:
     max_wave_height_amber: float
@@ -74,4 +90,5 @@ FALLBACK_GRID_FILE = DATA_DIR / "fallback" / "indian_ocean_grid.json"
 
 # API Keys & LLM settings
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
 DEFAULT_HARBOUR_ID = "rameswaram"

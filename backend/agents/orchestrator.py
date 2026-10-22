@@ -12,7 +12,9 @@ from datetime import datetime, timezone
 import logging
 import re
 import time
-from typing import Dict, List
+from typing import Dict, List, Optional
+
+import httpx
 
 from backend.agents.prompts import (
     detect_language,
@@ -21,6 +23,8 @@ from backend.agents.prompts import (
 from backend.agents.state import OrchestratorState
 from backend.config import (
     DEFAULT_HARBOUR_ID,
+    GEMINI_API_KEY,
+    GEMINI_MODEL,
     NM_TO_M,
 )
 from backend.schemas.models import (
@@ -563,7 +567,91 @@ def enforce_safety_circuit_breaker(state: OrchestratorState) -> None:
 # 4. MULTILINGUAL SYNTHESIS & MAP BUILDER AGENT
 # ==============================================================================
 
-def synthesize_response(state: OrchestratorState) -> None:
+async def _call_gemini_synthesis(state: OrchestratorState, evidence: List[str]) -> Optional[str]:
+    """
+    Synthesize marine advisory using Google Gemini 3.1 Flash Lite API.
+    Strictly constrained by deterministic physical observations and safety circuit breakers.
+    """
+    if not GEMINI_API_KEY:
+        return None
+
+    lang_names = {
+        "ta": "Tamil",
+        "ml": "Malayalam",
+        "te": "Telugu",
+        "kn": "Kannada",
+        "mr": "Marathi",
+        "gu": "Gujarati",
+        "or": "Odia",
+        "bn": "Bengali",
+        "hi": "Hindi",
+        "en": "English",
+    }
+    lang_name = lang_names.get(state.detected_language, "English")
+
+    system_instruction = (
+        "You are ORCA, an enterprise AI maritime reasoning synthesizer for Indian fishermen and coastal authorities.\n"
+        "Your task: Deliver a lean, authoritative, and direct recommendation based strictly on the deterministic oceanographic facts provided.\n\n"
+        "STRICT NON-NEGOTIABLE MARITIME RULES:\n"
+        "1. ZERO HALLUCINATION: Never invent or contradict the exact wave heights, wind speeds, bearings, distances, or safety statuses provided.\n"
+        "2. SAFETY FIRST: If Safety Status is RED_ALERT, explicitly command the vessel NOT to venture out into the sea, citing the exact hazard.\n"
+        "3. PRODUCTIVITY ACCURACY: If an ecosystem productivity decline is observed, explicitly cite the exact diagnostic mechanism (e.g. Marine Heatwave / Stratification / HAB Hypoxia) and severity.\n"
+        "4. CONCISENESS: Keep the recommendation focused and lean (2 to 4 sentences maximum). Include key numerical thresholds for clarity.\n"
+        f"5. LANGUAGE: Respond natively and fluently in {lang_name}."
+    )
+
+    evidence_text = "\n".join(f"- {e}" for e in evidence)
+    user_prompt = (
+        f"User Query: {state.query}\n"
+        f"Landing Harbour: {state.harbour.name} ({state.harbour.local_name}, {state.harbour.state})\n"
+        f"Vessel Profile: {state.vessel_type.value}\n"
+        f"Circuit Breaker Safety Status: {state.safety_status.value} (Verdict: {state.risk_verdict})\n"
+        f"Deterministic Observations & Evidence:\n{evidence_text}\n\n"
+        f"Target Output Language: {lang_name}\n"
+        "Generate the concise authoritative recommendation now:"
+    )
+
+    models_to_try = [GEMINI_MODEL, "gemini-3.1-flash-lite", "gemini-3.8-flash"]
+    payload = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [{"text": f"{system_instruction}\n\n{user_prompt}"}]
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.15,
+            "maxOutputTokens": 450,
+        }
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=4.0) as client:
+            for model in models_to_try:
+                try:
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
+                    res = await client.post(url, json=payload)
+                    if res.status_code == 200:
+                        data = res.json()
+                        candidates = data.get("candidates", [])
+                        if candidates:
+                            parts = candidates[0].get("content", {}).get("parts", [])
+                            if parts and "text" in parts[0]:
+                                text = parts[0]["text"].strip()
+                                if text:
+                                    return text
+                    elif res.status_code == 404:
+                        continue
+                except Exception as err:
+                    logger.debug(f"Gemini model {model} attempt error: {err}")
+                    continue
+    except Exception as e:
+        logger.warning(f"Gemini API synthesis unavailable: {e}")
+
+    return None
+
+
+async def synthesize_response(state: OrchestratorState) -> None:
     """
     Synthesizes findings into explainable evidence and localized text
     in the detected user language. Also generates the interactive GeoJSON map payload.
@@ -767,7 +855,18 @@ def synthesize_response(state: OrchestratorState) -> None:
     state.recommendation = rec
     state.evidence_and_reasoning = evidence
 
-    # 3. Build GeoJSON Map Payload
+    # 3. Dynamic Gemini 3.1 Flash Synthesis (when key available)
+    gemini_used = False
+    if GEMINI_API_KEY:
+        try:
+            gemini_text = await _call_gemini_synthesis(state, evidence)
+            if gemini_text:
+                state.recommendation = gemini_text
+                gemini_used = True
+        except Exception as e:
+            logger.warning(f"Gemini 3.1 synthesis bypassed: {e}")
+
+    # 4. Build GeoJSON Map Payload
     features = []
 
     # Harbour Marker
@@ -842,15 +941,17 @@ def synthesize_response(state: OrchestratorState) -> None:
     state.agent_traces.append(
         AgentTrace(
             agent_name="SynthesisExplainabilityAgent",
-            task_description="Multilingual evidence synthesis and interactive GeoJSON map payload generation",
+            task_description="Multilingual evidence synthesis with Gemini 3.1 and interactive GeoJSON map payload generation",
             latency_ms=round(t_latency, 2),
             status="COMPLETED",
-            input_payload={"language": lang, "status": state.safety_status.value},
+            input_payload={"language": lang, "status": state.safety_status.value, "model": GEMINI_MODEL if gemini_used else "deterministic_engine"},
             output_summary=(
-                f"Generated {len(evidence)} evidence points and {len(features)} map features in language '{lang}'."
+                f"Synthesized via Gemini 3.1 ({GEMINI_MODEL}) in language '{lang}' with {len(evidence)} evidence points."
+                if gemini_used
+                else f"Generated {len(evidence)} evidence points and {len(features)} map features in language '{lang}'."
             ),
             confidence_score=1.0,
-            citations=["ORCA Synthesis Engine"],
+            citations=["Google Gemini 3.1 API", "ORCA Marine Reasoning Engine"] if gemini_used else ["ORCA Synthesis Engine"],
         )
     )
 
@@ -890,7 +991,7 @@ async def run_orchestrator(request: ChatRequest) -> ChatResponse:
     enforce_safety_circuit_breaker(state)
 
     # 4. Multilingual Synthesis & Map Generation
-    synthesize_response(state)
+    await synthesize_response(state)
 
     return ChatResponse(
         recommendation=state.recommendation,
