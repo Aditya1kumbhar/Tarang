@@ -21,6 +21,21 @@ export default {
           500: '#06b6d4',
           600: '#0891b2',
         },
+        // Apple-inspired minimalist obsidian and typography tokens
+        apple: {
+          black: '#000000',
+          dark: '#0a0a0c',
+          card: '#141417',
+          surface: '#1c1c20',
+          border: 'rgba(255, 255, 255, 0.08)',
+          subtext: '#86868b',
+          blue: '#2997ff',
+          hover: 'rgba(255, 255, 255, 0.04)',
+          light: '#f5f5f7',
+          lightCard: '#ffffff',
+          lightBorder: 'rgba(0, 0, 0, 0.08)',
+          lightSubtext: '#6e6e73',
+        },
         // Drafted Nautical Sea-Chart Theme Tokens (Anti-glare sunlight & projector legible)
         paper: {
           50: '#FBF7ED',

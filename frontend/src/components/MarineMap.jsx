@@ -1,6 +1,32 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import { Layers, Eye, Compass, Anchor, Shield, AlertOctagon, Navigation, Crosshair } from 'lucide-react';
+import { Layers, Eye, Compass, Anchor, Shield, AlertOctagon, Navigation, Crosshair, Map as MapIcon } from 'lucide-react';
+
+const CARTO_API_KEY = import.meta.env.VITE_CARTO_API_KEY || 'cb1_4rt7_1_a83e32e8ca2ed0fb24dced5f';
+
+const BASEMAP_CONFIGS = {
+  voyager: {
+    id: 'voyager',
+    name: 'CARTO Voyager',
+    url: `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=${CARTO_API_KEY}`,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">CARTO</a>',
+    maxZoom: 19,
+  },
+  dark: {
+    id: 'dark',
+    name: 'CARTO Dark',
+    url: `https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=${CARTO_API_KEY}`,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">CARTO</a>',
+    maxZoom: 19,
+  },
+  esri: {
+    id: 'esri',
+    name: 'Esri Oceanic',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    attribution: '&copy; Esri, HERE, Garmin, &copy; OpenStreetMap',
+    maxZoom: 16,
+  },
+};
 
 export default function MarineMap({
   harbours = [],
@@ -8,9 +34,13 @@ export default function MarineMap({
   onSelectHarbour = () => {},
   mapPayload = null,
   activeRoute = null,
+  theme = 'ocean',
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
+  const currentTileLayerRef = useRef(null);
+  const [activeBasemap, setActiveBasemap] = useState('voyager'); // CARTO Voyager default as requested
+
   const layersRef = useRef({
     harbours: L.layerGroup(),
     imbl: L.layerGroup(),
@@ -40,19 +70,21 @@ export default function MarineMap({
       center: [14.0, 78.5],
       zoom: 5.5,
       minZoom: 4,
-      maxZoom: 16,
+      maxZoom: 19,
       zoomControl: false,
     });
 
     // Add Zoom Control to bottom-right
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // CartoDB Dark Matter basemap for modern oceanic GIS aesthetic
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap, &copy; CartoDB, &copy; ORCA Marine Systems',
+    // Initial Tile Layer: CARTO Voyager with verified API key
+    const initialConfig = BASEMAP_CONFIGS[activeBasemap] || BASEMAP_CONFIGS.voyager;
+    const tileLayer = L.tileLayer(initialConfig.url, {
+      attribution: initialConfig.attribution,
+      maxZoom: initialConfig.maxZoom,
       subdomains: 'abcd',
-      maxZoom: 19,
     }).addTo(map);
+    currentTileLayerRef.current = tileLayer;
 
     // Add our layer groups to the map
     Object.values(layersRef.current).forEach((layer) => layer.addTo(map));
@@ -62,8 +94,25 @@ export default function MarineMap({
     return () => {
       map.remove();
       mapInstanceRef.current = null;
+      currentTileLayerRef.current = null;
     };
   }, []);
+
+  // Update Tile Layer dynamically when activeBasemap changes
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    const cfg = BASEMAP_CONFIGS[activeBasemap] || BASEMAP_CONFIGS.voyager;
+    if (currentTileLayerRef.current) {
+      mapInstanceRef.current.removeLayer(currentTileLayerRef.current);
+    }
+    const newLayer = L.tileLayer(cfg.url, {
+      attribution: cfg.attribution,
+      maxZoom: cfg.maxZoom,
+      subdomains: 'abcd',
+    }).addTo(mapInstanceRef.current);
+    newLayer.bringToBack();
+    currentTileLayerRef.current = newLayer;
+  }, [activeBasemap]);
 
   // 2. Fetch Geofence GeoJSONs from backend
   useEffect(() => {
@@ -438,76 +487,127 @@ export default function MarineMap({
   };
 
   return (
-    <div className="relative w-full h-full bg-ocean-950 overflow-hidden select-none">
+    <div className="relative w-full h-full bg-[#0a0a0c] overflow-hidden select-none">
       {/* Map DOM Container */}
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
-      {/* Map Control Overlay (Top Left: Layer Switcher & Compass) */}
+      {/* Map Control Overlay (Top Left: Apple-Style Layer Switcher & Controls) */}
       <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
-        <div className="bg-ocean-900/90 border border-cyan-500/30 rounded-xl p-2.5 shadow-xl backdrop-blur-md text-xs">
-          <div className="flex items-center gap-1.5 text-cyan-400 font-bold mb-2 pb-1 border-b border-white/10 uppercase tracking-wider text-[10px]">
-            <Layers className="w-3.5 h-3.5" />
-            <span>GIS Map Overlays</span>
+        <div className="bg-black/75 border border-white/[0.1] rounded-xl p-3 shadow-2xl backdrop-blur-xl text-xs text-[#f5f5f7]">
+          {/* Basemap Selection */}
+          <div className="mb-2.5 pb-2 border-b border-white/[0.08]">
+            <div className="flex items-center justify-between text-[#86868b] font-medium uppercase tracking-wider text-[10px] mb-1.5">
+              <span className="flex items-center gap-1.5">
+                <MapIcon className="w-3 h-3 text-[#2997ff]" />
+                Basemap
+              </span>
+              <span className="text-[9px] text-[#38bdf8] font-mono">CARTO API</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1">
+              <button
+                type="button"
+                onClick={() => setActiveBasemap('voyager')}
+                className={`px-1.5 py-1 rounded text-center text-[10px] font-medium transition ${
+                  activeBasemap === 'voyager'
+                    ? 'bg-[#0071e3] text-white shadow-sm'
+                    : 'bg-white/[0.06] hover:bg-white/[0.12] text-[#d1d1d6]'
+                }`}
+                title="CARTO Voyager Nautical Basemap (Active API Key)"
+              >
+                Voyager
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveBasemap('dark')}
+                className={`px-1.5 py-1 rounded text-center text-[10px] font-medium transition ${
+                  activeBasemap === 'dark'
+                    ? 'bg-[#0071e3] text-white shadow-sm'
+                    : 'bg-white/[0.06] hover:bg-white/[0.12] text-[#d1d1d6]'
+                }`}
+                title="CARTO Dark Matter Basemap (Active API Key)"
+              >
+                Dark
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveBasemap('esri')}
+                className={`px-1.5 py-1 rounded text-center text-[10px] font-medium transition ${
+                  activeBasemap === 'esri'
+                    ? 'bg-[#0071e3] text-white shadow-sm'
+                    : 'bg-white/[0.06] hover:bg-white/[0.12] text-[#d1d1d6]'
+                }`}
+                title="Esri Oceanic Gray Basemap"
+              >
+                Esri
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-[#86868b] font-medium mb-2 pb-1.5 border-b border-white/[0.08] uppercase tracking-wider text-[10px]">
+            <div className="glass-icon w-5 h-5">
+              <Layers className="w-3 h-3 text-[#2997ff]" />
+            </div>
+            <span>Layers</span>
           </div>
           <div className="space-y-1.5">
-            <label className="flex items-center gap-2 cursor-pointer hover:text-cyan-300">
+            <label className="flex items-center gap-2 cursor-pointer hover:text-white transition">
               <input
                 type="checkbox"
                 checked={layersVisible.harbours}
                 onChange={() => toggleLayer('harbours')}
-                className="rounded accent-cyan-500 w-3.5 h-3.5"
+                className="rounded accent-[#0071e3] w-3.5 h-3.5"
               />
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-sm bg-cyan-400"></span>
-                <span>12 Major Landing Harbours</span>
+              <span className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#2997ff]"></span>
+                <span className="font-normal text-xs text-[#e1e1e6]">Harbours</span>
               </span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer hover:text-cyan-300">
+            <label className="flex items-center gap-2 cursor-pointer hover:text-white transition">
               <input
                 type="checkbox"
                 checked={layersVisible.pfz}
                 onChange={() => toggleLayer('pfz')}
-                className="rounded accent-cyan-500 w-3.5 h-3.5"
+                className="rounded accent-[#0071e3] w-3.5 h-3.5"
               />
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-sm bg-emerald-400"></span>
-                <span>PFZ Optimal Zones</span>
+              <span className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                <span className="font-normal text-xs text-[#e1e1e6]">PFZ Hotspots</span>
               </span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer hover:text-cyan-300">
+            <label className="flex items-center gap-2 cursor-pointer hover:text-white transition">
               <input
                 type="checkbox"
                 checked={layersVisible.route}
                 onChange={() => toggleLayer('route')}
-                className="rounded accent-cyan-500 w-3.5 h-3.5"
+                className="rounded accent-[#0071e3] w-3.5 h-3.5"
               />
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-sm bg-cyan-400"></span>
-                <span>A* Wave-Aware Route</span>
+              <span className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#2997ff]"></span>
+                <span className="font-normal text-xs text-[#e1e1e6]">Safe Route</span>
               </span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer hover:text-cyan-300">
+            <label className="flex items-center gap-2 cursor-pointer hover:text-white transition">
               <input
                 type="checkbox"
                 checked={layersVisible.imbl}
                 onChange={() => toggleLayer('imbl')}
-                className="rounded accent-cyan-500 w-3.5 h-3.5"
+                className="rounded accent-[#0071e3] w-3.5 h-3.5"
               />
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-sm bg-red-500"></span>
-                <span>IMBL Red Border (5 NM Buffer)</span>
+              <span className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                <span className="font-normal text-xs text-[#e1e1e6]">IMBL Border</span>
               </span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer hover:text-cyan-300">
+            <label className="flex items-center gap-2 cursor-pointer hover:text-white transition">
               <input
                 type="checkbox"
                 checked={layersVisible.mpa}
                 onChange={() => toggleLayer('mpa')}
-                className="rounded accent-cyan-500 w-3.5 h-3.5"
+                className="rounded accent-[#0071e3] w-3.5 h-3.5"
               />
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-sm bg-sky-500"></span>
-                <span>Marine Protected Areas (MPA)</span>
+              <span className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+                <span className="font-normal text-xs text-[#e1e1e6]">MPA Sanctuaries</span>
               </span>
             </label>
           </div>
@@ -516,38 +616,35 @@ export default function MarineMap({
         {/* Reset View Button */}
         <button
           onClick={handleResetView}
-          className="bg-ocean-900/90 hover:bg-ocean-800 border border-cyan-500/30 text-cyan-300 text-xs font-semibold px-3 py-1.5 rounded-md shadow-lg backdrop-blur-md flex items-center gap-2 transition"
+          className="glass-icon px-3 py-1.5 text-xs font-medium gap-2 shadow-lg text-[#f5f5f7]"
         >
-          <Crosshair className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Center on {activeHarbour?.name || 'Coast'}</span>
+          <Crosshair className="w-3.5 h-3.5 text-[#2997ff]" />
+          <span>Center: {activeHarbour?.name || 'Coast'}</span>
         </button>
       </div>
 
       {/* Map Legend Overlay (Bottom Left) */}
-      <div className="absolute bottom-4 left-4 z-20 bg-ocean-900/85 border border-cyan-500/20 rounded-md px-3 py-2 shadow-xl backdrop-blur-md text-[11px] hidden sm:block">
-        <div className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1.5">
-          Marine GIS Legend
-        </div>
-        <div className="flex flex-wrap items-center gap-3 text-slate-300">
+      <div className="absolute bottom-4 left-4 z-20 bg-black/75 border border-white/[0.1] rounded-lg px-3 py-1.5 shadow-xl backdrop-blur-xl text-[11px] hidden sm:block">
+        <div className="flex flex-wrap items-center gap-3 text-[#d1d1d6]">
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-1 bg-red-500 rounded-sm"></span>
-            <span>IMBL (Red Border)</span>
+            <span className="w-2.5 h-1 bg-red-400 rounded-sm"></span>
+            <span>IMBL</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-1 border-b-2 border-dashed border-amber-400"></span>
-            <span>5 NM Warning Buffer</span>
+            <span className="w-2.5 h-1 border-b-2 border-dashed border-amber-400"></span>
+            <span>5 NM Buffer</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 bg-sky-500/30 border border-sky-400 rounded-sm"></span>
-            <span>MPA Sanctuary</span>
+            <span className="w-2 h-2 bg-sky-400/30 border border-sky-400 rounded-sm"></span>
+            <span>MPA</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm bg-emerald-400 ring-2 ring-emerald-300"></span>
-            <span>PFZ Hotspot</span>
+            <span className="w-2 h-2 rounded-sm bg-emerald-400"></span>
+            <span>PFZ</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-1 border-b-2 border-dashed border-cyan-400"></span>
-            <span>Safe Route</span>
+            <span className="w-2.5 h-1 border-b-2 border-dashed border-[#2997ff]"></span>
+            <span>Route</span>
           </div>
         </div>
       </div>

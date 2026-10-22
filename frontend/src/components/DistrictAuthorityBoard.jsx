@@ -62,28 +62,28 @@ export default function DistrictAuthorityBoard({
     switch (verdict) {
       case 'EXTREME':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-red-700 text-white tracking-wider">
-            <ShieldAlert className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider bg-red-500/15 text-red-700 dark:text-red-400 border border-red-500/30">
+            <ShieldAlert className="w-3 h-3 text-current" />
             EXTREME ({score})
           </span>
         );
       case 'HIGH':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-600 text-white tracking-wider">
-            <AlertTriangle className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+            <AlertTriangle className="w-3 h-3 text-current" />
             HIGH ({score})
           </span>
         );
       case 'MODERATE':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 tracking-wider">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
             MODERATE ({score})
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-600/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 tracking-wider">
-            <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+            <ShieldCheck className="w-3 h-3 text-current" />
             LOW ({score})
           </span>
         );
@@ -92,24 +92,26 @@ export default function DistrictAuthorityBoard({
 
   return (
     <div className={`flex flex-col h-full w-full overflow-y-auto p-4 md:p-6 transition-colors ${
-      isChartTheme ? 'bg-paper-100 text-ink-900' : 'bg-ocean-950 text-slate-100'
+      isChartTheme ? 'bg-[#f5f5f7] text-[#1d1d1f]' : 'bg-[#0a0a0c] text-[#f5f5f7]'
     }`}>
       {/* 1. Header & Quick Metrics */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <div className="flex items-center gap-2">
-            <Building2 className={`w-5 h-5 ${isChartTheme ? 'text-chart-500' : 'text-cyan-400'}`} />
-            <h2 className="text-xl font-bold tracking-tight">
-              District Maritime Authority Board
+          <div className="flex items-center gap-2.5">
+            <div className="glass-icon w-8 h-8">
+              <Building2 className="w-4 h-4 text-[#2997ff]" />
+            </div>
+            <h2 className="text-lg font-semibold tracking-tight">
+              District Board
             </h2>
-            <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase ${
-              isChartTheme ? 'bg-paper-200 text-ink-700 border border-paper-300' : 'bg-ocean-900 text-cyan-300 border border-cyan-500/30'
+            <span className={`text-[10px] px-2 py-0.5 rounded font-medium tracking-wide uppercase border ${
+              isChartTheme ? 'bg-black/[0.04] text-[#86868b] border-black/[0.08]' : 'bg-white/[0.06] text-[#86868b] border-white/[0.1]'
             }`}>
-              12 Landing Centres
+              12 Centres
             </span>
           </div>
-          <p className={`text-xs mt-0.5 ${isChartTheme ? 'text-ink-500' : 'text-slate-400'}`}>
-            Coast-wide synoptic marine safety oversight and fleet venture clearance • Updated at {lastRefreshed || 'Synchronizing...'}
+          <p className="text-xs text-[#86868b] mt-0.5 font-normal">
+            Fleet status across 12 centres • {lastRefreshed || 'Live'}
           </p>
         </div>
 
@@ -118,79 +120,95 @@ export default function DistrictAuthorityBoard({
           <button
             onClick={fetchBoardData}
             disabled={isLoading}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition shadow-sm ${
-              isChartTheme
-                ? 'bg-paper-200 hover:bg-paper-300 text-ink-800 border border-paper-300'
-                : 'bg-ocean-900 hover:bg-ocean-800 text-cyan-300 border border-cyan-500/30'
-            }`}
+            className="glass-icon px-3 py-1.5 text-xs font-medium gap-1.5"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Refresh Telemetry</span>
+            <span>Refresh</span>
           </button>
         </div>
       </div>
 
-      {/* 2. Top Executive Summary Tiles */}
+      {/* 2. Top Executive Summary Tiles (Apple Tech Specs Style with Glassmorphic Icons) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <div className={`p-3 rounded-md border ${
-          isChartTheme ? 'bg-paper-50 border-paper-300' : 'bg-ocean-900/60 border-cyan-500/20'
+        <div className={`p-4 rounded-xl border transition-colors relative ${
+          isChartTheme ? 'bg-white border-black/[0.08] shadow-sm' : 'bg-white/[0.04] border-white/[0.08]'
         }`}>
-          <span className={`text-[11px] font-bold uppercase tracking-wider block ${
-            isChartTheme ? 'text-ink-500' : 'text-slate-400'
-          }`}>
-            Monitored Harbours
-          </span>
-          <span className="text-2xl font-mono font-bold mt-1 block">12</span>
-          <span className="text-[10px] text-slate-400">Gujarat to Odisha Coastline</span>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-medium uppercase tracking-wider block text-[#86868b]">
+              Monitored
+            </span>
+            <div className="glass-icon w-7 h-7">
+              <Anchor className="w-3.5 h-3.5 text-[#2997ff]" />
+            </div>
+          </div>
+          <span className="text-3xl font-semibold tracking-tight mt-1.5 block">12</span>
+          <span className="text-[11px] text-[#86868b] mt-0.5 block">Landing centres</span>
         </div>
 
-        <div className={`p-3 rounded-md border ${
-          redCount > 0 ? 'bg-red-500/10 border-red-500/40 text-red-600 dark:text-red-400' : (isChartTheme ? 'bg-paper-50 border-paper-300' : 'bg-ocean-900/60 border-cyan-500/20')
+        <div className={`p-4 rounded-xl border transition-colors relative ${
+          redCount > 0
+            ? 'bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-400'
+            : (isChartTheme ? 'bg-white border-black/[0.08] shadow-sm' : 'bg-white/[0.04] border-white/[0.08]')
         }`}>
-          <span className="text-[11px] font-bold uppercase tracking-wider block">
-            Venture Prohibited (Red)
-          </span>
-          <span className="text-2xl font-mono font-bold mt-1 block">{redCount}</span>
-          <span className="text-[10px]">{redCount > 0 ? 'Active Circuit Breaker' : 'Zero Active Bans'}</span>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-medium uppercase tracking-wider block text-[#86868b]">
+              Prohibited
+            </span>
+            <div className="glass-icon glass-icon-red w-7 h-7">
+              <ShieldAlert className="w-3.5 h-3.5 text-current" />
+            </div>
+          </div>
+          <span className="text-3xl font-semibold tracking-tight mt-1.5 block">{redCount}</span>
+          <span className="text-[11px] text-[#86868b] mt-0.5 block">{redCount > 0 ? 'Banned' : 'None'}</span>
         </div>
 
-        <div className={`p-3 rounded-md border ${
-          amberCount > 0 ? 'bg-amber-500/10 border-amber-500/40 text-amber-600 dark:text-amber-400' : (isChartTheme ? 'bg-paper-50 border-paper-300' : 'bg-ocean-900/60 border-cyan-500/20')
+        <div className={`p-4 rounded-xl border transition-colors relative ${
+          amberCount > 0
+            ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400'
+            : (isChartTheme ? 'bg-white border-black/[0.08] shadow-sm' : 'bg-white/[0.04] border-white/[0.08]')
         }`}>
-          <span className="text-[11px] font-bold uppercase tracking-wider block">
-            Caution Advised (Amber)
-          </span>
-          <span className="text-2xl font-mono font-bold mt-1 block">{amberCount}</span>
-          <span className="text-[10px]">Moderate Sea State Warning</span>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-medium uppercase tracking-wider block text-[#86868b]">
+              Caution
+            </span>
+            <div className="glass-icon glass-icon-amber w-7 h-7">
+              <AlertTriangle className="w-3.5 h-3.5 text-current" />
+            </div>
+          </div>
+          <span className="text-3xl font-semibold tracking-tight mt-1.5 block">{amberCount}</span>
+          <span className="text-[11px] text-[#86868b] mt-0.5 block">{amberCount > 0 ? 'Advisory' : 'None'}</span>
         </div>
 
-        <div className={`p-3 rounded-md border ${
-          isChartTheme ? 'bg-paper-50 border-paper-300' : 'bg-ocean-900/60 border-cyan-500/20'
+        <div className={`p-4 rounded-xl border transition-colors relative ${
+          isChartTheme ? 'bg-white border-black/[0.08] shadow-sm' : 'bg-white/[0.04] border-white/[0.08]'
         }`}>
-          <span className={`text-[11px] font-bold uppercase tracking-wider block ${
-            isChartTheme ? 'text-ink-500' : 'text-slate-400'
-          }`}>
-            Optimal Sea State (Green)
-          </span>
-          <span className="text-2xl font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-1 block">{greenCount}</span>
-          <span className="text-[10px] text-slate-400">Clear Venture Permitted</span>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-medium uppercase tracking-wider block text-[#86868b]">
+              Clear
+            </span>
+            <div className="glass-icon glass-icon-emerald w-7 h-7">
+              <ShieldCheck className="w-3.5 h-3.5 text-current" />
+            </div>
+          </div>
+          <span className="text-3xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-400 mt-1.5 block">{greenCount}</span>
+          <span className="text-[11px] text-[#86868b] mt-0.5 block">Permitted</span>
         </div>
       </div>
 
       {/* 3. State Filter Bar */}
       <div className="flex items-center gap-1.5 flex-wrap mb-4">
-        <span className={`text-xs font-bold flex items-center gap-1 mr-2 ${isChartTheme ? 'text-ink-700' : 'text-slate-300'}`}>
+        <span className="text-xs font-medium text-[#86868b] flex items-center gap-1 mr-2">
           <Filter className="w-3.5 h-3.5" />
-          Filter State:
+          State:
         </span>
         {states.map((st) => (
           <button
             key={st}
             onClick={() => setStateFilter(st)}
-            className={`px-2.5 py-1 rounded text-xs font-bold transition ${
+            className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
               stateFilter === st
-                ? (isChartTheme ? 'bg-chart-500 text-white shadow' : 'bg-cyan-500 text-slate-950 shadow')
-                : (isChartTheme ? 'bg-paper-200 hover:bg-paper-300 text-ink-700' : 'bg-ocean-900 hover:bg-ocean-800 text-slate-300')
+                ? (isChartTheme ? 'bg-[#1d1d1f] text-white shadow-sm' : 'bg-white text-black shadow-sm')
+                : (isChartTheme ? 'bg-black/[0.04] hover:bg-black/[0.08] text-[#86868b]' : 'bg-white/[0.04] hover:bg-white/[0.08] text-[#86868b] hover:text-[#f5f5f7]')
             }`}
           >
             {st}
@@ -198,26 +216,26 @@ export default function DistrictAuthorityBoard({
         ))}
       </div>
 
-      {/* 4. High-Density Authority Matrix Table */}
-      <div className={`rounded-md border overflow-hidden shadow-sm ${
-        isChartTheme ? 'border-paper-300 bg-paper-50' : 'border-cyan-500/20 bg-ocean-900/40'
+      {/* 4. High-Density Authority Matrix Table (Apple Spec Layout) */}
+      <div className={`rounded-xl border overflow-hidden transition-colors ${
+        isChartTheme ? 'border-black/[0.08] bg-white shadow-sm' : 'border-white/[0.08] bg-white/[0.02]'
       }`}>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className={`border-b font-mono uppercase text-[11px] tracking-wider ${
-                isChartTheme ? 'bg-paper-200/70 border-paper-300 text-ink-700' : 'bg-ocean-950/80 border-cyan-500/30 text-cyan-300'
+              <tr className={`border-b text-[10px] uppercase tracking-wider ${
+                isChartTheme ? 'bg-black/[0.02] border-black/[0.06] text-[#86868b]' : 'bg-white/[0.03] border-white/[0.06] text-[#86868b]'
               }`}>
-                <th className="py-2.5 px-3">Landing Centre</th>
-                <th className="py-2.5 px-3">State</th>
-                <th className="py-2.5 px-3">Safety Index (0-100)</th>
-                <th className="py-2.5 px-3">Verdict</th>
-                <th className="py-2.5 px-3">Wave & Wind</th>
-                <th className="py-2.5 px-3">Boundary Clearance</th>
-                <th className="py-2.5 px-3 text-right">Command Action</th>
+                <th className="py-3 px-4 font-medium">Landing Centre</th>
+                <th className="py-3 px-4 font-medium">State</th>
+                <th className="py-3 px-4 font-medium">Safety Index (0-100)</th>
+                <th className="py-3 px-4 font-medium">Verdict</th>
+                <th className="py-3 px-4 font-medium">Wave & Wind</th>
+                <th className="py-3 px-4 font-medium">Boundary Clearance</th>
+                <th className="py-3 px-4 font-medium text-right">Command Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-inherit">
+            <tbody className={`divide-y ${isChartTheme ? 'divide-black/[0.04]' : 'divide-white/[0.04]'}`}>
               {filteredHarbours.map((h) => {
                 const isRed = h.safety_status === 'RED_ALERT' || h.circuit_breaker_triggered;
                 return (
@@ -225,42 +243,44 @@ export default function DistrictAuthorityBoard({
                     key={h.harbour_id}
                     className={`transition ${
                       isChartTheme
-                        ? 'hover:bg-paper-100'
-                        : 'hover:bg-ocean-800/40'
-                    } ${isRed ? (isChartTheme ? 'bg-red-500/5' : 'bg-red-950/20') : ''}`}
+                        ? 'hover:bg-black/[0.02]'
+                        : 'hover:bg-white/[0.02]'
+                    } ${isRed ? (isChartTheme ? 'bg-red-500/5' : 'bg-red-950/15') : ''}`}
                   >
                     {/* Landing Centre */}
-                    <td className="py-2.5 px-3">
-                      <div className="font-bold flex items-center gap-1.5">
-                        <Anchor className={`w-3.5 h-3.5 shrink-0 ${isChartTheme ? 'text-chart-500' : 'text-cyan-400'}`} />
-                        <span>{h.harbour_name}</span>
+                    <td className="py-3 px-4">
+                      <div className="font-medium flex items-center gap-2">
+                        <div className="glass-icon w-6 h-6 shrink-0">
+                          <Anchor className="w-3 h-3 text-[#2997ff]" />
+                        </div>
+                        <span className="text-sm font-medium">{h.harbour_name}</span>
                       </div>
-                      <span className={`text-[11px] block mt-0.5 ${isChartTheme ? 'text-ink-500' : 'text-slate-400'}`}>
+                      <span className="text-[11px] block mt-0.5 text-[#86868b]">
                         {h.local_name}
                       </span>
                     </td>
 
                     {/* State */}
-                    <td className="py-2.5 px-3 font-medium">
+                    <td className="py-3 px-4 font-normal text-[#86868b]">
                       {h.state}
                     </td>
 
                     {/* Safety Index Gauge */}
-                    <td className="py-2.5 px-3">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-sm w-8">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2.5">
+                        <span className="font-mono font-medium text-sm w-7">
                           {h.safety_index}
                         </span>
-                        <div className="w-24 h-2 bg-slate-200 dark:bg-ocean-950 rounded-full overflow-hidden shrink-0">
+                        <div className="w-24 h-1.5 bg-black/[0.08] dark:bg-white/[0.08] rounded-full overflow-hidden shrink-0">
                           <div
                             className={`h-full ${
                               h.safety_index >= 76
-                                ? 'bg-red-600'
+                                ? 'bg-red-500'
                                 : h.safety_index >= 51
-                                ? 'bg-amber-600'
+                                ? 'bg-amber-500'
                                 : h.safety_index >= 26
                                 ? 'bg-amber-400'
-                                : 'bg-emerald-500'
+                                : 'bg-emerald-400'
                             }`}
                             style={{ width: `${Math.min(100, Math.max(5, h.safety_index))}%` }}
                           />
@@ -269,39 +289,39 @@ export default function DistrictAuthorityBoard({
                     </td>
 
                     {/* Verdict */}
-                    <td className="py-2.5 px-3">
+                    <td className="py-3 px-4">
                       {getVerdictBadge(h.risk_verdict, h.safety_index)}
                     </td>
 
                     {/* Wave & Wind */}
-                    <td className="py-2.5 px-3">
-                      <div className="flex items-center gap-3 font-mono text-[11px]">
-                        <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-300">
-                          <Waves className="w-3 h-3" />
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-3 font-mono text-[11px] text-[#86868b]">
+                        <span className="flex items-center gap-1 text-[#f5f5f7]">
+                          <Waves className="w-3 h-3 text-[#86868b]" />
                           {h.wave_height_m}m
                         </span>
-                        <span className="flex items-center gap-1 text-sky-600 dark:text-sky-300">
-                          <Wind className="w-3 h-3" />
+                        <span className="flex items-center gap-1 text-[#f5f5f7]">
+                          <Wind className="w-3 h-3 text-[#86868b]" />
                           {h.wind_speed_kmh} km/h
                         </span>
                       </div>
                     </td>
 
                     {/* Boundary Clearance */}
-                    <td className="py-2.5 px-3 font-mono text-[11px]">
-                      <span className={h.nearest_boundary_distance_nm <= 1.5 ? 'text-red-600 font-bold' : (isChartTheme ? 'text-ink-700' : 'text-slate-300')}>
+                    <td className="py-3 px-4 font-mono text-[11px]">
+                      <span className={h.nearest_boundary_distance_nm <= 1.5 ? 'text-red-400 font-medium' : 'text-[#86868b]'}>
                         {h.nearest_boundary_distance_nm.toFixed(1)} NM
                       </span>
                     </td>
 
                     {/* Command Action */}
-                    <td className="py-2.5 px-3 text-right">
+                    <td className="py-3 px-4 text-right">
                       <button
                         onClick={() => onSelectHarbour && onSelectHarbour(h.harbour_id)}
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold transition shadow-sm ${
+                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium transition shadow-sm ${
                           isChartTheme
-                            ? 'bg-paper-200 hover:bg-chart-500 hover:text-white text-ink-800 border border-paper-300'
-                            : 'bg-ocean-950 hover:bg-cyan-500 hover:text-slate-950 text-cyan-300 border border-cyan-500/40'
+                            ? 'bg-black/[0.04] hover:bg-black/[0.08] text-[#1d1d1f] border border-black/[0.08]'
+                            : 'bg-white/[0.08] hover:bg-white/[0.14] text-[#f5f5f7] border border-white/[0.1]'
                         }`}
                         title={`Focus ${h.harbour_name} in Fisher View`}
                       >

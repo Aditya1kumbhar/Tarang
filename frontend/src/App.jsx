@@ -27,7 +27,7 @@ export default function App() {
   const [vesselType, setVesselType] = useState('country_craft');
   const [isBackendHealthy, setIsBackendHealthy] = useState(false);
   const [personaMode, setPersonaMode] = useState('fisher'); // 'fisher' | 'district'
-  const [themeMode, setThemeMode] = useState('chart'); // 'chart' | 'ocean'
+  const [themeMode, setThemeMode] = useState('ocean'); // 'ocean' (dark) | 'chart' (light)
 
   // Marine Telemetry & Dashboard Snapshot
   const [liveWeather, setLiveWeather] = useState(null);
@@ -136,7 +136,10 @@ export default function App() {
       const res = await fetch(`/api/v1/dashboard-summary?harbour_id=${harbourId}&vessel_type=${vessel}`);
       if (res.ok) {
         const data = await res.json();
-        setLiveWeather(data.weather);
+        setLiveWeather({
+          ...data.weather,
+          sst_c: data.top_pfz?.sst_c || data.weather?.sst_c || 28.4,
+        });
         setSafetyStatus(data.weather?.safety_status || 'GREEN');
         setSafetyOverrideBanner(data.safety_override_banner);
         if (data.map_payload && data.map_payload.features) {
@@ -219,60 +222,62 @@ export default function App() {
   return (
     <div
       className={`flex flex-col h-screen w-screen overflow-hidden font-sans transition-colors ${
-        themeMode === 'ocean' ? 'dark bg-ocean-950 text-slate-100' : 'bg-paper-100 text-ink-900'
+        themeMode === 'ocean' ? 'dark bg-[#0a0a0c] text-[#f5f5f7]' : 'bg-[#f5f5f7] text-[#1d1d1f]'
       }`}
     >
-      {/* 1. Top Command Header */}
+      {/* 1. Apple-Minimalist Frosted Command Header */}
       <header
-        className={`h-14 px-4 flex items-center justify-between shrink-0 z-30 shadow-sm border-b transition-colors ${
+        className={`h-14 px-4 sm:px-6 flex items-center justify-between shrink-0 z-30 transition-colors backdrop-blur-xl border-b ${
           themeMode === 'chart'
-            ? 'bg-paper-50 border-paper-400 text-ink-900'
-            : 'bg-ocean-900 border-cyan-500/30 text-slate-100 shadow-lg'
+            ? 'bg-white/80 border-black/[0.08] text-[#1d1d1f]'
+            : 'bg-black/75 border-white/[0.08] text-[#f5f5f7]'
         }`}
       >
         {/* Brand & Identity */}
         <div className="flex items-center gap-3">
-          <div
-            className={`relative flex items-center justify-center w-9 h-9 rounded-sm border ${
-              themeMode === 'chart'
-                ? 'bg-paper-200 border-paper-500 text-ink-900'
-                : 'bg-cyan-950 border-cyan-400/50 text-cyan-300'
-            }`}
-          >
-            <Compass className="w-5 h-5 animate-pulse" />
+          <div className="glass-icon w-8 h-8">
+            <Compass className="w-4 h-4 text-[#2997ff]" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-mono font-bold text-base tracking-wider uppercase">
+              <h1 className="font-semibold text-sm tracking-tight">
                 ORCA
               </h1>
               <span
-                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-sm border font-mono ${
+                className={`text-[10px] font-medium tracking-wide px-1.5 py-0.5 rounded border ${
                   themeMode === 'chart'
-                    ? 'bg-paper-200 border-paper-400 text-ink-700'
-                    : 'bg-cyan-950 border-cyan-500/40 text-cyan-300'
+                    ? 'bg-black/[0.04] border-black/[0.08] text-[#86868b]'
+                    : 'bg-white/[0.06] border-white/[0.1] text-[#86868b]'
                 }`}
               >
                 SIH 2026 PS #20
               </span>
             </div>
-            <p className="text-[10px] text-ink-600 dark:text-slate-400 hidden sm:block tracking-tight font-mono">
-              Oceanographic Reasoning & Collaborative Agents • Indian Fisheries & Maritime Safety
+            <p className="text-[11px] text-[#86868b] hidden sm:block font-normal">
+              Marine Intelligence
             </p>
           </div>
         </div>
 
-        {/* Center: Persona Switch & Live Marine Ribbon */}
+        {/* Center: Apple Segmented Persona Switch & Telemetry Ribbon */}
         <div className="hidden md:flex items-center gap-3 text-xs">
-          {/* Dual Persona Switch */}
-          <div className="flex items-center rounded-sm border border-paper-400 dark:border-cyan-500/30 overflow-hidden bg-paper-200 dark:bg-ocean-950 text-xs font-mono">
+          {/* Apple Segmented Control */}
+          <div
+            className={`flex items-center p-0.5 rounded-lg border transition-colors ${
+              themeMode === 'chart'
+                ? 'bg-black/[0.05] border-black/[0.08]'
+                : 'bg-white/[0.06] border-white/[0.08]'
+            }`}
+          >
             <button
               type="button"
               onClick={() => setPersonaMode('fisher')}
-              className={`px-3 py-1 flex items-center gap-1.5 transition-colors ${
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
                 personaMode === 'fisher'
-                  ? 'bg-ink-900 text-paper-50 dark:bg-cyan-500 dark:text-slate-950 font-bold'
-                  : 'text-ink-600 dark:text-slate-400 hover:text-ink-900 dark:hover:text-slate-200'
+                  ? (themeMode === 'chart'
+                      ? 'bg-white text-[#1d1d1f] shadow-sm'
+                      : 'bg-white/[0.16] text-white shadow-sm')
+                  : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7]'
               }`}
             >
               <Anchor className="w-3.5 h-3.5" />
@@ -281,10 +286,12 @@ export default function App() {
             <button
               type="button"
               onClick={() => setPersonaMode('district')}
-              className={`px-3 py-1 flex items-center gap-1.5 transition-colors ${
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
                 personaMode === 'district'
-                  ? 'bg-ink-900 text-paper-50 dark:bg-cyan-500 dark:text-slate-950 font-bold'
-                  : 'text-ink-600 dark:text-slate-400 hover:text-ink-900 dark:hover:text-slate-200'
+                  ? (themeMode === 'chart'
+                      ? 'bg-white text-[#1d1d1f] shadow-sm'
+                      : 'bg-white/[0.16] text-white shadow-sm')
+                  : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7]'
               }`}
             >
               <Building2 className="w-3.5 h-3.5" />
@@ -292,42 +299,51 @@ export default function App() {
             </button>
           </div>
 
-          {/* Live Telemetry Ribbon */}
+          {/* Live Telemetry Ribbon (Apple Spec Callouts) */}
           {liveWeather && (
-            <div className="flex items-center gap-3 px-3 py-1 rounded-sm border border-paper-400 dark:border-cyan-500/20 bg-paper-200/80 dark:bg-ocean-950/70 font-mono">
-              <div className="flex items-center gap-1.5 text-ink-800 dark:text-amber-300" title="Sea Surface Temperature">
-                <Thermometer className="w-3.5 h-3.5" />
-                <span className="font-bold">{liveWeather.sst_c}°C SST</span>
+            <div
+              className={`flex items-center gap-3 px-3 py-1 rounded-lg border text-xs transition-colors ${
+                themeMode === 'chart'
+                  ? 'bg-black/[0.03] border-black/[0.06] text-[#1d1d1f]'
+                  : 'bg-white/[0.04] border-white/[0.08] text-[#f5f5f7]'
+              }`}
+            >
+              <div className="flex items-center gap-1.5" title="Sea Surface Temperature">
+                <Thermometer className="w-3.5 h-3.5 text-[#86868b]" />
+                <span className="font-medium tracking-tight">{liveWeather.sst_c}°C</span>
+                <span className="text-[10px] text-[#86868b] uppercase tracking-wider">SST</span>
               </div>
-              <span className="text-paper-500 dark:text-white/20">|</span>
-              <div className="flex items-center gap-1.5 text-ink-800 dark:text-cyan-300" title="Significant Wave Height">
-                <Waves className="w-3.5 h-3.5" />
-                <span className="font-bold">{liveWeather.wave_height_m}m Waves</span>
+              <span className="text-black/20 dark:text-white/20">|</span>
+              <div className="flex items-center gap-1.5" title="Significant Wave Height">
+                <Waves className="w-3.5 h-3.5 text-[#86868b]" />
+                <span className="font-medium tracking-tight">{liveWeather.wave_height_m}m</span>
+                <span className="text-[10px] text-[#86868b] uppercase tracking-wider">Waves</span>
               </div>
-              <span className="text-paper-500 dark:text-white/20">|</span>
-              <div className="flex items-center gap-1.5 text-ink-800 dark:text-sky-300" title="Surface Wind Speed">
-                <Wind className="w-3.5 h-3.5" />
-                <span className="font-bold">{liveWeather.wind_speed_kmh} km/h Wind</span>
+              <span className="text-black/20 dark:text-white/20">|</span>
+              <div className="flex items-center gap-1.5" title="Surface Wind Speed">
+                <Wind className="w-3.5 h-3.5 text-[#86868b]" />
+                <span className="font-medium tracking-tight">{liveWeather.wind_speed_kmh} km/h</span>
+                <span className="text-[10px] text-[#86868b] uppercase tracking-wider">Wind</span>
               </div>
             </div>
           )}
 
-          {/* Circuit Breaker Status Badge */}
+          {/* Circuit Breaker Status Pill */}
           <div
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[11px] font-mono font-bold uppercase tracking-wider ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium tracking-tight transition-colors ${
               safetyStatus === 'RED_ALERT'
-                ? 'bg-risk-extreme text-white border border-red-700'
+                ? 'glass-icon glass-icon-red'
                 : safetyStatus === 'AMBER'
-                ? 'bg-risk-moderate text-ink-900 border border-amber-600'
-                : 'bg-risk-low/20 border border-risk-low text-emerald-800 dark:text-emerald-300'
+                ? 'glass-icon glass-icon-amber'
+                : 'glass-icon glass-icon-emerald'
             }`}
           >
             {safetyStatus === 'RED_ALERT' ? (
-              <ShieldAlert className="w-3.5 h-3.5" />
+              <ShieldAlert className="w-3.5 h-3.5 text-current" />
             ) : (
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <ShieldCheck className="w-3.5 h-3.5 text-current" />
             )}
-            <span>Circuit Breaker: {safetyStatus.replace('_', ' ')}</span>
+            <span>Breaker: {safetyStatus.replace('_', ' ')}</span>
           </div>
         </div>
 
@@ -337,18 +353,18 @@ export default function App() {
           <button
             type="button"
             onClick={() => setThemeMode((prev) => (prev === 'chart' ? 'ocean' : 'chart'))}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm border border-paper-400 dark:border-cyan-500/30 bg-paper-200 dark:bg-ocean-950 font-mono text-[11px] hover:border-ink-500 dark:hover:border-cyan-400 transition-colors"
-            title="Toggle Visual Theme (Nautical Chart vs Ocean Dark)"
+            className="glass-icon px-2.5 py-1 text-xs gap-1.5"
+            title="Toggle Visual Theme (Light vs Dark)"
           >
             {themeMode === 'chart' ? (
               <>
-                <Sun className="w-3.5 h-3.5 text-chart-600" />
-                <span className="hidden sm:inline">Chart Paper</span>
+                <Sun className="w-3.5 h-3.5 text-[#86868b]" />
+                <span className="hidden sm:inline">Light</span>
               </>
             ) : (
               <>
-                <Moon className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="hidden sm:inline">Ocean Dark</span>
+                <Moon className="w-3.5 h-3.5 text-[#86868b]" />
+                <span className="hidden sm:inline">Dark</span>
               </>
             )}
           </button>
@@ -357,49 +373,39 @@ export default function App() {
           <button
             type="button"
             onClick={() => setIsTraceDrawerOpen(true)}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm font-mono text-[11px] font-bold transition-colors ${
-              themeMode === 'chart'
-                ? 'bg-ink-900 hover:bg-ink-800 text-paper-50 border border-ink-900'
-                : 'bg-cyan-600 hover:bg-cyan-500 text-slate-950'
-            }`}
+            className="glass-icon glass-icon-blue px-3 py-1 text-xs font-medium gap-1.5"
           >
-            <Activity className="w-3.5 h-3.5" />
-            <span>Agent Telemetry</span>
+            <Activity className="w-3.5 h-3.5 text-[#2997ff]" />
+            <span>Telemetry</span>
           </button>
 
-          {/* Custom Domain Badge */}
-          <div className="hidden xl:flex items-center gap-1.5 text-[11px] font-mono px-2 py-1 rounded-sm border border-paper-400 dark:border-cyan-500/30 bg-paper-200 dark:bg-ocean-950">
-            <Globe className="w-3 h-3 text-chart-600 dark:text-cyan-400" />
-            <span>orca.marine.gov.in</span>
-          </div>
-
           {/* Legal Navigation */}
-          <div className="hidden lg:flex items-center gap-2 text-[11px] font-mono text-ink-600 dark:text-slate-400">
+          <div className="hidden lg:flex items-center gap-2 text-[11px] text-[#86868b]">
             <button
               onClick={() => setIsPrivacyOpen(true)}
-              className="hover:underline underline-offset-2"
+              className="hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7] transition"
             >
               Privacy
             </button>
             <span>•</span>
             <button
               onClick={() => setIsTermsOpen(true)}
-              className="hover:underline underline-offset-2"
+              className="hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7] transition"
             >
               Terms
             </button>
           </div>
 
-          {/* Backend Connectivity Status */}
-          <div className="flex items-center gap-1.5 pl-1">
+          {/* Backend Connectivity Indicator */}
+          <div className="flex items-center gap-1.5 pl-2">
             <div
-              className={`w-2 h-2 rounded-sm ${
-                isBackendHealthy ? 'bg-emerald-500 shadow-[0_0_6px_#10b981]' : 'bg-red-500'
+              className={`w-2 h-2 rounded-full ${
+                isBackendHealthy ? 'bg-emerald-400' : 'bg-red-400'
               }`}
-              title={isBackendHealthy ? 'FastAPI Backend Online (:8000)' : 'Backend Offline'}
+              title={isBackendHealthy ? 'FastAPI Backend Online' : 'Backend Offline'}
             />
-            <span className="text-[10px] text-ink-600 dark:text-slate-400 hidden sm:inline font-mono">
-              {isBackendHealthy ? 'Online' : 'Offline'}
+            <span className="text-[11px] text-[#86868b] hidden sm:inline">
+              {isBackendHealthy ? 'Live' : 'Offline'}
             </span>
           </div>
         </div>
@@ -435,6 +441,7 @@ export default function App() {
               activeHarbour={selectedHarbour}
               onSelectHarbour={(h) => setSelectedHarbour(h)}
               mapPayload={mapPayload}
+              theme={themeMode}
             />
           </div>
 

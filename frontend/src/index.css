@@ -4,27 +4,31 @@
 
 @layer base {
   body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", sans-serif;
+    letter-spacing: -0.012em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Outfit', 'Inter', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Outfit", "Inter", sans-serif;
+    letter-spacing: -0.022em;
   }
 }
 
-/* Custom Scrollbar */
+/* Apple-style Ultra-Minimal Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(10, 19, 36, 0.6);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(30, 58, 110, 0.7);
-  border-radius: 9999px;
+  background: rgba(140, 140, 145, 0.25);
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(6, 182, 212, 0.6);
+  background: rgba(140, 140, 145, 0.45);
 }
 
 /* Leaflet Custom Overrides for Oceanic Dark Theme */
@@ -82,4 +86,93 @@
 
 .pfz-pulse-glow {
   animation: pulse-ring 2.5s ease-in-out infinite;
+}
+
+/* Apple Glassmorphism Icon Tile System */
+.glass-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.25), 0 2px 8px -2px rgba(0, 0, 0, 0.35);
+  color: inherit;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-icon:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.35), 0 4px 12px -2px rgba(0, 0, 0, 0.45);
+}
+
+:not(.dark) .glass-icon {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.8), 0 1px 3px 0 rgba(0, 0, 0, 0.06);
+  color: inherit;
+}
+
+:not(.dark) .glass-icon-emerald {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.32);
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.8), 0 2px 6px -1px rgba(16, 185, 129, 0.2);
+  color: #047857 !important;
+}
+
+:not(.dark) .glass-icon-amber {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.32);
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.8), 0 2px 6px -1px rgba(245, 158, 11, 0.2);
+  color: #b45309 !important;
+}
+
+:not(.dark) .glass-icon-red {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.32);
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.8), 0 2px 6px -1px rgba(239, 68, 68, 0.2);
+  color: #b91c1c !important;
+}
+
+:not(.dark) .glass-icon-blue {
+  background: rgba(0, 113, 227, 0.12);
+  border: 1px solid rgba(0, 113, 227, 0.32);
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.8), 0 2px 6px -1px rgba(0, 113, 227, 0.2);
+  color: #0071e3 !important;
+}
+
+.dark .glass-icon-emerald,
+.glass-icon-emerald {
+  background: rgba(16, 185, 129, 0.16);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  box-shadow: inset 0 1px 1px 0 rgba(52, 211, 153, 0.3), 0 2px 8px -2px rgba(16, 185, 129, 0.25);
+  color: #34d399 !important;
+}
+
+.dark .glass-icon-amber,
+.glass-icon-amber {
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  box-shadow: inset 0 1px 1px 0 rgba(251, 191, 36, 0.3), 0 2px 8px -2px rgba(245, 158, 11, 0.25);
+  color: #fbbf24 !important;
+}
+
+.dark .glass-icon-red,
+.glass-icon-red {
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  box-shadow: inset 0 1px 1px 0 rgba(248, 113, 113, 0.3), 0 2px 8px -2px rgba(239, 68, 68, 0.25);
+  color: #f87171 !important;
+}
+
+.dark .glass-icon-blue,
+.glass-icon-blue {
+  background: rgba(41, 151, 255, 0.16);
+  border: 1px solid rgba(41, 151, 255, 0.35);
+  box-shadow: inset 0 1px 1px 0 rgba(41, 151, 255, 0.3), 0 2px 8px -2px rgba(41, 151, 255, 0.25);
+  color: #38bdf8 !important;
 }
