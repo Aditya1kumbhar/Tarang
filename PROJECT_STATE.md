@@ -50,7 +50,8 @@
   - LLM Hardening: System prompt defense against instructions inside data, server-side regex scans for API keys and prompt leakage, injection attempt logging.
   - Response Hygiene & Error Envelope: `Cache-Control: no-store` on all `/api/*` endpoints; standardized error envelope `{"detail": string, "error": machine_code}` across all status codes.
   - Observability: Structured request logging (method, path, status, IP, latency_ms) with 429 and 5xx alerts logged at WARNING level.
-  - CI Pipeline: GitHub Actions workflow (`.github/workflows/ci.yml`) enforcing `pip-audit`, `npm audit --audit-level=critical`, and test suite execution.
+  - CI Pipeline: GitHub Actions workflow (`.github/workflows/ci.yml`) enforcing `pip-audit`, `npm audit --audit-level=critical`, comprehensive test suite (45 tests), and production rate limiting verification script, with `workflow_dispatch` and `permissions: contents: read`.
+  - Live Rate Limiting Verification: Confirmed live on Render (`https://tarang-0v0t.onrender.com/api/v1/chat`) with 10x HTTP 200 followed by HTTP 429 on requests 11–12.
 - **Backend Server:** Live daemon running on `http://127.0.0.1:8000` (auto-reload active).
 - **Frontend Server:** Live Vite dev server running on `http://localhost:5173`.
 - **Live Production Deployment:** Verified active on Render at `https://tarang-0v0t.onrender.com` (serving unified SPA + FastAPI REST API with live Gemini & Open-Meteo integration).
