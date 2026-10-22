@@ -67,6 +67,20 @@ app.add_middleware(
 
 
 # ==============================================================================
+# STATIC SPA ASSETS & ROOT SERVING (Production Unified Mode)
+# ==============================================================================
+from pathlib import Path
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
+_DIST_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+if _DIST_DIR.exists():
+    _assets_dir = _DIST_DIR / "assets"
+    if _assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=str(_assets_dir)), name="assets")
+
+
+# ==============================================================================
 # API ROUTES
 # ==============================================================================
 
@@ -326,3 +340,27 @@ async def chat_endpoint(request: ChatRequest) -> ChatResponse:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Agent orchestrator encountered an unexpected error: {str(e)}",
         )
+
+
+# ==============================================================================
+# SPA FALLBACK HANDLER (Serves index.html for frontend client-side routes)
+# ==============================================================================
+@app.get("/{full_path:path}", include_in_schema=False)
+async def serve_spa_fallback(full_path: str):
+    """
+    Serves static files or index.html for single-page application routing
+    when frontend/dist is built in production.
+    """
+    if _DIST_DIR.exists():
+        target_file = _DIST_DIR / full_path
+        if full_path and target_file.exists() and target_file.is_file():
+            return FileResponse(target_file)
+        index_file = _DIST_DIR / "index.html"
+        if index_file.exists():
+            return FileResponse(index_file)
+    return {
+        "status": "online",
+        "service": "ORCA Multi-Agent Backend",
+        "message": "Frontend build not detected. Access API docs at /docs",
+        "api_health": "/api/v1/health",
+    }

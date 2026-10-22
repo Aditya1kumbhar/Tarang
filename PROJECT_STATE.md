@@ -31,6 +31,13 @@
 - `test_tools.py`: 18 unit tests covering all deterministic marine tools and safety index tiers.
 - `test_api.py`: 14 integration tests covering all 8 SIH evaluation queries and REST endpoints.
 
+### Production Deployment Assets
+- `Dockerfile`: Multi-stage build (Node 22 builder -> Python 3.11-slim non-root runtime) serving both SPA and REST API.
+- `.dockerignore`: Lean image exclusion filter (.venv, node_modules, .git, .pytest_cache).
+- `build.sh`: Free-tier Render native build script (installs Python backend & builds Vite frontend).
+- `frontend/vercel.json`: Clean SPA catch-all rewrite for optional decoupled Vercel deployment.
+- `backend/main.py`: Enhanced with SPA fallback serving `frontend/dist/index.html` at `/` while retaining all `/api/v1/*` routes.
+
 ## 3. Active Status & Operational Invariants
 - **Phase Completion:** Phases 1 through 5 fully implemented and verified.
 - **Automated Tests:** 32/32 tests passing (18 unit + 14 integration).
