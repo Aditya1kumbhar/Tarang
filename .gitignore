@@ -26,5 +26,8 @@ build/
 Thumbs.db
 *.log
 *.tmp
+*.db
+*.db-shm
+*.db-wal
 .idea/
 .vscode/

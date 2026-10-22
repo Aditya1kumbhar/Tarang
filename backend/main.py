@@ -21,6 +21,7 @@ from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
+from backend.rate_limiter import get_real_client_ip, limiter
 from backend.agents.orchestrator import run_orchestrator
 from backend.agents.prompts import get_safety_override_banner
 from backend.config import (
@@ -67,29 +68,9 @@ async def lifespan(app: FastAPI):
 
 
 # ==============================================================================
-# RATE LIMITER SETUP (slowapi - RATE_LIMITING Requirement)
+# RATE LIMITER SETUP (Multi-worker shared storage across Uvicorn processes)
 # ==============================================================================
-def get_real_client_ip(request: Request = None) -> str:
-    """Extracts client IP, prioritizing Cloudflare & reverse-proxy headers."""
-    if request is not None:
-        cf_ip = request.headers.get("cf-connecting-ip")
-        if cf_ip:
-            return cf_ip.strip()
-        x_forwarded = request.headers.get("x-forwarded-for")
-        if x_forwarded:
-            return x_forwarded.split(",")[0].strip()
-        if request.client and request.client.host:
-            return request.client.host
-    return "127.0.0.1"
-
-
-# Default rate limit for all /api routes is 120/minute per IP
-# headers_enabled=False allows returning Pydantic response models directly
-limiter = Limiter(
-    key_func=get_real_client_ip,
-    default_limits=["120/minute"],
-    headers_enabled=False,
-)
+# limiter and get_real_client_ip are imported from backend.rate_limiter
 
 
 # ==============================================================================

@@ -40,10 +40,11 @@
 
 ## 3. Active Status & Operational Invariants
 - **Phase Completion:** Phases 1 through 5 fully implemented and verified.
-- **Automated Tests:** 38/38 tests passing (18 unit + 20 integration including full security suite).
+- **Automated Tests:** 40/40 tests passing (18 unit + 22 integration including multi-worker rate limiting and security suite).
 - **Security Hardening (Render Production):** Enforced zero-trust security architecture:
   - Strict CORS allowlist from `ALLOWED_ORIGINS` (no arbitrary origin reflection, credentials restricted to allowlist).
-  - Per-IP rate limiting via `slowapi` (10 req/min on `/api/v1/chat`, 120 req/min default on `/api/v1/*` with custom CF/X-Forwarded-For IP extractor).
+  - Multi-worker shared rate limiting via `slowapi` + WAL-mode `SQLiteSharedStorage` (with optional Redis support via `REDIS_URL`): 10 req/min on `/api/v1/chat`, 120 req/min default on `/api/v1/*`.
+  - Cloudflare & reverse-proxy IP extraction: `CF-Connecting-IP` top priority, right-to-left `X-Forwarded-For` traversal with private proxy stripping to prevent spoofing leftmost headers.
   - Chat input validation: Pydantic bounds (1-2000 chars), HTTP 413 on empty or oversized message payload, 15.0s timeout on AI pipeline.
   - Production blueprint lockdown: `/docs`, `/redoc`, and `/openapi.json` disabled (`404 Not Found`) when `ENVIRONMENT=production`.
   - Comprehensive security headers: strict CSP allowing Google Fonts/unpkg Leaflet/tiles, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, and HSTS `max-age=31536000; includeSubDomains`.

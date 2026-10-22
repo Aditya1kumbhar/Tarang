@@ -412,7 +412,9 @@ def test_input_validation_rejects_invalid_scenario_with_422():
 
 def test_rate_limiting_chat_endpoint_triggers_429():
     """Verifies that exceeding the 10/min rate limit on /chat triggers HTTP 429."""
-    # Send messages until limit is hit (limit is 10/min)
+    from backend.rate_limiter import limiter
+    limiter._storage.reset()
+
     got_429 = False
     for i in range(12):
         resp = client.post(
@@ -426,6 +428,66 @@ def test_rate_limiting_chat_endpoint_triggers_429():
             assert "Rate limit exceeded" in data["detail"]
             break
     assert got_429, "Expected HTTP 429 rate limit exceeded response."
+
+
+def test_cf_connecting_ip_resolution_and_anti_spoofing():
+    """
+    Verifies that get_real_client_ip prioritizes CF-Connecting-IP
+    and resists X-Forwarded-For leftmost spoofing.
+    """
+    from starlette.requests import Request
+    from backend.rate_limiter import get_real_client_ip
+
+    # 1. Cloudflare header present, attacker attempts to spoof X-Forwarded-For
+    req_cf = Request({
+        "type": "http",
+        "headers": [
+            (b"cf-connecting-ip", b"203.0.113.195"),
+            (b"x-forwarded-for", b"1.1.1.1, 8.8.8.8"),
+        ],
+    })
+    assert get_real_client_ip(req_cf) == "203.0.113.195"
+
+    # 2. Behind Render proxy (10.0.1.5) without Cloudflare:
+    # Client sends spoofed 1.1.1.1, Render appends client IP 198.51.100.22 and internal hop 10.0.1.5
+    req_render = Request({
+        "type": "http",
+        "headers": [
+            (b"x-forwarded-for", b"1.1.1.1, 198.51.100.22, 10.0.1.5"),
+        ],
+    })
+    # Must pick 198.51.100.22 (not 1.1.1.1 and not 10.0.1.5)
+    assert get_real_client_ip(req_render) == "198.51.100.22"
+
+
+def test_production_multi_worker_shared_storage():
+    """
+    Verifies that the rate limiter's storage is shared across simulated
+    independent Uvicorn worker instances.
+    """
+    from backend.rate_limiter import get_real_client_ip, limiter
+
+    # Clear storage
+    limiter._storage.reset()
+
+    # Simulate 2 separate uvicorn worker processes alternating requests from the same client IP
+    test_key = "LIMITS:203.0.113.88//api/v1/chat/10/1/minute"
+
+    # Worker 1 registers 5 requests
+    for _ in range(5):
+        limiter._storage.incr(test_key, 60)
+
+    # Worker 2 registers 5 requests
+    for _ in range(5):
+        limiter._storage.incr(test_key, 60)
+
+    # Counter must be 10 across both workers
+    assert limiter._storage.get(test_key) == 10
+
+    # 11th request across any worker breaches limit
+    c11 = limiter._storage.incr(test_key, 60)
+    assert c11 == 11
+
 
 
 def test_docs_disabled_in_production(monkeypatch):
