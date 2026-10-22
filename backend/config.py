@@ -92,3 +92,27 @@ FALLBACK_GRID_FILE = DATA_DIR / "fallback" / "indian_ocean_grid.json"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
 DEFAULT_HARBOUR_ID = "rameswaram"
+AI_TIMEOUT_SECONDS = 15.0
+
+# Security & Environment Configuration
+# Controlled by ENVIRONMENT (or legacy ENV) with production-safe defaults
+ENVIRONMENT = os.getenv("ENVIRONMENT", os.getenv("ENV", "production")).strip().lower()
+IS_PRODUCTION = ENVIRONMENT == "production"
+
+# Strict CORS Allowlist (CORS Requirement)
+# Never reflect arbitrary Origin; load from ALLOWED_ORIGINS env var
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "").strip()
+if _raw_origins:
+    ALLOWED_ORIGINS = [orig.strip() for orig in _raw_origins.split(",") if orig.strip()]
+elif IS_PRODUCTION:
+    ALLOWED_ORIGINS = [
+        "https://tarang-0v0t.onrender.com",
+    ]
+else:
+    ALLOWED_ORIGINS = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ]
+

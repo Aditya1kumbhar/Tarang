@@ -176,3 +176,12 @@
   box-shadow: inset 0 1px 1px 0 rgba(41, 151, 255, 0.3), 0 2px 8px -2px rgba(41, 151, 255, 0.25);
   color: #38bdf8 !important;
 }
+
+/* Mobile Safe Area Insets for iOS Notches & Home Indicators */
+.pb-safe {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+

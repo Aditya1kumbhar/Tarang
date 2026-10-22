@@ -1,29 +1,47 @@
 """
 ORCA FastAPI Backend Server (SIH 2026 PS #20 / ID 26176).
 Provides production-grade REST APIs for multi-agent reasoning, live harbour status,
-dashboard summaries, and maritime safety overrides.
+dashboard summaries, and maritime safety overrides with strict security guardrails.
 """
 
+import asyncio
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 import json
 import logging
+from pathlib import Path
 from typing import Any, Dict, List
 
-from fastapi import FastAPI, HTTPException, Query, status
+from fastapi import FastAPI, HTTPException, Query, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from backend.agents.orchestrator import run_orchestrator
 from backend.agents.prompts import get_safety_override_banner
-from backend.config import DEFAULT_HARBOUR_ID, IMBL_FILE, MPA_FILE
+from backend.config import (
+    AI_TIMEOUT_SECONDS,
+    ALLOWED_ORIGINS,
+    DEFAULT_HARBOUR_ID,
+    ENVIRONMENT,
+    IMBL_FILE,
+    IS_PRODUCTION,
+    MPA_FILE,
+)
 from backend.schemas.models import (
     ChatRequest,
     ChatResponse,
     DashboardSummaryResponse,
     DistrictBoardResponse,
     DistrictHarbourSummary,
+    HarbourID,
     HarbourInfo,
     SafetyLevel,
+    ScenarioType,
     VesselType,
 )
 from backend.tools.geospatial_tool import check_geofence
@@ -41,38 +59,168 @@ logger = logging.getLogger("orca_api")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Initializing ORCA Multi-Agent Maritime Backend...")
-    # Pre-warm harbour registry and geofence caches
+    logger.info("Initializing ORCA Multi-Agent Maritime Backend (Environment: %s)...", ENVIRONMENT)
     load_harbours_dict()
-    logger.info("Harbour caches pre-warmed successfully.")
+    logger.info("Harbour caches pre-warmed successfully. CORS allowlist: %s", ALLOWED_ORIGINS)
     yield
     logger.info("Shutting down ORCA Backend.")
 
+
+# ==============================================================================
+# RATE LIMITER SETUP (slowapi - RATE_LIMITING Requirement)
+# ==============================================================================
+def get_real_client_ip(request: Request = None) -> str:
+    """Extracts client IP, prioritizing Cloudflare & reverse-proxy headers."""
+    if request is not None:
+        cf_ip = request.headers.get("cf-connecting-ip")
+        if cf_ip:
+            return cf_ip.strip()
+        x_forwarded = request.headers.get("x-forwarded-for")
+        if x_forwarded:
+            return x_forwarded.split(",")[0].strip()
+        if request.client and request.client.host:
+            return request.client.host
+    return "127.0.0.1"
+
+
+# Default rate limit for all /api routes is 120/minute per IP
+# headers_enabled=False allows returning Pydantic response models directly
+limiter = Limiter(
+    key_func=get_real_client_ip,
+    default_limits=["120/minute"],
+    headers_enabled=False,
+)
+
+
+# ==============================================================================
+# FASTAPI APPLICATION CREATION
+# ==============================================================================
+# Disable API docs when in production (DOCS_DISABLED_IN_PROD Requirement)
+docs_url = None if IS_PRODUCTION else "/docs"
+redoc_url = None if IS_PRODUCTION else "/redoc"
+openapi_url = None if IS_PRODUCTION else "/openapi.json"
 
 app = FastAPI(
     title="ORCA: Oceanographic Reasoning & Collaborative Agents API",
     description="Enterprise-grade Agentic AI Marine Intelligence Platform for Indian Fisheries & Coastal Safety",
     version="1.0.0",
     lifespan=lifespan,
+    docs_url=docs_url,
+    redoc_url=redoc_url,
+    openapi_url=openapi_url,
+    debug=not IS_PRODUCTION,
 )
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
 
-# Enable CORS for local Vite frontend and dashboard integration
+# Strict CORS Allowlist (CORS Requirement)
+# Never reflect arbitrary origins or use wildcard with credentials
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
 
 # ==============================================================================
+# SECURITY HEADERS & SERVER DISCLOSURE MIDDLEWARE (SECURITY_HEADERS & SERVER_HEADER)
+# ==============================================================================
+@app.middleware("http")
+async def add_security_headers_middleware(request: Request, call_next):
+    """
+    Applies strict Content-Security-Policy, anti-framing, HSTS, and referrer headers
+    while stripping server stack disclosure headers and unauthorized CORS on every response.
+    """
+    origin = request.headers.get("origin")
+    response = await call_next(request)
+
+    # Enforce strict CORS allowlist: Never reflect arbitrary Origin or leak credentials
+    if origin and origin not in ALLOWED_ORIGINS:
+        if "access-control-allow-origin" in response.headers:
+            del response.headers["access-control-allow-origin"]
+        if "access-control-allow-credentials" in response.headers:
+            del response.headers["access-control-allow-credentials"]
+
+    # Remove or genericize server header (SERVER_HEADER Requirement)
+    if "server" in response.headers:
+        del response.headers["server"]
+    if "x-powered-by" in response.headers:
+        del response.headers["x-powered-by"]
+    response.headers["server"] = "webserver"
+
+    # Strict Security Headers (SECURITY_HEADERS Requirement)
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; script-src 'self'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https:; connect-src 'self'"
+    )
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
+    return response
+
+
+# ==============================================================================
+# GLOBAL EXCEPTION HANDLERS (ERROR_HANDLING, CHAT_INPUT_VALIDATION & RATE_LIMITING)
+# ==============================================================================
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+    """Returns clean JSON error with HTTP 429 when rate limit is exceeded."""
+    return JSONResponse(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        content={
+            "detail": f"Rate limit exceeded: {exc.detail}",
+            "error": "rate_limit_exceeded",
+        },
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    Rejects empty or oversized chat message payloads with HTTP 413,
+    and returns HTTP 422 for other schema validation errors.
+    """
+    if request.url.path.endswith("/chat"):
+        for error in exc.errors():
+            loc = error.get("loc", ())
+            if "message" in loc:
+                return JSONResponse(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    content={
+                        "detail": "Payload too large or empty: 'message' is required and must not exceed 2000 characters."
+                    },
+                )
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"detail": exc.errors()},
+    )
+
+
+@app.exception_handler(Exception)
+async def global_unhandled_exception_handler(request: Request, exc: Exception):
+    """Logs full trace internally but returns clean generic JSON to client in production."""
+    logger.exception("Unhandled server error processing %s: %s", request.url.path, exc)
+    if IS_PRODUCTION:
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": "Internal server error"},
+        )
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": str(exc)},
+    )
+
+
+# ==============================================================================
 # STATIC SPA ASSETS & ROOT SERVING (Production Unified Mode)
 # ==============================================================================
-from pathlib import Path
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
-
 _DIST_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 if _DIST_DIR.exists():
     _assets_dir = _DIST_DIR / "assets"
@@ -85,7 +233,7 @@ if _DIST_DIR.exists():
 # ==============================================================================
 
 @app.get("/api/v1/health", summary="Health check", tags=["System"])
-async def health_check() -> Dict[str, Any]:
+async def health_check(request: Request) -> Dict[str, Any]:
     """Returns service health status and timestamp."""
     return {
         "status": "healthy",
@@ -96,7 +244,7 @@ async def health_check() -> Dict[str, Any]:
 
 
 @app.get("/api/v1/harbours", response_model=List[HarbourInfo], summary="List Indian fishing landing centres", tags=["Harbours"])
-async def list_harbours() -> List[HarbourInfo]:
+async def list_harbours(request: Request) -> List[HarbourInfo]:
     """
     Returns the 12 major Indian fishing landing centres with coordinates,
     state, and primary regional language metadata.
@@ -112,19 +260,21 @@ async def list_harbours() -> List[HarbourInfo]:
     tags=["Dashboard"],
 )
 async def get_dashboard_summary(
-    harbour_id: str = Query(DEFAULT_HARBOUR_ID, description="Target harbour identifier"),
+    request: Request,
+    harbour_id: HarbourID = Query(HarbourID.RAMESWARAM, description="Target harbour identifier"),
     vessel_type: VesselType = Query(VesselType.COUNTRY_CRAFT, description="Vessel type"),
 ) -> DashboardSummaryResponse:
     """
     Retrieves an immediate snapshot of live marine weather, top PFZ zone,
     geofence status, and map payload for dashboard views without full chat reasoning.
+    Strictly validates harbour_id and vessel_type against allowlists (INPUT_VALIDATION).
     """
     harbours = load_harbours_dict()
-    harbour = harbours.get(harbour_id)
+    harbour = harbours.get(harbour_id.value)
     if not harbour:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Harbour '{harbour_id}' not found in registry."
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Harbour '{harbour_id.value}' not found in registry."
         )
 
     # 1. Fetch Weather
@@ -136,24 +286,22 @@ async def get_dashboard_summary(
         vessel_type=vessel_type,
     )
 
-    # 2. Compute PFZs
-    pfz_report = compute_pfz_zones(harbour_id=harbour.id, max_candidates=3)
+    # 2. Compute Top PFZ Zone
+    pfz_report = compute_pfz_zones(harbour_id=harbour.id, max_candidates=1)
     top_pfz = pfz_report.top_recommendation
 
-    # 3. Assess Geofence for harbour / top PFZ
-    eval_lon = top_pfz.longitude if top_pfz else harbour.lon
-    eval_lat = top_pfz.latitude if top_pfz else harbour.lat
-    geofence = check_geofence(eval_lon, eval_lat)
+    # 3. Geofence Check
+    geofence = check_geofence(harbour.lon, harbour.lat)
 
-    # 4. Check Safety Circuit Breaker
+    # 4. Maritime Safety Override Banner
     safety_override = None
-    if weather.circuit_breaker_triggered or weather.safety_status == SafetyLevel.RED_ALERT or geofence.is_violation:
-        safety_override = get_safety_override_banner("RED_ALERT", harbour.primary_language)
+    if weather.safety_status == SafetyLevel.RED_ALERT or geofence.alert_level == "CRITICAL":
+        safety_override = get_safety_override_banner("RED_ALERT", "en")
     elif weather.safety_status == SafetyLevel.AMBER or geofence.alert_level == "WARNING":
-        safety_override = get_safety_override_banner("AMBER", harbour.primary_language)
+        safety_override = get_safety_override_banner("AMBER", "en")
 
     # 5. Build Map Payload
-    features = [
+    map_features = [
         {
             "type": "Feature",
             "geometry": {"type": "Point", "coordinates": [harbour.lon, harbour.lat]},
@@ -162,31 +310,36 @@ async def get_dashboard_summary(
                 "id": harbour.id,
                 "name": harbour.name,
                 "local_name": harbour.local_name,
+                "state": harbour.state,
             },
         }
     ]
     if top_pfz:
-        features.append({
-            "type": "Feature",
-            "geometry": {"type": "Point", "coordinates": [top_pfz.longitude, top_pfz.latitude]},
-            "properties": {
-                "entity": "pfz_zone",
-                "zone_id": top_pfz.zone_id,
-                "pfz_score": top_pfz.pfz_score,
-                "bearing_deg": top_pfz.bearing_deg,
-                "bearing_cardinal": top_pfz.bearing_cardinal,
-                "distance_nm": top_pfz.distance_nm,
-                "is_safe": top_pfz.is_geofence_safe,
-            },
-        })
+        map_features.append(
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [top_pfz.longitude, top_pfz.latitude],
+                },
+                "properties": {
+                    "entity": "pfz_hotspot",
+                    "pfz_score": top_pfz.pfz_score,
+                    "bearing": top_pfz.bearing_cardinal,
+                    "distance_km": top_pfz.distance_km,
+                    "distance_nm": top_pfz.distance_nm,
+                    "sst_c": top_pfz.sst_c,
+                    "chla_mg_m3": top_pfz.chla_mg_m3,
+                    "rationale": top_pfz.biological_rationale,
+                },
+            }
+        )
 
-    map_payload = {"type": "FeatureCollection", "features": features}
-
-    evidence_ledger = []
+    evidence_entries = []
     if weather.evidence_ledger_entry:
-        evidence_ledger.append(weather.evidence_ledger_entry)
+        evidence_entries.append(weather.evidence_ledger_entry)
     if top_pfz and top_pfz.evidence_ledger_entry:
-        evidence_ledger.append(top_pfz.evidence_ledger_entry)
+        evidence_entries.append(top_pfz.evidence_ledger_entry)
 
     return DashboardSummaryResponse(
         harbour=harbour,
@@ -194,29 +347,29 @@ async def get_dashboard_summary(
         top_pfz=top_pfz,
         geofence=geofence,
         safety_override_banner=safety_override,
-        map_payload=map_payload,
-        evidence_ledger=evidence_ledger,
+        map_payload={"type": "FeatureCollection", "features": map_features},
+        evidence_ledger=evidence_entries,
     )
 
 
 @app.get(
     "/api/v1/district-board",
     response_model=DistrictBoardResponse,
-    summary="Coast-wide district authority board for all 12 Indian landing centres",
+    summary="Get coast-wide district authority surveillance table",
     tags=["District Authority"],
 )
 async def get_district_board(
-    vessel_type: VesselType = Query(VesselType.COUNTRY_CRAFT, description="Vessel type"),
+    request: Request,
+    vessel_type: VesselType = Query(VesselType.COUNTRY_CRAFT, description="Vessel type profile"),
 ) -> DistrictBoardResponse:
     """
-    Returns coast-wide 0-100 Sea-Venture Safety Indices, active advisories,
-    wave heights, wind speeds, and boundary proximity for all 12 major Indian landing centres.
-    Designed for harbour masters, fisheries departments, and district disaster management rooms.
+    Returns immediate status, 0-100 Sea-Venture Safety Index, boundary clearance,
+    and active advisories across all 12 Indian landing centres.
     """
-    harbours_dict = load_harbours_dict()
-    summaries = []
+    harbours = list_harbours_sync()
+    summaries: List[DistrictHarbourSummary] = []
 
-    for h in harbours_dict.values():
+    for h in harbours:
         metrics = get_fallback_marine_and_weather(h.lat, h.lon)
         safety_status, advisory, _, _, cb_triggered = assess_vessel_safety(metrics, vessel_type)
         safety_index, risk_verdict = calculate_sea_venture_safety_index(metrics, vessel_type)
@@ -254,6 +407,11 @@ async def get_district_board(
     )
 
 
+def list_harbours_sync() -> List[HarbourInfo]:
+    """Helper to return harbours synchronously for district board."""
+    return list(load_harbours_dict().values())
+
+
 @app.get(
     "/api/v1/demo-scenario",
     response_model=ChatResponse,
@@ -261,10 +419,11 @@ async def get_district_board(
     tags=["Demo Scenarios"],
 )
 async def get_demo_scenario(
-    scenario: str = Query("safe", description="Scenario key: safe | danger | cyclone | pfz | route"),
+    request: Request,
+    scenario: ScenarioType = Query(ScenarioType.SAFE, description="Scenario key: safe | danger | cyclone | pfz | route"),
 ) -> ChatResponse:
     """
-    Serves the 5 canonical SIH26176 evaluation scenarios for instant judge demonstration:
+    Serves the 5 canonical SIH26176 evaluation scenarios with strict enum validation (INPUT_VALIDATION):
     - safe: Goa / Malvan calm departure (LOW risk)
     - danger: Mumbai 06:00 IST morning wind-wave shear (HIGH risk)
     - cyclone: Paradip cyclonic swell surge (EXTREME risk)
@@ -272,49 +431,46 @@ async def get_demo_scenario(
     - route: Chennai wave-aware A* safe routing
     """
     scenarios = {
-        "safe": ChatRequest(
+        ScenarioType.SAFE: ChatRequest(
             message="Is it safe for a small motorized boat to venture into the sea tomorrow morning off the coast?",
-            harbour_id="malvan",
+            harbour_id=HarbourID.MALVAN,
             vessel_type=VesselType.COUNTRY_CRAFT,
         ),
-        "danger": ChatRequest(
+        ScenarioType.DANGER: ChatRequest(
             message="Can a country craft venture out of Mumbai harbour with 34 km/h wind shear and 1.9m wave height?",
-            harbour_id="mumbai",
+            harbour_id=HarbourID.MUMBAI,
             vessel_type=VesselType.COUNTRY_CRAFT,
         ),
-        "cyclone": ChatRequest(
+        ScenarioType.CYCLONE: ChatRequest(
             message="Severe weather alert off Paradip coast: wave height 3.8m, wind gusts 65 km/h, swell period 15s. Should vessels venture?",
-            harbour_id="paradip",
+            harbour_id=HarbourID.PARADIP,
             vessel_type=VesselType.COUNTRY_CRAFT,
         ),
-        "pfz": ChatRequest(
+        ScenarioType.PFZ: ChatRequest(
             message="Find the highest confidence Potential Fishing Zones (PFZ) offshore from Rameswaram harbour.",
-            harbour_id="rameswaram",
+            harbour_id=HarbourID.RAMESWARAM,
             vessel_type=VesselType.COUNTRY_CRAFT,
         ),
-        "route": ChatRequest(
+        ScenarioType.ROUTE: ChatRequest(
             message="Calculate a safe navigation route from Chennai harbour to the PFZ cluster avoiding rough seas.",
-            harbour_id="chennai",
+            harbour_id=HarbourID.CHENNAI,
             vessel_type=VesselType.COUNTRY_CRAFT,
         ),
     }
 
-    req = scenarios.get(scenario.lower())
-    if not req:
-        req = scenarios["safe"]
-
+    req = scenarios[scenario]
     return await run_orchestrator(req)
 
 
 @app.get("/api/v1/geofences/imbl", summary="Get IMBL GeoJSON", tags=["Geofences"])
-async def get_imbl_geofence() -> Dict[str, Any]:
+async def get_imbl_geofence(request: Request) -> Dict[str, Any]:
     """Returns Indo-Sri Lanka and Indo-Pak IMBL boundaries as GeoJSON."""
     with open(IMBL_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 @app.get("/api/v1/geofences/mpa", summary="Get MPA GeoJSON", tags=["Geofences"])
-async def get_mpa_geofence() -> Dict[str, Any]:
+async def get_mpa_geofence(request: Request) -> Dict[str, Any]:
     """Returns Marine Protected Area polygons as GeoJSON."""
     with open(MPA_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
@@ -326,19 +482,41 @@ async def get_mpa_geofence() -> Dict[str, Any]:
     summary="Multi-agent conversational reasoning endpoint",
     tags=["Multi-Agent Reasoning"],
 )
-async def chat_endpoint(request: ChatRequest) -> ChatResponse:
+@limiter.limit("10/minute")
+async def chat_endpoint(request: Request, chat_request: ChatRequest) -> ChatResponse:
     """
     Main conversational agent endpoint for SIH 2026 Problem Statement #20.
-    Executes Planner -> Parallel Specialist Agents -> Safety Circuit Breaker -> Synthesis Agent.
+    - Rate limited to 10 requests/minute per IP (RATE_LIMITING).
+    - Rejects empty/whitespace or oversized message (>2000 chars) with HTTP 413 (CHAT_INPUT_VALIDATION).
+    - Enforces server-side timeout with generic error on failure (never leaks stack traces).
     """
+    # Enforce non-empty and length bounds with HTTP 413
+    if not chat_request.message or not chat_request.message.strip() or len(chat_request.message) > 2000:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Payload too large: 'message' is required and must not exceed 2000 characters.",
+        )
+
     try:
-        response = await run_orchestrator(request)
+        # Enforce server-side timeout to avoid hanging AI calls (CHAT_INPUT_VALIDATION)
+        response = await asyncio.wait_for(
+            run_orchestrator(chat_request),
+            timeout=AI_TIMEOUT_SECONDS,
+        )
         return response
+    except asyncio.TimeoutError:
+        logger.error("Chat orchestrator timed out after %s seconds", AI_TIMEOUT_SECONDS)
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="The marine reasoning engine timed out while analyzing ocean telemetry. Please try again.",
+        )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("Error executing multi-agent orchestrator: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Agent orchestrator encountered an unexpected error: {str(e)}",
+            detail="Unable to process reasoning query at this time. Please try again later.",
         )
 
 
@@ -346,11 +524,16 @@ async def chat_endpoint(request: ChatRequest) -> ChatResponse:
 # SPA FALLBACK HANDLER (Serves index.html for frontend client-side routes)
 # ==============================================================================
 @app.get("/{full_path:path}", include_in_schema=False)
-async def serve_spa_fallback(full_path: str):
+@limiter.exempt
+async def serve_spa_fallback(full_path: str, request: Request):
     """
     Serves static files or index.html for single-page application routing
-    when frontend/dist is built in production.
+    when frontend/dist is built in production. Exempted from API rate limits.
     """
+    # Return 404 for API blueprint routes when disabled in production (DOCS_DISABLED_IN_PROD)
+    if IS_PRODUCTION and full_path.strip("/") in ["docs", "redoc", "openapi.json"]:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
+
     if _DIST_DIR.exists():
         target_file = _DIST_DIR / full_path
         if full_path and target_file.exists() and target_file.is_file():

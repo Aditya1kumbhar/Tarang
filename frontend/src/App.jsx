@@ -27,6 +27,7 @@ export default function App() {
   const [vesselType, setVesselType] = useState('country_craft');
   const [isBackendHealthy, setIsBackendHealthy] = useState(false);
   const [personaMode, setPersonaMode] = useState('fisher'); // 'fisher' | 'district'
+  const [mobileTab, setMobileTab] = useState('map'); // 'map' | 'chat' (phone responsive navigation)
   const [themeMode, setThemeMode] = useState('ocean'); // 'ocean' (dark) | 'chart' (light)
 
   // Marine Telemetry & Dashboard Snapshot
@@ -163,6 +164,7 @@ export default function App() {
   // 4. Handle User Chat Query
   const handleSendMessage = async (payload) => {
     setIsLoading(true);
+    setMobileTab('chat'); // Switch to chat tab on phone when message sent
 
     const userMsg = {
       role: 'user',
@@ -221,7 +223,7 @@ export default function App() {
 
   return (
     <div
-      className={`flex flex-col h-screen w-screen overflow-hidden font-sans transition-colors ${
+      className={`flex flex-col h-screen h-[100dvh] w-screen overflow-hidden font-sans transition-colors ${
         themeMode === 'ocean' ? 'dark bg-[#0a0a0c] text-[#f5f5f7]' : 'bg-[#f5f5f7] text-[#1d1d1f]'
       }`}
     >
@@ -373,10 +375,11 @@ export default function App() {
           <button
             type="button"
             onClick={() => setIsTraceDrawerOpen(true)}
-            className="glass-icon glass-icon-blue px-3 py-1 text-xs font-medium gap-1.5"
+            className="glass-icon glass-icon-blue px-2.5 sm:px-3 py-1 text-xs font-medium gap-1.5"
+            title="Inspect Agent Execution Telemetry"
           >
             <Activity className="w-3.5 h-3.5 text-[#2997ff]" />
-            <span>Telemetry</span>
+            <span className="hidden sm:inline">Telemetry</span>
           </button>
 
           {/* Legal Navigation */}
@@ -397,7 +400,7 @@ export default function App() {
           </div>
 
           {/* Backend Connectivity Indicator */}
-          <div className="flex items-center gap-1.5 pl-2">
+          <div className="flex items-center gap-1.5 pl-1 sm:pl-2">
             <div
               className={`w-2 h-2 rounded-full ${
                 isBackendHealthy ? 'bg-emerald-400' : 'bg-red-400'
@@ -429,13 +432,16 @@ export default function App() {
               const h = harbours.find((item) => item.id === harbourId);
               if (h) setSelectedHarbour(h);
               setPersonaMode('fisher');
+              setMobileTab('map');
             }}
           />
         </div>
       ) : (
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
           {/* Left Side: Marine GIS Interactive Map */}
-          <div className="w-full md:w-[58%] h-1/2 md:h-full relative shrink-0">
+          <div className={`w-full md:w-[58%] h-full relative shrink-0 ${
+            mobileTab === 'map' ? 'block' : 'hidden md:block'
+          }`}>
             <MarineMap
               harbours={harbours}
               activeHarbour={selectedHarbour}
@@ -446,7 +452,9 @@ export default function App() {
           </div>
 
           {/* Right Side: Multilingual Conversational Agent Console */}
-          <div className="w-full md:w-[42%] h-1/2 md:h-full flex flex-col shrink-0">
+          <div className={`w-full md:w-[42%] h-full flex flex-col shrink-0 ${
+            mobileTab === 'chat' ? 'flex' : 'hidden md:flex'
+          }`}>
             <ChatPanel
               harbours={harbours}
               selectedHarbour={selectedHarbour}
@@ -460,12 +468,72 @@ export default function App() {
               liveWeather={liveWeather}
               safetyStatus={safetyStatus}
               theme={themeMode}
+              onViewMap={() => setMobileTab('map')}
             />
           </div>
         </div>
       )}
 
-      {/* 4. Multi-Agent Reasoning & Provenance Side Drawer */}
+      {/* 4. Mobile Bottom Tab Navigation Bar (Phone Only) */}
+      <nav
+        className={`md:hidden shrink-0 border-t backdrop-blur-xl px-2 py-1 pb-safe flex items-center justify-around z-30 select-none transition-colors ${
+          themeMode === 'chart'
+            ? 'bg-white/95 border-black/[0.08] text-[#1d1d1f]'
+            : 'bg-[#0a0a0c]/95 border-white/[0.08] text-[#f5f5f7]'
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            setPersonaMode('fisher');
+            setMobileTab('map');
+          }}
+          className={`flex-1 py-1 px-2 rounded-lg flex flex-col items-center gap-1 text-[10px] font-medium transition ${
+            personaMode === 'fisher' && mobileTab === 'map'
+              ? (themeMode === 'chart' ? 'text-[#0071e3] bg-black/[0.05]' : 'text-[#2997ff] bg-white/[0.08]')
+              : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7]'
+          }`}
+        >
+          <Compass className="w-4 h-4" />
+          <span>Marine Map</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setPersonaMode('fisher');
+            setMobileTab('chat');
+          }}
+          className={`flex-1 py-1 px-2 rounded-lg flex flex-col items-center gap-1 text-[10px] font-medium transition relative ${
+            personaMode === 'fisher' && mobileTab === 'chat'
+              ? (themeMode === 'chart' ? 'text-[#0071e3] bg-black/[0.05]' : 'text-[#2997ff] bg-white/[0.08]')
+              : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7]'
+          }`}
+        >
+          <div className="relative">
+            <Radio className="w-4 h-4" />
+            {safetyStatus === 'RED_ALERT' && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            )}
+          </div>
+          <span>AI Advisory</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setPersonaMode('district')}
+          className={`flex-1 py-1 px-2 rounded-lg flex flex-col items-center gap-1 text-[10px] font-medium transition ${
+            personaMode === 'district'
+              ? (themeMode === 'chart' ? 'text-[#0071e3] bg-black/[0.05]' : 'text-[#2997ff] bg-white/[0.08]')
+              : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7]'
+          }`}
+        >
+          <Building2 className="w-4 h-4" />
+          <span>District Board</span>
+        </button>
+      </nav>
+
+      {/* 5. Multi-Agent Reasoning & Provenance Side Drawer */}
       <AgentTraceDrawer
         isOpen={isTraceDrawerOpen}
         onClose={() => setIsTraceDrawerOpen(false)}
@@ -474,7 +542,7 @@ export default function App() {
         evidenceLedger={evidenceLedger}
       />
 
-      {/* 5. Statutory Legal Modals */}
+      {/* 6. Statutory Legal Modals */}
       <PrivacyPolicyModal
         isOpen={isPrivacyOpen}
         onClose={() => setIsPrivacyOpen(false)}

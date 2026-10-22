@@ -62,9 +62,9 @@ def test_dashboard_summary_endpoint():
 
 
 def test_dashboard_summary_invalid_harbour():
-    """Verifies 404 response on unknown harbour ID."""
+    """Verifies 422 response on unknown harbour ID (INPUT_VALIDATION)."""
     resp = client.get("/api/v1/dashboard-summary?harbour_id=nonexistent_port")
-    assert resp.status_code == 404
+    assert resp.status_code == 422
 
 
 # ==============================================================================
@@ -343,3 +343,109 @@ def test_demo_scenarios_endpoint():
         assert data["risk_verdict"] in ["LOW", "MODERATE", "HIGH", "EXTREME"]
         assert "evidence_ledger" in data
         assert len(data["evidence_ledger"]) >= 1
+
+
+# ==============================================================================
+# APPLICATION SECURITY INTEGRATION TESTS
+# ==============================================================================
+
+def test_security_headers_present():
+    """Verifies all mandatory security headers and server disclosure redaction."""
+    resp = client.get("/api/v1/health")
+    assert resp.status_code == 200
+    headers = resp.headers
+
+    # CSP
+    assert "content-security-policy" in headers
+    csp = headers["content-security-policy"]
+    assert "default-src 'self'" in csp
+    assert "https://fonts.googleapis.com" in csp
+    assert "https://unpkg.com" in csp
+
+    # Anti-framing & nosniff
+    assert headers.get("x-frame-options") == "DENY"
+    assert headers.get("x-content-type-options") == "nosniff"
+    assert headers.get("referrer-policy") == "no-referrer"
+    assert headers.get("permissions-policy") == "camera=(), microphone=(), geolocation=()"
+    assert "max-age=31536000" in headers.get("strict-transport-security", "")
+
+    # Server stack disclosure genericized
+    assert headers.get("server") != "uvicorn"
+
+
+def test_cors_strict_allowlist_rejects_arbitrary_origin():
+    """Verifies that an arbitrary fake origin does not receive allow-credentials."""
+    fake_origin = "https://malicious-site.example.com"
+    resp = client.options(
+        "/api/v1/health",
+        headers={
+            "Origin": fake_origin,
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    # Origin must not be reflected
+    assert resp.headers.get("access-control-allow-origin") != fake_origin
+    assert resp.headers.get("access-control-allow-credentials") is None
+
+
+def test_chat_message_validation_rejects_empty_and_oversized_with_413():
+    """Verifies that empty, whitespace, and >2000 character messages return HTTP 413."""
+    # Empty message
+    resp_empty = client.post("/api/v1/chat", json={"message": ""})
+    assert resp_empty.status_code == 413
+
+    # Whitespace message
+    resp_ws = client.post("/api/v1/chat", json={"message": "    "})
+    assert resp_ws.status_code == 413
+
+    # Oversized message (> 2000 chars)
+    oversized_msg = "A" * 2005
+    resp_over = client.post("/api/v1/chat", json={"message": oversized_msg})
+    assert resp_over.status_code == 413
+
+
+def test_input_validation_rejects_invalid_scenario_with_422():
+    """Verifies that unknown demo scenarios return HTTP 422."""
+    resp = client.get("/api/v1/demo-scenario?scenario=hacked_scenario")
+    assert resp.status_code == 422
+
+
+def test_rate_limiting_chat_endpoint_triggers_429():
+    """Verifies that exceeding the 10/min rate limit on /chat triggers HTTP 429."""
+    # Send messages until limit is hit (limit is 10/min)
+    got_429 = False
+    for i in range(12):
+        resp = client.post(
+            "/api/v1/chat",
+            json={"message": f"Security rate limit check test probe {i}"},
+            headers={"cf-connecting-ip": "198.51.100.42"},
+        )
+        if resp.status_code == 429:
+            got_429 = True
+            data = resp.json()
+            assert "Rate limit exceeded" in data["detail"]
+            break
+    assert got_429, "Expected HTTP 429 rate limit exceeded response."
+
+
+def test_docs_disabled_in_production(monkeypatch):
+    """Verifies that API docs and openapi.json return 404 when ENVIRONMENT=production."""
+    import importlib
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    from backend import config
+    importlib.reload(config)
+    from backend import main
+    importlib.reload(main)
+    from fastapi.testclient import TestClient
+    prod_client = TestClient(main.app)
+
+    assert prod_client.get("/docs").status_code == 404
+    assert prod_client.get("/redoc").status_code == 404
+    assert prod_client.get("/openapi.json").status_code == 404
+
+    # Reset back to development state for subsequent tests
+    monkeypatch.delenv("ENVIRONMENT", raising=False)
+    importlib.reload(config)
+    importlib.reload(main)
+
+

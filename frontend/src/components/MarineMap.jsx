@@ -63,7 +63,20 @@ export default function MarineMap({
     mpa: true,
   });
 
+  const [isLayersOpen, setIsLayersOpen] = useState(false);
   const [geofenceData, setGeofenceData] = useState({ imbl: null, mpa: null });
+
+  // Handle container resize & orientation changes smoothly (Mobile & Tablet)
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+    const observer = new ResizeObserver(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    });
+    observer.observe(mapContainerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   // 1. Initialize Map
   useEffect(() => {
@@ -496,8 +509,32 @@ export default function MarineMap({
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
       {/* Map Control Overlay (Top Left: Apple-Style Layer Switcher & Controls) */}
-      <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
-        <div className="bg-black/75 border border-white/[0.1] rounded-xl p-3 shadow-2xl backdrop-blur-xl text-xs text-[#f5f5f7]">
+      <div className="absolute top-3 left-3 z-20 flex flex-col gap-2 max-w-[calc(100vw-24px)]">
+        {/* Mobile Toolbar Pills */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setIsLayersOpen((prev) => !prev)}
+            className="glass-icon px-2.5 py-1.5 text-xs font-medium gap-1.5 shadow-lg text-[#f5f5f7] sm:hidden"
+            title="Toggle Map Layers & Basemaps"
+          >
+            <Layers className="w-3.5 h-3.5 text-[#2997ff]" />
+            <span>Layers</span>
+          </button>
+
+          <button
+            onClick={handleResetView}
+            className="glass-icon px-2.5 sm:px-3 py-1.5 text-xs font-medium gap-1.5 shadow-lg text-[#f5f5f7]"
+            title="Center Map on Active Harbour"
+          >
+            <Crosshair className="w-3.5 h-3.5 text-[#2997ff]" />
+            <span className="hidden sm:inline">Center: {activeHarbour?.name || 'Coast'}</span>
+            <span className="sm:hidden">Center</span>
+          </button>
+        </div>
+
+        {/* Layer & Basemap Panel (Toggleable on mobile, persistent on tablet/desktop) */}
+        <div className={`${isLayersOpen ? 'block' : 'hidden sm:block'} bg-black/80 border border-white/[0.1] rounded-xl p-3 shadow-2xl backdrop-blur-xl text-xs text-[#f5f5f7] max-w-[240px]`}>
           {/* Basemap Selection */}
           <div className="mb-2.5 pb-2 border-b border-white/[0.08]">
             <div className="flex items-center justify-between text-[#86868b] font-medium uppercase tracking-wider text-[10px] mb-1.5">
@@ -616,15 +653,6 @@ export default function MarineMap({
             </label>
           </div>
         </div>
-
-        {/* Reset View Button */}
-        <button
-          onClick={handleResetView}
-          className="glass-icon px-3 py-1.5 text-xs font-medium gap-2 shadow-lg text-[#f5f5f7]"
-        >
-          <Crosshair className="w-3.5 h-3.5 text-[#2997ff]" />
-          <span>Center: {activeHarbour?.name || 'Coast'}</span>
-        </button>
       </div>
 
       {/* Map Legend Overlay (Bottom Left) */}

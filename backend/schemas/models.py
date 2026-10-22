@@ -11,6 +11,27 @@ class VesselType(str, Enum):
     COUNTRY_CRAFT = "country_craft"
     MECHANIZED_TRAWLER = "mechanized_trawler"
 
+class HarbourID(str, Enum):
+    RAMESWARAM = "rameswaram"
+    NAGAPATTINAM = "nagapattinam"
+    CHENNAI = "chennai"
+    KOCHI = "kochi"
+    VIZHINJAM = "vizhinjam"
+    MANGALURU = "mangaluru"
+    MALVAN = "malvan"
+    MUMBAI = "mumbai"
+    VERAVAL = "veraval"
+    VISAKHAPATNAM = "visakhapatnam"
+    KAKINADA = "kakinada"
+    PARADIP = "paradip"
+
+class ScenarioType(str, Enum):
+    SAFE = "safe"
+    DANGER = "danger"
+    CYCLONE = "cyclone"
+    PFZ = "pfz"
+    ROUTE = "route"
+
 class BoundaryType(str, Enum):
     IMBL = "IMBL"
     MPA = "MPA"
@@ -154,10 +175,10 @@ class AgentTrace(BaseModel):
     citations: List[str] = Field(default_factory=list)
 
 class ChatRequest(BaseModel):
-    message: str
-    harbour_id: Optional[str] = "rameswaram"
+    message: str = Field(..., min_length=1, max_length=2000, description="User query message, required, max 2000 characters")
+    harbour_id: Optional[HarbourID] = HarbourID.RAMESWARAM
     vessel_type: Optional[VesselType] = VesselType.COUNTRY_CRAFT
-    language: Optional[str] = "en"
+    language: Optional[str] = Field("en", pattern=r"^(en|ta|ml|te|kn|mr|gu|or|bn|hi)$", description="Supported language code")
     conversation_id: Optional[str] = None
 
 class ChatResponse(BaseModel):

@@ -216,8 +216,67 @@ export default function DistrictAuthorityBoard({
         ))}
       </div>
 
-      {/* 4. High-Density Authority Matrix Table (Apple Spec Layout) */}
-      <div className={`rounded-xl border overflow-hidden transition-colors ${
+      {/* 4. Mobile Responsive Harbour Cards (< md) */}
+      <div className="md:hidden space-y-2.5 mb-6">
+        {filteredHarbours.map((h) => {
+          const isRed = h.safety_status === 'RED_ALERT' || h.circuit_breaker_triggered;
+          return (
+            <div
+              key={h.harbour_id}
+              className={`p-3.5 rounded-xl border transition-colors ${
+                isChartTheme
+                  ? 'bg-white border-black/[0.08] shadow-sm'
+                  : 'bg-white/[0.03] border-white/[0.08]'
+              } ${isRed ? (isChartTheme ? 'bg-red-500/5 border-red-500/20' : 'bg-red-950/20 border-red-500/30') : ''}`}
+            >
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="glass-icon w-7 h-7 shrink-0">
+                    <Anchor className="w-3.5 h-3.5 text-[#2997ff]" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-xs tracking-tight">{h.harbour_name}</h3>
+                    <p className="text-[10px] text-[#86868b]">{h.local_name} • {h.state}</p>
+                  </div>
+                </div>
+                {getVerdictBadge(h.risk_verdict, h.safety_index)}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-[11px] mb-2.5 py-1.5 px-2.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04]">
+                <div className="flex items-center gap-1.5">
+                  <Waves className="w-3.5 h-3.5 text-[#86868b]" />
+                  <span>{h.wave_height_m}m waves</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Wind className="w-3.5 h-3.5 text-[#86868b]" />
+                  <span>{h.wind_speed_kmh} km/h wind</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-0.5">
+                <span className="text-[10px] text-[#86868b]">
+                  {h.nearest_boundary_distance_nm <= 1.5 ? (
+                    <strong className="text-red-400 font-medium">Border Alert: {h.nearest_boundary_distance_nm.toFixed(1)} NM</strong>
+                  ) : (
+                    <span>Clearance: {h.nearest_boundary_distance_nm.toFixed(1)} NM</span>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onSelectHarbour && onSelectHarbour(h.harbour_id)}
+                  className="glass-icon glass-icon-blue px-2.5 py-1 text-xs font-medium gap-1 text-[#2997ff]"
+                >
+                  <span>Inspect</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 5. Desktop High-Density Authority Matrix Table (>= md) */}
+      <div className={`hidden md:block rounded-xl border overflow-hidden transition-colors ${
         isChartTheme ? 'border-black/[0.08] bg-white shadow-sm' : 'border-white/[0.08] bg-white/[0.02]'
       }`}>
         <div className="overflow-x-auto">

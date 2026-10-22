@@ -13,24 +13,26 @@ export default function SafetyAlertBanner({ safetyStatus, safetyOverrideBanner, 
   // If green and no override banner, we show a sleek, compact status bar
   if (isGreen && !safetyOverrideBanner) {
     return (
-      <div className="bg-black/50 border-b border-emerald-500/20 px-4 py-2 text-xs flex items-center justify-between backdrop-blur-xl">
-        <div className="flex items-center gap-2 text-emerald-400">
-          <div className="glass-icon glass-icon-emerald w-7 h-7 shrink-0">
-            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+      <div className="bg-black/50 border-b border-emerald-500/20 px-3 sm:px-4 py-1.5 sm:py-2 text-xs flex items-center justify-between backdrop-blur-xl">
+        <div className="flex items-center gap-2 text-emerald-400 min-w-0">
+          <div className="glass-icon glass-icon-emerald w-6 h-6 sm:w-7 sm:h-7 shrink-0">
+            <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
           </div>
-          <span className="font-medium tracking-tight">Clearance: Normal</span>
+          <span className="font-medium tracking-tight text-[11px] sm:text-xs truncate">Clearance: Normal</span>
           <span className="text-white/20 hidden md:inline">•</span>
-          <span className="text-[#86868b] hidden md:inline font-normal">
+          <span className="text-[#86868b] hidden md:inline font-normal truncate">
             Conditions clear off {harbour?.name || 'coast'}.
           </span>
         </div>
         {weather && (
-          <div className="flex items-center gap-4 text-[#86868b] text-[11px]">
+          <div className="flex items-center gap-2 sm:gap-4 text-[#86868b] text-[10px] sm:text-[11px] shrink-0">
             <span className="flex items-center gap-1">
-              <Waves className="w-3 h-3 text-[#86868b]" /> Waves: <strong className="text-[#f5f5f7] font-medium">{weather.wave_height_m}m</strong>
+              <Waves className="w-3 h-3 text-[#86868b]" />
+              <strong className="text-[#f5f5f7] font-medium">{weather.wave_height_m}m</strong>
             </span>
             <span className="flex items-center gap-1">
-              <Wind className="w-3 h-3 text-[#86868b]" /> Wind: <strong className="text-[#f5f5f7] font-medium">{weather.wind_speed_kmh} km/h</strong>
+              <Wind className="w-3 h-3 text-[#86868b]" />
+              <strong className="text-[#f5f5f7] font-medium">{weather.wind_speed_kmh} km/h</strong>
             </span>
           </div>
         )}

@@ -115,6 +115,7 @@ export default function ChatPanel({
   liveWeather = null,
   safetyStatus = 'GREEN',
   theme = 'chart',
+  onViewMap = null,
 }) {
   const [inputText, setInputText] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('en');
@@ -262,23 +263,35 @@ export default function ChatPanel({
               ORCA Console
             </h2>
           </div>
-          <button
-            onClick={onOpenTraceDrawer}
-            className="glass-icon glass-icon-blue px-2.5 py-1 text-xs font-medium gap-1.5"
-          >
-            <Activity className="w-3.5 h-3.5 text-[#2997ff]" />
-            <span>Agent Traces</span>
-          </button>
+          <div className="flex items-center gap-1.5">
+            {onViewMap && (
+              <button
+                type="button"
+                onClick={onViewMap}
+                className="glass-icon px-2.5 py-1 text-xs font-medium gap-1 text-[#2997ff] md:hidden"
+                title="Switch to Marine Map"
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>Map</span>
+              </button>
+            )}
+            <button
+              onClick={onOpenTraceDrawer}
+              className="glass-icon glass-icon-blue px-2.5 py-1 text-xs font-medium gap-1.5"
+            >
+              <Activity className="w-3.5 h-3.5 text-[#2997ff]" />
+              <span className="hidden sm:inline">Agent Traces</span>
+              <span className="sm:hidden">Traces</span>
+            </button>
+          </div>
         </div>
 
         {/* Operating Controls Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-xs">
           {/* Harbour Selector */}
           <div>
-            <label className={`block text-[10px] font-medium uppercase tracking-wider mb-1 ${
-              isChartTheme ? 'text-[#86868b]' : 'text-[#86868b]'
-            }`}>
-              Landing Harbour
+            <label className="block text-[9px] sm:text-[10px] font-medium uppercase tracking-wider mb-1 text-[#86868b] truncate">
+              Harbour
             </label>
             <select
               value={selectedHarbour?.id || 'rameswaram'}
@@ -286,7 +299,7 @@ export default function ChatPanel({
                 const found = harbours.find((h) => h.id === e.target.value);
                 if (found) onSelectHarbour(found);
               }}
-              className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition ${
+              className={`w-full rounded-lg px-1.5 sm:px-2.5 py-1.5 text-[11px] sm:text-xs truncate focus:outline-none transition ${
                 isChartTheme
                   ? 'bg-black/[0.03] border border-black/[0.1] text-[#1d1d1f] focus:border-[#0071e3]'
                   : 'bg-white/[0.05] border border-white/[0.1] text-[#f5f5f7] focus:border-[#2997ff]'
@@ -294,7 +307,7 @@ export default function ChatPanel({
             >
               {harbours.map((h) => (
                 <option key={h.id} value={h.id} className={isChartTheme ? "bg-white text-[#1d1d1f]" : "bg-[#141417] text-white"}>
-                  {h.name} ({h.local_name || h.state})
+                  {h.name}
                 </option>
               ))}
             </select>
@@ -302,32 +315,32 @@ export default function ChatPanel({
 
           {/* Vessel Selector */}
           <div>
-            <label className="block text-[10px] font-medium uppercase tracking-wider mb-1 text-[#86868b]">
-              Vessel Profile
+            <label className="block text-[9px] sm:text-[10px] font-medium uppercase tracking-wider mb-1 text-[#86868b] truncate">
+              Vessel
             </label>
             <select
               value={vesselType}
               onChange={(e) => onChangeVesselType(e.target.value)}
-              className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition ${
+              className={`w-full rounded-lg px-1.5 sm:px-2.5 py-1.5 text-[11px] sm:text-xs truncate focus:outline-none transition ${
                 isChartTheme
                   ? 'bg-black/[0.03] border border-black/[0.1] text-[#1d1d1f] focus:border-[#0071e3]'
                   : 'bg-white/[0.05] border border-white/[0.1] text-[#f5f5f7] focus:border-[#2997ff]'
               }`}
             >
-              <option value="country_craft" className={isChartTheme ? "bg-white text-[#1d1d1f]" : "bg-[#141417] text-white"}>Country Craft (Vallam)</option>
-              <option value="mechanized_trawler" className={isChartTheme ? "bg-white text-[#1d1d1f]" : "bg-[#141417] text-white"}>Mechanized Trawler (45ft)</option>
+              <option value="country_craft" className={isChartTheme ? "bg-white text-[#1d1d1f]" : "bg-[#141417] text-white"}>Country Craft</option>
+              <option value="mechanized_trawler" className={isChartTheme ? "bg-white text-[#1d1d1f]" : "bg-[#141417] text-white"}>Trawler (45ft)</option>
             </select>
           </div>
 
           {/* Language Selector */}
           <div>
-            <label className="block text-[10px] font-medium uppercase tracking-wider mb-1 text-[#86868b]">
-              Response Language
+            <label className="block text-[9px] sm:text-[10px] font-medium uppercase tracking-wider mb-1 text-[#86868b] truncate">
+              Language
             </label>
             <select
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
-              className={`w-full rounded-lg px-2.5 py-1.5 text-xs focus:outline-none transition ${
+              className={`w-full rounded-lg px-1.5 sm:px-2.5 py-1.5 text-[11px] sm:text-xs truncate focus:outline-none transition ${
                 isChartTheme
                   ? 'bg-black/[0.03] border border-black/[0.1] text-[#1d1d1f] focus:border-[#0071e3]'
                   : 'bg-white/[0.05] border border-white/[0.1] text-[#f5f5f7] focus:border-[#2997ff]'
@@ -335,7 +348,7 @@ export default function ChatPanel({
             >
               {LANGUAGES.map((lang) => (
                 <option key={lang.code} value={lang.code} className={isChartTheme ? "bg-white text-[#1d1d1f]" : "bg-[#141417] text-white"}>
-                  {lang.label}
+                  {lang.label.split(' ')[0]}
                 </option>
               ))}
             </select>
@@ -600,7 +613,7 @@ export default function ChatPanel({
       </div>
 
       {/* 4. Text & Voice Input Bar */}
-      <form onSubmit={handleSend} className={`p-3 border-t transition-colors backdrop-blur-xl ${
+      <form onSubmit={handleSend} className={`p-2.5 sm:p-3 pb-safe border-t transition-colors backdrop-blur-xl ${
         isChartTheme
           ? 'bg-white/80 border-black/[0.08]'
           : 'bg-black/60 border-white/[0.08]'

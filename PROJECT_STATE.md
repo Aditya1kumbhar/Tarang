@@ -40,9 +40,20 @@
 
 ## 3. Active Status & Operational Invariants
 - **Phase Completion:** Phases 1 through 5 fully implemented and verified.
-- **Automated Tests:** 32/32 tests passing (18 unit + 14 integration).
+- **Automated Tests:** 38/38 tests passing (18 unit + 20 integration including full security suite).
+- **Security Hardening (Render Production):** Enforced zero-trust security architecture:
+  - Strict CORS allowlist from `ALLOWED_ORIGINS` (no arbitrary origin reflection, credentials restricted to allowlist).
+  - Per-IP rate limiting via `slowapi` (10 req/min on `/api/v1/chat`, 120 req/min default on `/api/v1/*` with custom CF/X-Forwarded-For IP extractor).
+  - Chat input validation: Pydantic bounds (1-2000 chars), HTTP 413 on empty or oversized message payload, 15.0s timeout on AI pipeline.
+  - Production blueprint lockdown: `/docs`, `/redoc`, and `/openapi.json` disabled (`404 Not Found`) when `ENVIRONMENT=production`.
+  - Comprehensive security headers: strict CSP allowing Google Fonts/unpkg Leaflet/tiles, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, and HSTS `max-age=31536000; includeSubDomains`.
+  - Server stack disclosure genericized (`server: webserver`, stripped `x-powered-by`, `--no-server-header` on uvicorn).
+  - Input validation: strict enums (`HarbourID`, `VesselType`, `ScenarioType`) with HTTP 422 on invalid values.
+  - Global sanitized exception handling: generic 500 error responses in production without stack trace leaks.
 - **Backend Server:** Live daemon running on `http://127.0.0.1:8000` (auto-reload active).
 - **Frontend Server:** Live Vite dev server running on `http://localhost:5173`.
+- **Live Production Deployment:** Verified active on Render at `https://tarang-0v0t.onrender.com` (serving unified SPA + FastAPI REST API with live Gemini & Open-Meteo integration).
+- **Mobile & Phone Responsiveness:** Full mobile ergonomics upgrade with dynamic `100dvh` viewport sizing, iOS/Android safe area insets (`pb-safe`), dedicated 3-tab floating bottom navigation (`Marine Map` | `AI Advisory` | `District Board`) on screens `< md`, collapsible touch-friendly GIS layers with native `ResizeObserver` for zero-lag Leaflet tile invalidation, responsive single-row compact controls in `ChatPanel`, and card-based landing centre surveillance in `DistrictAuthorityBoard`. Dual-pane side-by-side view preserved for desktop/tablet (`>= md`).
 - **UI Redesign:** Apple MacBook Air minimalist aesthetic applied across all frontend components (SF Pro / Inter font stack, tight `-0.012em` letter tracking, frosted glass backdrop blur, hairline borders, Apple glassmorphic icon tiles with rim highlights, ultra-lean 1-line micro-copy, zero pill buttons, zero purple, zero emojis).
 - **Dark & Light Mode Contrast Parity:** Both `ocean` (dark) and `chart` (light) themes verified with WCAG AAA readability. High-contrast color tiers for glassmorphic tiles (`#047857`/`#34d399` emerald, `#b45309`/`#fbbf24` amber, `#b91c1c`/`#f87171` red, `#0071e3`/`#38bdf8` blue) with zero dark-on-dark or light-on-light text artifacts.
 - **Basemap:** Authenticated CARTO Basemaps API key (isolated via `VITE_CARTO_API_KEY` in gitignored `.env`) integrated with 5M requests/mo quota. Interactive 1-click basemap switcher in GIS overlay: CARTO Voyager (nautical default), CARTO Dark Matter, and Esri Oceanic Gray. Zero watermarks across all zoom levels.
