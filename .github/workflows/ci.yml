@@ -34,7 +34,7 @@ jobs:
       - name: Install Python dependencies & pip-audit
         run: |
           python -m pip install --upgrade pip setuptools
-          pip install -r backend/requirements.txt pip-audit
+          pip install --upgrade -r backend/requirements.txt pip-audit
 
       - name: Run pip-audit for Python dependency vulnerabilities
         run: pip-audit --strict
