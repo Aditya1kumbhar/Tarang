@@ -2,9 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import MarineMap from './components/MarineMap';
 import ChatPanel from './components/ChatPanel';
 import SafetyAlertBanner from './components/SafetyAlertBanner';
-import AgentTraceDrawer from './components/AgentTraceDrawer';
 import DistrictAuthorityBoard from './components/DistrictAuthorityBoard';
-import { PrivacyPolicyModal, TermsConditionsModal } from './components/LegalModals';
 import {
   Compass,
   Radio,
@@ -13,7 +11,6 @@ import {
   Thermometer,
   ShieldCheck,
   ShieldAlert,
-  Activity,
   Anchor,
   Globe,
   Building2,
@@ -42,11 +39,6 @@ export default function App() {
   const [agentTraces, setAgentTraces] = useState([]);
   const [provenanceList, setProvenanceList] = useState([]);
   const [evidenceLedger, setEvidenceLedger] = useState([]);
-  const [isTraceDrawerOpen, setIsTraceDrawerOpen] = useState(false);
-
-  // Legal Modals State
-  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
-  const [isTermsOpen, setIsTermsOpen] = useState(false);
 
   // Sync Tailwind dark mode class on root document
   useEffect(() => {
@@ -370,47 +362,6 @@ export default function App() {
               </>
             )}
           </button>
-
-          {/* Agent Telemetry Drawer Button */}
-          <button
-            type="button"
-            onClick={() => setIsTraceDrawerOpen(true)}
-            className="glass-icon glass-icon-blue px-2.5 sm:px-3 py-1 text-xs font-medium gap-1.5"
-            title="Inspect Agent Execution Telemetry"
-          >
-            <Activity className="w-3.5 h-3.5 text-[#2997ff]" />
-            <span className="hidden sm:inline">Telemetry</span>
-          </button>
-
-          {/* Legal Navigation */}
-          <div className="hidden lg:flex items-center gap-2 text-[11px] text-[#86868b]">
-            <button
-              onClick={() => setIsPrivacyOpen(true)}
-              className="hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7] transition"
-            >
-              Privacy
-            </button>
-            <span>•</span>
-            <button
-              onClick={() => setIsTermsOpen(true)}
-              className="hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7] transition"
-            >
-              Terms
-            </button>
-          </div>
-
-          {/* Backend Connectivity Indicator */}
-          <div className="flex items-center gap-1.5 pl-1 sm:pl-2">
-            <div
-              className={`w-2 h-2 rounded-full ${
-                isBackendHealthy ? 'bg-emerald-400' : 'bg-red-400'
-              }`}
-              title={isBackendHealthy ? 'FastAPI Backend Online' : 'Backend Offline'}
-            />
-            <span className="text-[11px] text-[#86868b] hidden sm:inline">
-              {isBackendHealthy ? 'Live' : 'Offline'}
-            </span>
-          </div>
         </div>
       </header>
 
@@ -464,7 +415,6 @@ export default function App() {
               messages={messages}
               isLoading={isLoading}
               onSendMessage={handleSendMessage}
-              onOpenTraceDrawer={() => setIsTraceDrawerOpen(true)}
               liveWeather={liveWeather}
               safetyStatus={safetyStatus}
               theme={themeMode}
@@ -532,25 +482,6 @@ export default function App() {
           <span>District Board</span>
         </button>
       </nav>
-
-      {/* 5. Multi-Agent Reasoning & Provenance Side Drawer */}
-      <AgentTraceDrawer
-        isOpen={isTraceDrawerOpen}
-        onClose={() => setIsTraceDrawerOpen(false)}
-        agentTraces={agentTraces}
-        provenanceList={provenanceList}
-        evidenceLedger={evidenceLedger}
-      />
-
-      {/* 6. Statutory Legal Modals */}
-      <PrivacyPolicyModal
-        isOpen={isPrivacyOpen}
-        onClose={() => setIsPrivacyOpen(false)}
-      />
-      <TermsConditionsModal
-        isOpen={isTermsOpen}
-        onClose={() => setIsTermsOpen(false)}
-      />
     </div>
   );
 }

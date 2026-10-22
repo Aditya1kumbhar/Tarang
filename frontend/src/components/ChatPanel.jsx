@@ -8,7 +8,6 @@ import {
   Compass,
   Ship,
   Languages,
-  Activity,
   Layers,
   AlertTriangle,
   ShieldCheck,
@@ -263,27 +262,19 @@ export default function ChatPanel({
               ORCA Console
             </h2>
           </div>
-          <div className="flex items-center gap-1.5">
-            {onViewMap && (
+          {onViewMap && (
+            <div className="flex items-center gap-1.5 md:hidden">
               <button
                 type="button"
                 onClick={onViewMap}
-                className="glass-icon px-2.5 py-1 text-xs font-medium gap-1 text-[#2997ff] md:hidden"
+                className="glass-icon px-2.5 py-1 text-xs font-medium gap-1 text-[#2997ff]"
                 title="Switch to Marine Map"
               >
                 <Compass className="w-3.5 h-3.5" />
                 <span>Map</span>
               </button>
-            )}
-            <button
-              onClick={onOpenTraceDrawer}
-              className="glass-icon glass-icon-blue px-2.5 py-1 text-xs font-medium gap-1.5"
-            >
-              <Activity className="w-3.5 h-3.5 text-[#2997ff]" />
-              <span className="hidden sm:inline">Agent Traces</span>
-              <span className="sm:hidden">Traces</span>
-            </button>
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Operating Controls Grid */}
@@ -542,14 +533,6 @@ export default function ChatPanel({
                       ) : (
                         <Volume2 className="w-3.5 h-3.5" />
                       )}
-                    </button>
-                    {/* Trace Drawer Trigger */}
-                    <button
-                      onClick={onOpenTraceDrawer}
-                      className="p-1 rounded-md text-[#86868b] hover:text-[#f5f5f7] hover:bg-white/[0.08] transition"
-                      title="Inspect Agent DAG Trace"
-                    >
-                      <Activity className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
