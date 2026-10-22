@@ -7,6 +7,7 @@ deterministic offline climatological fallback, and strict Indian vessel safety t
 import asyncio
 from datetime import datetime, timezone
 import logging
+import time
 from typing import Any, Dict, Optional, Tuple
 
 import httpx
@@ -54,6 +55,11 @@ def get_fallback_marine_and_weather(lat: float, lon: float) -> Dict[str, Any]:
     }
 
 
+# Fast In-Memory Marine & Weather Cache (90s TTL to eliminate redundant external roundtrips)
+_WEATHER_CACHE: Dict[Tuple[float, float], Tuple[float, Dict[str, Any]]] = {}
+_WEATHER_CACHE_TTL = 90.0
+
+
 async def fetch_live_marine_and_weather(
     lat: float,
     lon: float,
@@ -64,6 +70,13 @@ async def fetch_live_marine_and_weather(
     Queries Open-Meteo Marine and Weather APIs concurrently with strict async timeout.
     Extracts current hour physical measurements.
     """
+    cache_key = (round(lat, 3), round(lon, 3))
+    now = time.time()
+    if cache_key in _WEATHER_CACHE:
+        cached_time, cached_val = _WEATHER_CACHE[cache_key]
+        if now - cached_time < _WEATHER_CACHE_TTL:
+            return dict(cached_val)
+
     marine_params = {
         "latitude": lat,
         "longitude": lon,
@@ -114,7 +127,7 @@ async def fetch_live_marine_and_weather(
     cape = f_hourly.get("cape", [300.0])[0] or 300.0
     weather_code = f_hourly.get("weather_code", [1])[0] or 1
 
-    return {
+    res_dict = {
         "wave_height_m": float(wave_height),
         "wave_direction_deg": float(wave_dir),
         "wave_period_s": float(wave_period),
@@ -129,6 +142,8 @@ async def fetch_live_marine_and_weather(
         "source": "Live Open-Meteo Marine & Forecast API",
         "is_fallback": False,
     }
+    _WEATHER_CACHE[cache_key] = (now, dict(res_dict))
+    return res_dict
 
 
 def calculate_sea_venture_safety_index(

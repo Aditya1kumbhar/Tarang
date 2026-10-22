@@ -567,9 +567,21 @@ def enforce_safety_circuit_breaker(state: OrchestratorState) -> None:
 # 4. MULTILINGUAL SYNTHESIS & MAP BUILDER AGENT
 # ==============================================================================
 
+_GEMINI_CLIENT: Optional[httpx.AsyncClient] = None
+
+def _get_gemini_client() -> httpx.AsyncClient:
+    global _GEMINI_CLIENT
+    if _GEMINI_CLIENT is None or _GEMINI_CLIENT.is_closed:
+        _GEMINI_CLIENT = httpx.AsyncClient(
+            timeout=httpx.Timeout(2.2, connect=1.0),
+            limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
+        )
+    return _GEMINI_CLIENT
+
+
 async def _call_gemini_synthesis(state: OrchestratorState, evidence: List[str]) -> Optional[str]:
     """
-    Synthesize marine advisory using Google Gemini 3.1 Flash Lite API.
+    Synthesize marine advisory using Google Gemini 3.1 Flash Lite API with sub-second keep-alive.
     Strictly constrained by deterministic physical observations and safety circuit breakers.
     """
     if not GEMINI_API_KEY:
@@ -591,27 +603,27 @@ async def _call_gemini_synthesis(state: OrchestratorState, evidence: List[str]) 
 
     system_instruction = (
         "You are ORCA, an enterprise AI maritime reasoning synthesizer for Indian fishermen and coastal authorities.\n"
-        "Your task: Deliver a lean, authoritative, and direct recommendation based strictly on the deterministic oceanographic facts provided.\n\n"
+        "Your task: Deliver an immediate, ultra-concise, authoritative recommendation in 1 to 2 lines based strictly on the deterministic oceanographic facts provided.\n\n"
         "STRICT NON-NEGOTIABLE MARITIME RULES:\n"
-        "1. ZERO HALLUCINATION: Never invent or contradict the exact wave heights, wind speeds, bearings, distances, or safety statuses provided.\n"
-        "2. SAFETY FIRST: If Safety Status is RED_ALERT, explicitly command the vessel NOT to venture out into the sea, citing the exact hazard.\n"
-        "3. PRODUCTIVITY ACCURACY: If an ecosystem productivity decline is observed, explicitly cite the exact diagnostic mechanism (e.g. Marine Heatwave / Stratification / HAB Hypoxia) and severity.\n"
-        "4. CONCISENESS: Keep the recommendation focused and lean (2 to 4 sentences maximum). Include key numerical thresholds for clarity.\n"
+        "1. ZERO HALLUCINATION: Never invent or alter the wave heights, wind speeds, bearings, distances, or safety statuses provided.\n"
+        "2. SAFETY FIRST: If Safety Status is RED_ALERT, explicitly command the vessel NOT to venture out, citing the exact hazard.\n"
+        "3. PRODUCTIVITY ACCURACY: If productivity decline is observed, state the primary mechanism (e.g. Marine Heatwave / Stratification / HAB Hypoxia) and severity.\n"
+        "4. ULTRA-LEAN: Output ONLY 1 or 2 essential lines. No pleasantries or unnecessary introductory padding.\n"
         f"5. LANGUAGE: Respond natively and fluently in {lang_name}."
     )
 
     evidence_text = "\n".join(f"- {e}" for e in evidence)
     user_prompt = (
-        f"User Query: {state.query}\n"
-        f"Landing Harbour: {state.harbour.name} ({state.harbour.local_name}, {state.harbour.state})\n"
-        f"Vessel Profile: {state.vessel_type.value}\n"
-        f"Circuit Breaker Safety Status: {state.safety_status.value} (Verdict: {state.risk_verdict})\n"
-        f"Deterministic Observations & Evidence:\n{evidence_text}\n\n"
-        f"Target Output Language: {lang_name}\n"
-        "Generate the concise authoritative recommendation now:"
+        f"Query: {state.query}\n"
+        f"Harbour: {state.harbour.name} ({state.harbour.local_name})\n"
+        f"Vessel: {state.vessel_type.value}\n"
+        f"Status: {state.safety_status.value} (Verdict: {state.risk_verdict})\n"
+        f"Evidence:\n{evidence_text}\n"
+        f"Language: {lang_name}\n"
+        "Directive:"
     )
 
-    models_to_try = [GEMINI_MODEL, "gemini-3.1-flash-lite", "gemini-3.8-flash"]
+    models_to_try = [GEMINI_MODEL, "gemini-3.1-flash-lite", "gemini-flash-latest"]
     payload = {
         "contents": [
             {
@@ -620,33 +632,30 @@ async def _call_gemini_synthesis(state: OrchestratorState, evidence: List[str]) 
             }
         ],
         "generationConfig": {
-            "temperature": 0.15,
-            "maxOutputTokens": 450,
+            "temperature": 0.1,
+            "maxOutputTokens": 140,
         }
     }
 
-    try:
-        async with httpx.AsyncClient(timeout=4.0) as client:
-            for model in models_to_try:
-                try:
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
-                    res = await client.post(url, json=payload)
-                    if res.status_code == 200:
-                        data = res.json()
-                        candidates = data.get("candidates", [])
-                        if candidates:
-                            parts = candidates[0].get("content", {}).get("parts", [])
-                            if parts and "text" in parts[0]:
-                                text = parts[0]["text"].strip()
-                                if text:
-                                    return text
-                    elif res.status_code == 404:
-                        continue
-                except Exception as err:
-                    logger.debug(f"Gemini model {model} attempt error: {err}")
-                    continue
-    except Exception as e:
-        logger.warning(f"Gemini API synthesis unavailable: {e}")
+    client = _get_gemini_client()
+    for model in models_to_try:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
+            res = await client.post(url, json=payload)
+            if res.status_code == 200:
+                data = res.json()
+                candidates = data.get("candidates", [])
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    if parts and "text" in parts[0]:
+                        text = parts[0]["text"].strip()
+                        if text:
+                            return text
+            elif res.status_code in (404, 429, 503):
+                continue
+        except Exception as err:
+            logger.debug(f"Gemini model {model} attempt error: {err}")
+            continue
 
     return None
 
