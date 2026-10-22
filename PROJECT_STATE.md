@@ -34,8 +34,9 @@
 ## 3. Active Status & Operational Invariants
 - **Phase Completion:** Phases 1 through 5 fully implemented and verified.
 - **Automated Tests:** 32/32 tests passing (18 unit + 14 integration).
-- **Backend Server:** Live daemon running on `http://127.0.0.1:8000`.
+- **Backend Server:** Live daemon running on `http://127.0.0.1:8000` (auto-reload active).
 - **Frontend Server:** Live Vite dev server running on `http://localhost:5173`.
+- **Code Optimization:** Pruned 19 dead imports/tokens across 5 backend files (Ponytail audit verified).
 - **Node.js Environment:** Standalone Node LTS `v24.22.1` installed in `~/.local/node`.
 - **Python Compatibility:** Python 3.9.6 compatibility verified (dataclass slots resolved).
 - **Offline Resilience:** 4.0s API timeout falling back to pre-seeded `indian_ocean_grid.json`.
