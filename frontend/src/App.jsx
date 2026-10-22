@@ -12,7 +12,6 @@ import {
   ShieldCheck,
   ShieldAlert,
   Anchor,
-  Globe,
   Building2,
   Sun,
   Moon,
@@ -22,7 +21,6 @@ export default function App() {
   const [harbours, setHarbours] = useState([]);
   const [selectedHarbour, setSelectedHarbour] = useState(null);
   const [vesselType, setVesselType] = useState('country_craft');
-  const [isBackendHealthy, setIsBackendHealthy] = useState(false);
   const [personaMode, setPersonaMode] = useState('fisher'); // 'fisher' | 'district'
   const [mobileTab, setMobileTab] = useState('map'); // 'map' | 'chat' (phone responsive navigation)
   const [themeMode, setThemeMode] = useState('ocean'); // 'ocean' (dark) | 'chart' (light)
@@ -46,13 +44,10 @@ export default function App() {
     }
   }, [themeMode]);
 
-  // 1. Initial Health Check & Harbours Load
+  // 1. Initial Harbours Load
   useEffect(() => {
     const initializeSystem = async () => {
       try {
-        const healthRes = await fetch('/api/v1/health');
-        if (healthRes.ok) setIsBackendHealthy(true);
-
         const harboursRes = await fetch('/api/v1/harbours');
         if (harboursRes.ok) {
           const harboursData = await harboursRes.json();

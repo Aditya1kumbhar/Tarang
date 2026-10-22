@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import { Layers, Eye, Compass, Anchor, Shield, AlertOctagon, Navigation, Crosshair, Map as MapIcon } from 'lucide-react';
+import { Layers, Compass, Anchor, Navigation, Crosshair } from 'lucide-react';
 
 const CARTO_API_KEY = import.meta.env.VITE_CARTO_API_KEY || '';
 

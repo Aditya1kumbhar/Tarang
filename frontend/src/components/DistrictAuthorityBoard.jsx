@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   Waves,
   Wind,
-  Compass,
   ArrowRight,
   Filter,
   RefreshCw,

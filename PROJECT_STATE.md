@@ -61,7 +61,7 @@
 - **Basemap:** Authenticated CARTO Basemaps API key (isolated via `VITE_CARTO_API_KEY` in gitignored `.env`) integrated with 5M requests/mo quota. Interactive 1-click basemap switcher in GIS overlay: CARTO Voyager (nautical default), CARTO Dark Matter, and Esri Oceanic Gray. Zero watermarks across all zoom levels.
 - **Telemetry Enrichment:** `liveWeather` populated with dynamic SST (`sst_c`) alongside wave height and wind.
 - **Gemini 3.1 LLM Synthesis & Instant Chat Pipeline:** Google Gemini 3.1 Flash Lite (`gemini-3.1-flash-lite` with cascade to `gemini-flash-latest` and instant deterministic fallback) integrated via gitignored `.env` (`GEMINI_API_KEY`). Features persistent HTTP keep-alive connection pooling, 90-second in-memory weather caching (`_WEATHER_CACHE`), and lean 140-token output budgeting to guarantee sub-second, zero-hang responses with 100% mathematical and geofence accuracy.
-- **Code Optimization:** Pruned 19 dead imports/tokens across 5 backend files (Ponytail audit verified).
+- **Code Optimization & Ponytail Audit:** Cleaned 33 lines of dead tokens, unused icon imports, and dead constants across 8 files (`App.jsx`, `ChatPanel.jsx`, `MarineMap.jsx`, `DistrictAuthorityBoard.jsx`, `SafetyAlertBanner.jsx`, `prompts.py`, `test_tools.py`, `test_api.py`), eliminated dead `isBackendHealthy` network roundtrip on initial mount. All 45 unit and integration tests passing.
 - **Node.js Environment:** Standalone Node LTS `v24.22.1` installed in `~/.local/node`.
 - **Python Compatibility:** Python 3.9.6 compatibility verified (dataclass slots resolved).
 - **Offline Resilience:** 4.0s API timeout falling back to pre-seeded `indian_ocean_grid.json`.

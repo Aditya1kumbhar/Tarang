@@ -17,7 +17,6 @@ from starlette.testclient import TestClient
 
 from backend.main import app
 from backend.rate_limiter import limiter
-from backend.schemas.models import SafetyLevel, VesselType
 
 client = TestClient(app)
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, ShieldAlert, ShieldCheck, ChevronDown, ChevronUp, Waves, Wind } from 'lucide-react';
+import { AlertTriangle, ShieldAlert, ChevronDown, ChevronUp, Waves, Wind } from 'lucide-react';
 
 export default function SafetyAlertBanner({ safetyStatus, safetyOverrideBanner, weather, harbour }) {
   const [isExpanded, setIsExpanded] = useState(true);

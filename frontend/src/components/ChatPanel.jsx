@@ -6,15 +6,11 @@ import {
   Volume2,
   VolumeX,
   Compass,
-  Ship,
-  Languages,
-  Layers,
   AlertTriangle,
   ShieldCheck,
   ShieldAlert,
   ChevronDown,
   ChevronRight,
-  Info,
 } from 'lucide-react';
 
 const SIH_SCENARIOS = [

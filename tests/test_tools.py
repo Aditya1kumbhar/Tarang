@@ -19,7 +19,6 @@ from backend.tools.geospatial_tool import (
     calculate_distance_and_bearing,
     check_geofence,
     compute_safe_route,
-    load_imbl_features,
     load_mpa_features,
 )
 from backend.tools.ocean_pfz_tool import (
@@ -33,7 +32,6 @@ from backend.tools.productivity_tool import diagnose_productivity_decline
 from backend.tools.weather_marine_tool import (
     assess_vessel_safety,
     calculate_sea_venture_safety_index,
-    get_fallback_marine_and_weather,
     get_weather_marine_report,
 )
 
