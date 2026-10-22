@@ -5,6 +5,10 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   security-audit:
@@ -48,3 +52,4 @@ jobs:
 
       - name: Run Production-Configured Rate Limiting Verification
         run: PYTHONPATH=. python tests/verify_production_ratelimit.py
+
