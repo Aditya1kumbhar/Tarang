@@ -127,29 +127,33 @@ export default function ChatPanel({
 
   // Web Speech API: Speech-to-Text Recognition Setup
   useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = selectedLanguage === 'ta' ? 'ta-IN' : selectedLanguage === 'hi' ? 'hi-IN' : 'en-IN';
+    try {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = selectedLanguage === 'ta' ? 'ta-IN' : selectedLanguage === 'hi' ? 'hi-IN' : 'en-IN';
 
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        setInputText((prev) => (prev ? `${prev} ${transcript}` : transcript));
-        setIsListening(false);
-      };
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          setInputText((prev) => (prev ? `${prev} ${transcript}` : transcript));
+          setIsListening(false);
+        };
 
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
-      };
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error:', event.error);
+          setIsListening(false);
+        };
 
-      recognition.onend = () => {
-        setIsListening(false);
-      };
+        recognition.onend = () => {
+          setIsListening(false);
+        };
 
-      recognitionRef.current = recognition;
+        recognitionRef.current = recognition;
+      }
+    } catch (err) {
+      console.warn('SpeechRecognition initialization error or policy restriction:', err);
     }
   }, [selectedLanguage]);
 
