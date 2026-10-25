@@ -120,9 +120,17 @@ export default function ChatPanel({
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
 
-  // Auto-scroll messages
+  // Auto-scroll messages (safe against mobile WebKit smooth scroll differences)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    try {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    } catch (e) {
+      try {
+        messagesEndRef.current?.scrollIntoView(false);
+      } catch (err) {
+        // Fallback for older mobile WebKit
+      }
+    }
   }, [messages, isLoading]);
 
   // Web Speech API: Speech-to-Text Recognition Setup

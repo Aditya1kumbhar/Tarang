@@ -69,50 +69,68 @@ export default function MarineMap({
   // Handle container resize & orientation changes smoothly (Mobile & Tablet)
   useEffect(() => {
     if (!mapContainerRef.current) return;
-    const observer = new ResizeObserver(() => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.invalidateSize();
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry && entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+        if (mapInstanceRef.current) {
+          try {
+            mapInstanceRef.current.invalidateSize();
+            if (activeHarbour) {
+              mapInstanceRef.current.setView([activeHarbour.lat, activeHarbour.lon], 9);
+            }
+          } catch (e) {
+            console.warn('Leaflet resize update warning:', e);
+          }
+        }
       }
     });
     observer.observe(mapContainerRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [activeHarbour]);
 
   // 1. Initialize Map
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-    // Default center on Indian Ocean / Subcontinent
-    const map = L.map(mapContainerRef.current, {
-      center: [14.0, 78.5],
-      zoom: 5.5,
-      minZoom: 4,
-      maxZoom: 19,
-      zoomControl: false,
-    });
+    try {
+      // Default center on Indian Ocean / Subcontinent
+      const map = L.map(mapContainerRef.current, {
+        center: [14.0, 78.5],
+        zoom: 5.5,
+        minZoom: 4,
+        maxZoom: 19,
+        zoomControl: false,
+      });
 
-    // Add Zoom Control to bottom-right
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+      // Add Zoom Control to bottom-right
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // Initial Tile Layer: CARTO Voyager with verified API key
-    const initialConfig = BASEMAP_CONFIGS[activeBasemap] || BASEMAP_CONFIGS.voyager;
-    const tileLayer = L.tileLayer(initialConfig.url, {
-      attribution: initialConfig.attribution,
-      maxZoom: initialConfig.maxZoom,
-      subdomains: 'abcd',
-    }).addTo(map);
-    currentTileLayerRef.current = tileLayer;
+      // Initial Tile Layer: CARTO Voyager with verified API key
+      const initialConfig = BASEMAP_CONFIGS[activeBasemap] || BASEMAP_CONFIGS.voyager;
+      const tileLayer = L.tileLayer(initialConfig.url, {
+        attribution: initialConfig.attribution,
+        maxZoom: initialConfig.maxZoom,
+        subdomains: 'abcd',
+      }).addTo(map);
+      currentTileLayerRef.current = tileLayer;
 
-    // Add our layer groups to the map
-    Object.values(layersRef.current).forEach((layer) => layer.addTo(map));
+      // Add our layer groups to the map
+      Object.values(layersRef.current).forEach((layer) => layer.addTo(map));
 
-    mapInstanceRef.current = map;
+      mapInstanceRef.current = map;
 
-    return () => {
-      map.remove();
-      mapInstanceRef.current = null;
-      currentTileLayerRef.current = null;
-    };
+      return () => {
+        try {
+          map.remove();
+        } catch (e) {
+          // Ignore teardown errors
+        }
+        mapInstanceRef.current = null;
+        currentTileLayerRef.current = null;
+      };
+    } catch (err) {
+      console.warn('Leaflet map initialization warning:', err);
+    }
   }, []);
 
   // Update Tile Layer dynamically when activeBasemap changes
@@ -463,19 +481,36 @@ export default function MarineMap({
       }
     });
 
-    // Auto-fit bounds if we have features
-    if (bounds.isValid()) {
-      mapInstanceRef.current.fitBounds(bounds, { padding: [60, 60], maxZoom: 10 });
+    // Auto-fit bounds if we have features and map is visible
+    if (bounds.isValid() && mapInstanceRef.current) {
+      const container = mapContainerRef.current;
+      if (container && container.clientWidth > 0 && container.clientHeight > 0) {
+        try {
+          mapInstanceRef.current.fitBounds(bounds, { padding: [60, 60], maxZoom: 10 });
+        } catch (err) {
+          console.warn('Leaflet fitBounds suppressed due to container dimensions:', err);
+        }
+      }
     }
   }, [mapPayload]);
 
-  // 6. Pan to Active Harbour when changed
+  // 6. Pan to Active Harbour when changed (guarded against zero-dimension mobile tabs)
   useEffect(() => {
     if (!mapInstanceRef.current || !activeHarbour) return;
-    mapInstanceRef.current.flyTo([activeHarbour.lat, activeHarbour.lon], 9, {
-      duration: 1.2,
-      easeLinearity: 0.25,
-    });
+    const container = mapContainerRef.current;
+    if (!container || container.clientWidth === 0 || container.clientHeight === 0) {
+      // Container is hidden (e.g. on mobile while on chat tab).
+      // Leaflet's zoom/pixel math divides by container size (0), producing NaN if called.
+      return;
+    }
+    try {
+      mapInstanceRef.current.flyTo([activeHarbour.lat, activeHarbour.lon], 9, {
+        duration: 1.2,
+        easeLinearity: 0.25,
+      });
+    } catch (err) {
+      console.warn('Leaflet flyTo suppressed due to container state:', err);
+    }
   }, [activeHarbour]);
 
   // 7. Toggle Layer Visibility
@@ -496,10 +531,16 @@ export default function MarineMap({
 
   const handleResetView = () => {
     if (!mapInstanceRef.current) return;
-    if (activeHarbour) {
-      mapInstanceRef.current.flyTo([activeHarbour.lat, activeHarbour.lon], 9);
-    } else {
-      mapInstanceRef.current.flyTo([14.0, 78.5], 5.5);
+    const container = mapContainerRef.current;
+    if (!container || container.clientWidth === 0 || container.clientHeight === 0) return;
+    try {
+      if (activeHarbour) {
+        mapInstanceRef.current.flyTo([activeHarbour.lat, activeHarbour.lon], 9);
+      } else {
+        mapInstanceRef.current.flyTo([14.0, 78.5], 5.5);
+      }
+    } catch (err) {
+      console.warn('handleResetView suppressed:', err);
     }
   };
 
