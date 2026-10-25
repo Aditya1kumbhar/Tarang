@@ -3,6 +3,7 @@ import MarineMap from './components/MarineMap';
 import ChatPanel from './components/ChatPanel';
 import SafetyAlertBanner from './components/SafetyAlertBanner';
 import DistrictAuthorityBoard from './components/DistrictAuthorityBoard';
+import { PrivacyModal, TermsModal } from './components/LegalModals';
 import {
   Compass,
   Radio,
@@ -24,6 +25,8 @@ export default function App() {
   const [personaMode, setPersonaMode] = useState('fisher'); // 'fisher' | 'district'
   const [mobileTab, setMobileTab] = useState('map'); // 'map' | 'chat' (phone responsive navigation)
   const [themeMode, setThemeMode] = useState('ocean'); // 'ocean' (dark) | 'chart' (light)
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   // Marine Telemetry & Dashboard Snapshot
   const [liveWeather, setLiveWeather] = useState(null);
@@ -323,8 +326,26 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right Tools & Theme Toggle */}
-        <div className="flex items-center gap-2 text-xs">
+        {/* Right Tools, Legal & Theme Toggle */}
+        <div className="flex items-center gap-1.5 sm:gap-2 text-xs">
+          {/* Statutory Legal Links */}
+          <button
+            type="button"
+            onClick={() => setShowPrivacy(true)}
+            className="px-2 py-1 text-[11px] font-medium text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7] rounded-md transition"
+            title="Statutory Privacy Policy (DPDP Act 2023)"
+          >
+            Privacy
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowTerms(true)}
+            className="px-2 py-1 text-[11px] font-medium text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7] rounded-md transition"
+            title="Terms of Maritime Service (UNCLOS / SOLAS)"
+          >
+            Terms
+          </button>
+
           {/* Theme Switch */}
           <button
             type="button"
@@ -464,6 +485,18 @@ export default function App() {
           <span>District Board</span>
         </button>
       </nav>
+
+      {/* 5. Statutory Legal Modals (DPDP Act 2023 & UNCLOS) */}
+      <PrivacyModal
+        isOpen={showPrivacy}
+        onClose={() => setShowPrivacy(false)}
+        theme={themeMode}
+      />
+      <TermsModal
+        isOpen={showTerms}
+        onClose={() => setShowTerms(false)}
+        theme={themeMode}
+      />
     </div>
   );
 }
