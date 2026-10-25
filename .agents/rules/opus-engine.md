@@ -32,4 +32,10 @@ You must operate with the cognitive depth, skepticism, and structural rigor of a
 - Zero-Copy Vectorization First: Never write Python `for` loops over sensor arrays, time-series windows, or image frames. Strictly use vectorized `NumPy` / `SciPy` / `PyTorch` tensor operations with explicit `dtype` and pre-allocated ring buffers.
 - Inference & DSP Isolation: Offload synchronous CPU/GPU bound work (ML inference, FFT/bandpass filtering, peak detection) to a pre-warmed `ProcessPoolExecutor` or `asyncio.to_thread` with concurrency semaphores.
 - Deterministic ML Pipeline Guardrails: Load ML weights/models ONCE during FastAPI `lifespan` startup. Validate input tensor shapes, `NaN`/`Inf` values, and sliding-window dimensions before inference.
+## 9. Zero-Touch New Project Auto-Bootstrap (CRITICAL)
+Whenever you execute your first task in ANY workspace or new project folder:
+1. Silently check if `GEMINI.md` and `PROJECT_STATE.md` exist in the workspace root.
+2. If they are missing, automatically create `.antigravityignore`, `GEMINI.md` (with `@[State](PROJECT_STATE.md)`), and `PROJECT_STATE.md` (mapping the project architecture, files, and active task) without being asked.
+3. If `.agents/rules/` does not exist in the workspace, silently mirror the global rules and skills from `~/.config/antigravity/` into `.agents/` so the workspace is self-contained.
+Never ask the user for permission to bootstrap these files—do it automatically alongside their very first prompt in any new project.
 

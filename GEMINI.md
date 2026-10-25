@@ -22,6 +22,7 @@ You are building **ORCA (Oceanographic Reasoning & Collaborative Agents)**, an e
 3. **100% WORKING LIVE + FALLBACK DATA PIPELINE:** Every external API call (Open-Meteo Marine, ERDDAP SST/Chlorophyll) must have an async timeout (`4.0s`) and automatically fall back to a pre-seeded realistic regional dataset in `backend/data/fallback/` so the system NEVER crashes offline or during coastal network drops.
 4. **STRICT PYDANTIC PROVENANCE:** Every agent output must return structured JSON containing `source_dataset`, `timestamp_utc`, `coordinates`, `metrics`, `reasoning_trace`, and `confidence_score`.
 5. **QUOTA-EFFICIENT EXECUTION:** Write modular, complete, self-contained files. Avoid unnecessary terminal loops. Run `pytest` to verify each phase before completing the walkthrough artifact.
+6. **MANDATORY RULES & SKILLS CONTRACT:** All architecture and implementation strictly adheres to `.agents/rules/` (`emil-apple-strict-lock.md`, `opus-engine.md`, `zero-trust-security.md`, `ponytail.md`) and `.agents/skills/`. All frontend/UI modifications strictly enforce the Apple Design + Emil Kowalski design lock with zero generic AI templates. Every response must provide the mandatory security (`🔒 Security Gate Checked: ...`) and UI (`🍎🎨 Apple + Emil UI Lock Enforced: ...`) receipts where applicable.
 
 ---
 

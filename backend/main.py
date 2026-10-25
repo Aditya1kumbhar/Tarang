@@ -283,7 +283,7 @@ if _DIST_DIR.exists():
 # API ROUTES
 # ==============================================================================
 
-@app.get("/api/v1/health", summary="Health check", tags=["System"])
+@app.api_route("/api/v1/health", methods=["GET", "HEAD"], summary="Health check", tags=["System"])
 async def health_check(request: Request) -> Dict[str, Any]:
     """Returns service health status and timestamp."""
     return {
@@ -618,7 +618,7 @@ async def chat_endpoint(request: Request, chat_request: ChatRequest) -> ChatResp
 # SPA FALLBACK HANDLER (Serves index.html for frontend client-side routes)
 # Enforces strict API 404 hygiene (API_404_HYGIENE Requirement)
 # ==============================================================================
-@app.get("/{full_path:path}", include_in_schema=False)
+@app.api_route("/{full_path:path}", methods=["GET", "HEAD"], include_in_schema=False)
 @limiter.exempt
 async def serve_spa_fallback(full_path: str, request: Request):
     """
