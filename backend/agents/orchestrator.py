@@ -592,7 +592,7 @@ def _get_gemini_client() -> httpx.AsyncClient:
     global _GEMINI_CLIENT
     if _GEMINI_CLIENT is None or _GEMINI_CLIENT.is_closed:
         _GEMINI_CLIENT = httpx.AsyncClient(
-            timeout=httpx.Timeout(12.0, connect=4.0),
+            timeout=httpx.Timeout(6.0, connect=2.5),
             limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
         )
     return _GEMINI_CLIENT
@@ -645,10 +645,7 @@ async def _call_gemini_synthesis(state: OrchestratorState, evidence: List[str]) 
 
     models_to_try = [
         GEMINI_MODEL,
-        "gemini-3.5-flash-lite",
         "gemini-flash-lite-latest",
-        "gemini-3.5-flash",
-        "gemini-3.8-flash",
     ]
     # Remove duplicate model names while preserving order
     seen = set()
@@ -688,7 +685,10 @@ async def _call_gemini_synthesis(state: OrchestratorState, evidence: List[str]) 
                                 logger.warning("SECURITY ALERT: Detected potential system prompt leakage in LLM output; redacting.")
                                 return None
                             return text
-            elif res.status_code in (404, 429, 503):
+            elif res.status_code == 429:
+                logger.info(f"Gemini API rate limit hit (429); falling back immediately to deterministic synthesis.")
+                break
+            elif res.status_code in (404, 503):
                 logger.info(f"Gemini model {model} returned {res.status_code}, attempting next fallback model...")
                 continue
         except Exception as err:
