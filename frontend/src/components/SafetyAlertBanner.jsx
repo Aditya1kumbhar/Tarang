@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, ShieldAlert, ChevronDown, ChevronUp, Waves, Wind } from 'lucide-react';
+import { AlertTriangle, ShieldAlert, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function SafetyAlertBanner({ safetyStatus, safetyOverrideBanner, weather, harbour }) {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -59,19 +59,6 @@ export default function SafetyAlertBanner({ safetyStatus, safetyOverrideBanner, 
           </div>
 
           <div className="flex items-center gap-3">
-            {weather && (
-              <div className="hidden lg:flex items-center gap-3 text-xs bg-white/[0.04] px-3 py-1 rounded-lg border border-white/[0.08] text-[#86868b]">
-                <span className="flex items-center gap-1.5">
-                  <Waves className="w-3.5 h-3.5 text-[#86868b]" />
-                  <span>Wave: <strong className="font-medium text-[#f5f5f7]">{weather.wave_height_m}m</strong></span>
-                </span>
-                <span className="text-white/20">|</span>
-                <span className="flex items-center gap-1.5">
-                  <Wind className="w-3.5 h-3.5 text-[#86868b]" />
-                  <span>Wind: <strong className="font-medium text-[#f5f5f7]">{weather.wind_speed_kmh} km/h</strong></span>
-                </span>
-              </div>
-            )}
             <button
               onClick={() => setIsExpanded(!isExpanded)}
               className="p-1 rounded-md hover:bg-white/[0.08] text-[#86868b] hover:text-[#f5f5f7] transition-colors"
