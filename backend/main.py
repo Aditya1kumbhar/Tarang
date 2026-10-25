@@ -163,10 +163,14 @@ async def add_security_headers_and_observability_middleware(request: Request, ca
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
-    # 4. Response Hygiene: Cache-Control: no-store on all /api endpoints (RESPONSE_HYGIENE Requirement)
+    # 4. Response Hygiene: Cache-Control: no-store on all /api endpoints and SPA index.html (RESPONSE_HYGIENE Requirement)
     if request.url.path.startswith("/api/"):
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
         response.headers["Pragma"] = "no-cache"
+    elif request.url.path == "/" or request.url.path.endswith(".html"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
 
     # 5. Observability: Structured request logging with abuse detection (OBSERVABILITY Requirement)
     status_code = response.status_code
@@ -658,7 +662,14 @@ async def serve_spa_fallback(full_path: str, request: Request):
 
         index_file = _DIST_DIR / "index.html"
         if index_file.exists():
-            return FileResponse(index_file)
+            return FileResponse(
+                index_file,
+                headers={
+                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                    "Pragma": "no-cache",
+                    "Expires": "0",
+                },
+            )
 
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
