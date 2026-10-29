@@ -5,6 +5,7 @@ and multi-worker shared storage.
 """
 
 import os
+import time
 
 # Ensure production environment flags are set before importing application
 os.environ["ENVIRONMENT"] = "production"
@@ -14,6 +15,7 @@ os.environ["RATE_LIMIT_DB_PATH"] = "backend/data/rate_limit_shared.db"
 from fastapi.testclient import TestClient
 from backend.main import app
 from backend.rate_limiter import limiter
+from backend.auth import create_session_token
 
 def run_production_verification():
     print("==================================================================")
@@ -24,9 +26,21 @@ def run_production_verification():
     print(f"Shared DB path: {getattr(limiter._storage, 'db_path', 'N/A')}")
     print(f"Limiter enabled: {limiter.enabled}")
 
-    # 1. Reset storage for clean test run
+    # 1. Reset storage for clean test run & establish authenticated session
     limiter._storage.reset()
-    client = TestClient(app)
+    auth_token = create_session_token({
+        "email": "test.officer@nic.in",
+        "name": "Test Officer",
+        "picture": None,
+        "sub": "test_officer_sub",
+        "iat": int(time.time()),
+        "exp": int(time.time()) + 3600,
+    })
+    client = TestClient(
+        app,
+        cookies={"orca_session": auth_token},
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
 
     # 2. Simulate 24 rapid POST requests from a single client behind Cloudflare
     client_ip = "198.51.100.77"
@@ -36,7 +50,7 @@ def run_production_verification():
     for i in range(1, 25):
         resp = client.post(
             "/api/v1/chat",
-            json={"message": f"Rapid probe {i}: checking sea status off Rameswaram"},
+            json={"message": "Rapid probe: checking sea status off Rameswaram"},
             headers={
                 "CF-Connecting-IP": client_ip,
                 "X-Forwarded-For": f"1.1.1.1, {client_ip}, 10.0.1.2",
