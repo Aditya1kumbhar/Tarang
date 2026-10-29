@@ -51,8 +51,8 @@
 
 ## 3. Active Status & Operational Invariants
 - **Phase Completion:** Phases 1 through 5 fully implemented and verified.
-- **Automated Tests:** 50/50 tests passing (18 unit + 32 integration covering full master security hardening and authentication gate suite).
-- **Mandatory Google Authentication Barrier:** Strict access control enforced across entire stack. Unauthenticated visitors are locked out by `LoginPage.jsx` and cannot view map, chat, or district board. All sensitive backend endpoints require an HMAC-SHA256 signed `orca_session` cookie issued via Google Identity Services token verification or authorized officer sign-in. Zero tokens stored in `localStorage` (Zero-Trust Security Rule #14).
+- **Automated Tests:** 51/51 tests passing (18 unit + 33 integration covering full master security hardening, authentication gate, and email allowlist suite).
+- **Mandatory Google Authentication & Email Allowlist Barrier:** Strict access control enforced across entire stack. Unauthenticated visitors are locked out by `LoginPage.jsx` and cannot view map, chat, or district board. All sensitive backend endpoints require an HMAC-SHA256 signed `orca_session` cookie issued via Google Identity Services token verification or authorized officer sign-in. Zero tokens stored in `localStorage` (Zero-Trust Security Rule #14). Configurable `AUTHORIZED_EMAILS` allowlist strictly limits access to designated Google accounts with HTTP 403 Forbidden enforcement on unauthorized accounts.
 - **Security Hardening (Render Production & Master Pass):** Enforced defense-in-depth zero-trust architecture:
   - Definitive rate limiting: `slowapi` + WAL-mode `SQLiteSharedStorage` (with optional Redis support via `REDIS_URL`): 10 req/min on `/api/v1/chat`, 120 req/min default on `/api/v1/*`.
   - Cloudflare & reverse-proxy IP extraction: `CF-Connecting-IP` top priority, right-to-left `X-Forwarded-For` traversal with private proxy stripping to prevent spoofing leftmost headers.

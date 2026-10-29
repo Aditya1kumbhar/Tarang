@@ -41,6 +41,7 @@ from backend.config import (
     AI_TIMEOUT_SECONDS,
     ALLOWED_ORIGINS,
     AUTH_SECRET,
+    AUTHORIZED_EMAILS,
     ENVIRONMENT,
     GOOGLE_CLIENT_ID,
     IMBL_FILE,
@@ -339,6 +340,17 @@ async def google_auth_login(request: Request, body: GoogleAuthRequest, response:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired Google credential. Please authenticate again.",
         )
+
+    # Enforce Authorized Emails Allowlist when configured
+    if AUTHORIZED_EMAILS:
+        allowed_list = [e.strip().lower() for e in AUTHORIZED_EMAILS.split(",") if e.strip()]
+        if user.email.lower() not in allowed_list:
+            logger.warning("FORBIDDEN_LOGIN_ATTEMPT: %s not in AUTHORIZED_EMAILS", user.email)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access Denied: Google account '{user.email}' is not on the authorized maritime access list.",
+            )
+
     token = create_session_token(user.model_dump())
     set_session_cookie(response, token)
     return {

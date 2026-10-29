@@ -99,6 +99,7 @@ AI_CACHE_TTL_SECONDS = int(os.getenv("AI_CACHE_TTL_SECONDS", "300"))
 # Google OAuth 2.0 & Authentication Secrets
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", os.getenv("VITE_GOOGLE_CLIENT_ID", "")).strip()
 AUTH_SECRET = os.getenv("AUTH_SECRET", "orca_maritime_national_security_auth_secret_2026").strip()
+AUTHORIZED_EMAILS = os.getenv("AUTHORIZED_EMAILS", "").strip()
 
 # Security & Environment Configuration
 # Controlled by ENVIRONMENT (or legacy ENV) with production-safe defaults

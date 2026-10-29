@@ -724,5 +724,57 @@ def test_logout_clears_session():
     assert resp_logout.json()["status"] == "logged_out"
 
 
+def test_authorized_emails_allowlist_enforcement(monkeypatch):
+    """Verifies that when AUTHORIZED_EMAILS is set, unauthorized accounts receive 403 Forbidden."""
+    import time
+    from unittest.mock import AsyncMock, patch
+    from backend.auth import UserSession
+
+    auth_client = TestClient(app)
+
+    # Mock verify_google_id_token to return valid user sessions
+    mock_valid_user = UserSession(
+        email="unauthorized.fisher@gmail.com",
+        name="Unauthorized User",
+        picture=None,
+        sub="google_sub_123",
+        issued_at=int(time.time()),
+        expires_at=int(time.time()) + 3600,
+    )
+
+    with patch("backend.main.verify_google_id_token", new_callable=AsyncMock) as mock_verify:
+        mock_verify.return_value = mock_valid_user
+
+        # 1. Without allowlist (empty), login succeeds (200)
+        with patch("backend.main.AUTHORIZED_EMAILS", ""):
+            resp = auth_client.post("/api/v1/auth/google", json={"credential": "mock_valid_jwt"})
+            assert resp.status_code == 200
+            assert resp.json()["status"] == "success"
+
+        # 2. With allowlist set, an unlisted email is rejected with 403 Forbidden
+        with patch("backend.main.AUTHORIZED_EMAILS", "captain@nic.in,admiral@navy.mil"):
+            resp_blocked = auth_client.post("/api/v1/auth/google", json={"credential": "mock_valid_jwt"})
+            assert resp_blocked.status_code == 403
+            assert "Access Denied" in resp_blocked.json()["detail"]
+            assert resp_blocked.json()["error"] == "forbidden"
+
+        # 3. With allowlist set, a matching email is accepted with 200 OK
+        mock_allowed_user = UserSession(
+            email="captain@nic.in",
+            name="Authorized Captain",
+            picture=None,
+            sub="google_sub_456",
+            issued_at=int(time.time()),
+            expires_at=int(time.time()) + 3600,
+        )
+        mock_verify.return_value = mock_allowed_user
+        with patch("backend.main.AUTHORIZED_EMAILS", "captain@nic.in,admiral@navy.mil"):
+            resp_allowed = auth_client.post("/api/v1/auth/google", json={"credential": "mock_valid_jwt"})
+            assert resp_allowed.status_code == 200
+            assert resp_allowed.json()["status"] == "success"
+            assert resp_allowed.json()["user"]["email"] == "captain@nic.in"
+
+
+
 
 
