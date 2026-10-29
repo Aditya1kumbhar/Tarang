@@ -374,6 +374,7 @@ export default function App() {
         safetyOverrideBanner={safetyOverrideBanner}
         weather={liveWeather}
         harbour={selectedHarbour}
+        theme={themeMode}
       />
 
       {/* 3. Main Persona View */}

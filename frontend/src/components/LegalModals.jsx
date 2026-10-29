@@ -251,3 +251,4 @@ export function TermsModal({ isOpen, onClose, theme }) {
     </div>
   );
 }
+

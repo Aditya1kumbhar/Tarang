@@ -427,7 +427,7 @@ def test_rate_limiting_chat_endpoint_triggers_429():
     for i in range(12):
         resp = client.post(
             "/api/v1/chat",
-            json={"message": f"Security rate limit check test probe {i}"},
+            json={"message": "Security rate limit check test probe"},
             headers={"cf-connecting-ip": "198.51.100.42"},
         )
         if resp.status_code == 429:
