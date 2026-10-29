@@ -153,8 +153,8 @@ export default function MarineMap({
     const fetchGeofences = async () => {
       try {
         const [imblRes, mpaRes] = await Promise.all([
-          fetch('/api/v1/geofences/imbl').then((r) => (r.ok ? r.json() : null)),
-          fetch('/api/v1/geofences/mpa').then((r) => (r.ok ? r.json() : null)),
+          fetch('/api/v1/geofences/imbl', { credentials: 'include' }).then((r) => (r.ok ? r.json() : null)),
+          fetch('/api/v1/geofences/mpa', { credentials: 'include' }).then((r) => (r.ok ? r.json() : null)),
         ]);
         setGeofenceData({ imbl: imblRes, mpa: mpaRes });
       } catch (err) {

@@ -15,10 +15,23 @@ And verifies all standard REST endpoints (/health, /harbours, /dashboard-summary
 import pytest
 from starlette.testclient import TestClient
 
+from backend.auth import create_session_token
 from backend.main import app
 from backend.rate_limiter import limiter
 
-client = TestClient(app)
+TEST_USER_DICT = {
+    "email": "test.officer@nic.in",
+    "name": "Test Maritime Officer",
+    "sub": "test_officer_001",
+}
+TEST_TOKEN = create_session_token(TEST_USER_DICT)
+
+# Pre-authenticated test client for standard functional API tests
+client = TestClient(
+    app,
+    cookies={"orca_session": TEST_TOKEN},
+    headers={"Authorization": f"Bearer {TEST_TOKEN}"},
+)
 
 
 @pytest.fixture(autouse=True)
@@ -616,6 +629,100 @@ def test_llm_prompt_injection_resistance():
     rec = data["recommendation"]
     assert "AIza" not in rec
     assert "STRICT NON-NEGOTIABLE" not in rec
+
+
+# ==============================================================================
+# GOOGLE AUTHENTICATION & ZERO-TRUST GATE TESTS
+# ==============================================================================
+
+def test_unauthenticated_request_rejected_with_401():
+    """Verifies that an unauthenticated client cannot access protected API endpoints at any cost."""
+    unauth_client = TestClient(app)
+
+    # 1. Chat Endpoint
+    resp_chat = unauth_client.post("/api/v1/chat", json={"message": "Is it safe to fish?"})
+    assert resp_chat.status_code == 401
+    assert resp_chat.json()["error"] == "unauthorized"
+
+    # 2. Harbours Endpoint
+    resp_harbours = unauth_client.get("/api/v1/harbours")
+    assert resp_harbours.status_code == 401
+    assert resp_harbours.json()["error"] == "unauthorized"
+
+    # 3. Dashboard Summary Endpoint
+    resp_dash = unauth_client.get("/api/v1/dashboard-summary?harbour_id=rameswaram")
+    assert resp_dash.status_code == 401
+    assert resp_dash.json()["error"] == "unauthorized"
+
+    # 4. District Board Endpoint
+    resp_board = unauth_client.get("/api/v1/district-board")
+    assert resp_board.status_code == 401
+    assert resp_board.json()["error"] == "unauthorized"
+
+
+def test_auth_config_endpoint():
+    """Verifies that the /api/v1/auth/config endpoint returns public configuration."""
+    resp = client.get("/api/v1/auth/config")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "google_client_id" in data
+    assert "is_configured" in data
+    assert "environment" in data
+
+
+def test_google_auth_invalid_token_rejected_with_401():
+    """Verifies that forged or invalid Google credentials return HTTP 401."""
+    resp = client.post(
+        "/api/v1/auth/google",
+        json={"credential": "invalid.forged.google_jwt_token_12345"},
+    )
+    assert resp.status_code == 401
+    data = resp.json()
+    assert data["error"] == "unauthorized"
+    assert "Invalid or expired" in data["detail"]
+
+
+def test_dev_login_and_session_flow():
+    """Verifies authorized login, session cookie issuance, and /auth/me verification."""
+    login_client = TestClient(app)
+    resp_login = login_client.post(
+        "/api/v1/auth/dev-login",
+        json={"email": "officer.chennai@nic.in", "name": "Coast Guard Officer"},
+    )
+    assert resp_login.status_code == 200
+    data = resp_login.json()
+    assert data["status"] == "success"
+    assert data["user"]["email"] == "officer.chennai@nic.in"
+    assert "token" in data
+    token = data["token"]
+
+    # Verify session cookie was set
+    assert "orca_session" in resp_login.cookies
+
+    # Verify /api/v1/auth/me succeeds with the session
+    resp_me = login_client.get("/api/v1/auth/me")
+    assert resp_me.status_code == 200
+    assert resp_me.json()["user"]["email"] == "officer.chennai@nic.in"
+
+    # Also verify using Bearer token directly
+    bearer_client = TestClient(app, headers={"Authorization": f"Bearer {token}"})
+    resp_bearer = bearer_client.get("/api/v1/auth/me")
+    assert resp_bearer.status_code == 200
+    assert resp_bearer.json()["user"]["name"] == "Coast Guard Officer"
+
+
+def test_logout_clears_session():
+    """Verifies that logging out invalidates and clears the session cookie."""
+    auth_test_client = TestClient(app)
+    # Login first
+    auth_test_client.post("/api/v1/auth/dev-login", json={})
+    assert "orca_session" in auth_test_client.cookies
+
+    # Logout
+    resp_logout = auth_test_client.post("/api/v1/auth/logout")
+    assert resp_logout.status_code == 200
+    assert resp_logout.json()["status"] == "logged_out"
+
 
 
 

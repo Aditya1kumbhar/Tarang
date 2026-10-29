@@ -7,8 +7,9 @@
 
 ## 2. Directory & Component Registry
 ### Backend (`backend/`)
-- `main.py`: FastAPI routes (`/api/v1/chat`, `/api/v1/harbours`, `/api/v1/dashboard-summary`, `/api/v1/district-board`, `/api/v1/health`).
-- `config.py`: Calibrated safety thresholds, vessel safety matrices (`country_craft` vs `mechanized_trawler`), timeouts.
+- `auth.py`: Cryptographic session token manager (HMAC-SHA256 with constant-time comparison), Google Identity Services token verification via Google OAuth2 tokeninfo, FastAPI `get_current_user` dependency, and secure `HttpOnly` cookie issuance/clearing.
+- `main.py`: FastAPI routes (`/api/v1/chat`, `/api/v1/harbours`, `/api/v1/dashboard-summary`, `/api/v1/district-board`, `/api/v1/health`, `/api/v1/auth/*`), Content Security Policy expanded for Google Identity Services domains (`accounts.google.com`, `oauth2.googleapis.com`, `lh3.googleusercontent.com`).
+- `config.py`: Calibrated safety thresholds, vessel safety matrices (`country_craft` vs `mechanized_trawler`), timeouts, `GOOGLE_CLIENT_ID`, `AUTH_SECRET`.
 - `schemas/models.py`: Pydantic v2 models (`AgentState`, `EvidenceLedgerEntry`, `DistrictBoardResponse`, `GeoJSON`).
 - `tools/weather_marine_tool.py`: Open-Meteo live API, Kallakkadal surge/CAPE triggers, 0-100 Sea-Venture Safety Index.
 - `tools/ocean_pfz_tool.py`: Cayula-Cornillon thermal gradient, Chl-a scoring, 7-day persistence, geofence quarantine.
@@ -19,7 +20,8 @@
 - `data/`: 12 Indian landing centres, `imbl_lines.geojson`, `mpa_zones.geojson`, and `indian_ocean_grid.json` fallback.
 
 ### Frontend (`frontend/src/`)
-- `App.jsx`: Dual-persona layout (Fisher View vs District Authority Board), theme toggle (Chart/Ocean), telemetry ribbon.
+- `App.jsx`: Dual-persona layout (Fisher View vs District Authority Board), mandatory Google authentication gate (`!currentUser` full lockout barrier), authenticated user profile badge and sign-out in frosted header, theme toggle (Chart/Ocean), telemetry ribbon.
+- `components/LoginPage.jsx`: Apple-grade Google Identity Services authentication portal, mandatory lockout gate, DPDP Act 2023 compliance notes, session persistence, dev login fallback.
 - `components/MarineMap.jsx`: Leaflet GIS with 12 harbour pins, IMBL border + 5 NM buffer, MPAs, PFZ hotspots, A* route polyline.
 - `components/ChatPanel.jsx`: Multilingual chat, 1-click benchmark chips for 8 SIH queries, 40px numeric safety dial, Web Speech TTS.
 - `components/DistrictAuthorityBoard.jsx`: Fleet surveillance table across all 12 Indian landing centres with state filtering.
@@ -29,7 +31,7 @@
 
 ### Verification (`tests/`)
 - `test_tools.py`: 18 unit tests covering all deterministic marine tools and safety index tiers.
-- `test_api.py`: 14 integration tests covering all 8 SIH evaluation queries and REST endpoints.
+- `test_api.py`: 32 integration tests covering all 8 SIH evaluation queries, security hardening, rate limiting, and 5 dedicated Google authentication barrier tests (unauthenticated 401 rejections, auth config, invalid token rejection, dev login session flow, logout cookie clearing).
 
 ### Production Deployment Assets
 - `Dockerfile`: Multi-stage build (Node 22 builder -> Python 3.11-slim non-root runtime) serving both SPA and REST API.
@@ -49,7 +51,8 @@
 
 ## 3. Active Status & Operational Invariants
 - **Phase Completion:** Phases 1 through 5 fully implemented and verified.
-- **Automated Tests:** 45/45 tests passing (18 unit + 27 integration covering full master security hardening suite).
+- **Automated Tests:** 50/50 tests passing (18 unit + 32 integration covering full master security hardening and authentication gate suite).
+- **Mandatory Google Authentication Barrier:** Strict access control enforced across entire stack. Unauthenticated visitors are locked out by `LoginPage.jsx` and cannot view map, chat, or district board. All sensitive backend endpoints require an HMAC-SHA256 signed `orca_session` cookie issued via Google Identity Services token verification or authorized officer sign-in. Zero tokens stored in `localStorage` (Zero-Trust Security Rule #14).
 - **Security Hardening (Render Production & Master Pass):** Enforced defense-in-depth zero-trust architecture:
   - Definitive rate limiting: `slowapi` + WAL-mode `SQLiteSharedStorage` (with optional Redis support via `REDIS_URL`): 10 req/min on `/api/v1/chat`, 120 req/min default on `/api/v1/*`.
   - Cloudflare & reverse-proxy IP extraction: `CF-Connecting-IP` top priority, right-to-left `X-Forwarded-For` traversal with private proxy stripping to prevent spoofing leftmost headers.

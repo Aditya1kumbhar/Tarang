@@ -3,6 +3,7 @@ import MarineMap from './components/MarineMap';
 import ChatPanel from './components/ChatPanel';
 import SafetyAlertBanner from './components/SafetyAlertBanner';
 import DistrictAuthorityBoard from './components/DistrictAuthorityBoard';
+import LoginPage from './components/LoginPage';
 import { PrivacyModal, TermsModal } from './components/LegalModals';
 import {
   Compass,
@@ -16,9 +17,14 @@ import {
   Building2,
   Sun,
   Moon,
+  LogOut,
 } from 'lucide-react';
 
 export default function App() {
+  // Authentication & Security State
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+
   const [harbours, setHarbours] = useState([]);
   const [selectedHarbour, setSelectedHarbour] = useState(null);
   const [vesselType, setVesselType] = useState('country_craft');
@@ -47,33 +53,61 @@ export default function App() {
     }
   }, [themeMode]);
 
-  // 1. Initial Harbours Load
+  // 0. Verify Active Google Session on Initial Mount
   useEffect(() => {
+    let isMounted = true;
+    const verifySession = async () => {
+      try {
+        const res = await fetch('/api/v1/auth/me', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data.user) {
+            setCurrentUser(data.user);
+          }
+        }
+      } catch (err) {
+        console.debug('No active authentication session:', err);
+      } finally {
+        if (isMounted) setIsAuthChecking(false);
+      }
+    };
+    verifySession();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // 1. Initial Harbours Load (Strictly gated by authentication)
+  useEffect(() => {
+    if (!currentUser) return;
     const initializeSystem = async () => {
       try {
-        const harboursRes = await fetch('/api/v1/harbours');
+        const harboursRes = await fetch('/api/v1/harbours', { credentials: 'include' });
         if (harboursRes.ok) {
           const harboursData = await harboursRes.json();
           setHarbours(harboursData);
           const defaultHarbour = harboursData.find((h) => h.id === 'rameswaram') || harboursData[0];
           setSelectedHarbour(defaultHarbour);
+        } else if (harboursRes.status === 401) {
+          setCurrentUser(null);
         }
       } catch (err) {
         console.error('System initialization error:', err);
       }
     };
     initializeSystem();
-  }, []);
+  }, [currentUser]);
 
   // 2. URL Query Param Demo Evaluation Handler (?demo=safe|danger|cyclone|pfz|route)
   useEffect(() => {
+    if (!currentUser) return;
     const params = new URLSearchParams(window.location.search);
     const demoKey = params.get('demo');
     if (demoKey && ['safe', 'danger', 'cyclone', 'pfz', 'route'].includes(demoKey)) {
       const loadDemo = async () => {
         try {
           setIsLoading(true);
-          const res = await fetch(`/api/v1/demo-scenario?scenario=${demoKey}`);
+          const res = await fetch(`/api/v1/demo-scenario?scenario=${demoKey}`, { credentials: 'include' });
           if (res.ok) {
             const data = await res.json();
             if (data.harbour) setSelectedHarbour(data.harbour);
@@ -113,12 +147,16 @@ export default function App() {
       };
       loadDemo();
     }
-  }, []);
+  }, [currentUser]);
 
   // 3. Fetch Dashboard Summary whenever harbour or vessel type changes
   const fetchDashboardSummary = useCallback(async (harbourId, vessel) => {
+    if (!currentUser) return;
     try {
-      const res = await fetch(`/api/v1/dashboard-summary?harbour_id=${harbourId}&vessel_type=${vessel}`);
+      const res = await fetch(
+        `/api/v1/dashboard-summary?harbour_id=${harbourId}&vessel_type=${vessel}`,
+        { credentials: 'include' }
+      );
       if (res.ok) {
         const data = await res.json();
         setLiveWeather({
@@ -130,17 +168,19 @@ export default function App() {
         if (data.map_payload && data.map_payload.features) {
           setMapPayload(data.map_payload);
         }
+      } else if (res.status === 401) {
+        setCurrentUser(null);
       }
     } catch (err) {
       console.error('Error fetching dashboard summary:', err);
     }
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
-    if (selectedHarbour) {
+    if (selectedHarbour && currentUser) {
       fetchDashboardSummary(selectedHarbour.id, vesselType);
     }
-  }, [selectedHarbour, vesselType, fetchDashboardSummary]);
+  }, [selectedHarbour, vesselType, fetchDashboardSummary, currentUser]);
 
   // 4. Handle User Chat Query
   const handleSendMessage = async (payload) => {
@@ -158,7 +198,13 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        credentials: 'include',
       });
+
+      if (res.status === 401) {
+        setCurrentUser(null);
+        throw new Error('Authentication required. Please sign in again.');
+      }
 
       if (!res.ok) {
         throw new Error(`API error: ${res.status}`);
@@ -197,6 +243,52 @@ export default function App() {
       setIsLoading(false);
     }
   };
+
+  // 5. Handle Sign Out
+  const handleSignOut = async () => {
+    try {
+      await fetch('/api/v1/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setCurrentUser(null);
+    }
+  };
+
+  // 6. Security Gate Loading State
+  if (isAuthChecking) {
+    return (
+      <div
+        className={`min-h-[100dvh] w-screen flex flex-col items-center justify-center select-none transition-colors ${
+          themeMode === 'chart' ? 'bg-[#f5f5f7] text-[#1d1d1f]' : 'bg-[#030712] text-[#f5f5f7]'
+        }`}
+      >
+        <div className="glass-icon w-12 h-12 flex items-center justify-center mb-4 animate-pulse">
+          <Compass className="w-6 h-6 text-[#2997ff]" />
+        </div>
+        <p className="text-xs text-[#86868b] tracking-tight">Verifying Maritime Security Gate...</p>
+      </div>
+    );
+  }
+
+  // 7. Strict Google Authentication Lockout Screen (Impossible to bypass)
+  if (!currentUser) {
+    return (
+      <>
+        <LoginPage
+          onLoginSuccess={setCurrentUser}
+          themeMode={themeMode}
+          onOpenPrivacy={() => setShowPrivacy(true)}
+          onOpenTerms={() => setShowTerms(true)}
+        />
+        <PrivacyModal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
+        <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
+      </>
+    );
+  }
 
   return (
     <div
@@ -339,7 +431,7 @@ export default function App() {
           <button
             type="button"
             onClick={() => setThemeMode((prev) => (prev === 'chart' ? 'ocean' : 'chart'))}
-            className="glass-icon px-2.5 py-1 text-xs gap-1.5"
+            className="glass-icon px-2.5 py-1 text-xs gap-1.5 active:scale-[0.97] transition-transform"
             title="Toggle Visual Theme (Light vs Dark)"
           >
             {themeMode === 'chart' ? (
@@ -354,6 +446,42 @@ export default function App() {
               </>
             )}
           </button>
+
+          {/* Authenticated User Session Badge & Sign Out */}
+          {currentUser && (
+            <div className="flex items-center gap-1.5 pl-1 border-l border-black/[0.08] dark:border-white/[0.08]">
+              <div
+                className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08]"
+                title={`Signed in as ${currentUser.name} (${currentUser.email})`}
+              >
+                {currentUser.picture ? (
+                  <img
+                    src={currentUser.picture}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    className="w-4 h-4 rounded-full object-cover ring-1 ring-black/10 dark:ring-white/15"
+                  />
+                ) : (
+                  <div className="w-4 h-4 rounded-full bg-[#0071e3]/15 text-[#0071e3] text-[9px] font-semibold flex items-center justify-center">
+                    {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                )}
+                <span className="hidden lg:inline text-[11px] font-medium text-[#1d1d1f] dark:text-[#f5f5f7] max-w-[110px] truncate">
+                  {currentUser.name || currentUser.email}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="glass-icon p-1.5 text-[#86868b] hover:text-[#e11d48] dark:hover:text-[#f43f5e] active:scale-[0.97] transition"
+                title={`Sign Out (${currentUser.email})`}
+                aria-label="Sign Out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
       </header>
 

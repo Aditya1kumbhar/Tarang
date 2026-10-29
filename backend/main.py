@@ -14,7 +14,7 @@ from pathlib import Path
 import time
 from typing import Any, Dict, List, Tuple
 
-from fastapi import FastAPI, HTTPException, Query, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -22,6 +22,16 @@ from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
+from backend.auth import (
+    DevLoginRequest,
+    GoogleAuthRequest,
+    UserSession,
+    clear_session_cookie,
+    create_session_token,
+    get_current_user,
+    set_session_cookie,
+    verify_google_id_token,
+)
 from backend.rate_limiter import get_real_client_ip, limiter
 from backend.agents.orchestrator import run_orchestrator
 from backend.agents.prompts import get_safety_override_banner
@@ -30,7 +40,9 @@ from backend.config import (
     AI_DAILY_BUDGET,
     AI_TIMEOUT_SECONDS,
     ALLOWED_ORIGINS,
+    AUTH_SECRET,
     ENVIRONMENT,
+    GOOGLE_CLIENT_ID,
     IMBL_FILE,
     IS_PRODUCTION,
     MPA_FILE,
@@ -150,12 +162,15 @@ async def add_security_headers_and_observability_middleware(request: Request, ca
         del response.headers["x-powered-by"]
     response.headers["server"] = "webserver"
 
-    # 3. Strict Security Headers (SECURITY_HEADERS Requirement)
+    # 3. Strict Security Headers (SECURITY_HEADERS Requirement + Google GIS)
     response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; script-src 'self'; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; "
+        "default-src 'self'; "
+        "script-src 'self' https://accounts.google.com/gsi/client; "
+        "frame-src 'self' https://accounts.google.com/gsi/ https://accounts.google.com; "
+        "connect-src 'self' https://accounts.google.com/gsi/ https://oauth2.googleapis.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://accounts.google.com/gsi/style; "
         "font-src 'self' https://fonts.gstatic.com; "
-        "img-src 'self' data: https:; connect-src 'self'"
+        "img-src 'self' data: https: https://lh3.googleusercontent.com;"
     )
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -235,6 +250,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     """Standardizes all HTTPExceptions into the unified JSON error envelope."""
     code_map = {
         400: "bad_request",
+        401: "unauthorized",
         403: "forbidden",
         404: "not_found",
         405: "method_not_allowed",
@@ -294,8 +310,96 @@ async def health_check(request: Request) -> Dict[str, Any]:
     }
 
 
+# ==============================================================================
+# AUTHENTICATION ROUTES (Google Identity Services & Session Management)
+# ==============================================================================
+
+@app.get("/api/v1/auth/config", summary="Get Google OAuth Configuration", tags=["Authentication"])
+@limiter.limit("60/minute")
+async def get_auth_config(request: Request):
+    """Returns Google Client ID and whether Google authentication is active."""
+    return {
+        "google_client_id": GOOGLE_CLIENT_ID,
+        "is_configured": bool(GOOGLE_CLIENT_ID),
+        "environment": ENVIRONMENT,
+    }
+
+
+@app.post("/api/v1/auth/google", summary="Authenticate via Google OAuth ID Token", tags=["Authentication"])
+@limiter.limit("20/minute")
+async def google_auth_login(request: Request, body: GoogleAuthRequest, response: Response):
+    """
+    Verifies a Google OAuth2 ID Token (from Google Identity Services GIS)
+    against Google's tokeninfo API, establishes an HMAC-signed session,
+    and sets an HttpOnly session cookie.
+    """
+    user = await verify_google_id_token(body.credential, client_id=GOOGLE_CLIENT_ID)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired Google credential. Please authenticate again.",
+        )
+    token = create_session_token(user.model_dump())
+    set_session_cookie(response, token)
+    return {
+        "status": "success",
+        "user": user.model_dump(),
+        "token": token,
+    }
+
+
+@app.post("/api/v1/auth/dev-login", summary="Authorized Developer / Evaluation Login", tags=["Authentication"])
+@limiter.limit("20/minute")
+async def dev_auth_login(request: Request, body: DevLoginRequest, response: Response):
+    """
+    Authorized login for local evaluation and testing environments when GOOGLE_CLIENT_ID
+    has not yet been provisioned in Google Cloud Console.
+    Disabled in production if GOOGLE_CLIENT_ID is active.
+    """
+    if IS_PRODUCTION and GOOGLE_CLIENT_ID:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Developer login is disabled in production when Google Client ID is configured.",
+        )
+    now = int(time.time())
+    email = body.email or "maritime.officer@nic.in"
+    name = body.name or "Authorized Maritime Officer"
+    user = UserSession(
+        email=email,
+        name=name,
+        picture=None,
+        sub=f"dev_user_{hashlib.md5(email.encode()).hexdigest()[:8]}",
+        issued_at=now,
+        expires_at=now + 7 * 86400,
+    )
+    token = create_session_token(user.model_dump())
+    set_session_cookie(response, token)
+    return {
+        "status": "success",
+        "user": user.model_dump(),
+        "token": token,
+    }
+
+
+@app.get("/api/v1/auth/me", summary="Get Current Authenticated User Session", tags=["Authentication"])
+@limiter.limit("60/minute")
+async def get_current_user_profile(request: Request, user: UserSession = Depends(get_current_user)):
+    """Verifies that the caller has a valid session and returns their user profile."""
+    return {
+        "status": "authenticated",
+        "user": user.model_dump(),
+    }
+
+
+@app.post("/api/v1/auth/logout", summary="Logout & Invalidate Session", tags=["Authentication"])
+async def logout_user(response: Response):
+    """Clears the HttpOnly session cookie and logs out the user."""
+    clear_session_cookie(response)
+    return {"status": "logged_out"}
+
+
 @app.get("/api/v1/harbours", response_model=List[HarbourInfo], summary="List Indian fishing landing centres", tags=["Harbours"])
-async def list_harbours(request: Request) -> List[HarbourInfo]:
+async def list_harbours(request: Request, current_user: UserSession = Depends(get_current_user)) -> List[HarbourInfo]:
     """
     Returns the 12 major Indian fishing landing centres with coordinates,
     state, and primary regional language metadata.
@@ -314,6 +418,7 @@ async def get_dashboard_summary(
     request: Request,
     harbour_id: HarbourID = Query(HarbourID.RAMESWARAM, description="Target harbour identifier"),
     vessel_type: VesselType = Query(VesselType.COUNTRY_CRAFT, description="Vessel type"),
+    current_user: UserSession = Depends(get_current_user),
 ) -> DashboardSummaryResponse:
     """
     Retrieves an immediate snapshot of live marine weather, top PFZ zone,
@@ -412,6 +517,7 @@ async def get_dashboard_summary(
 async def get_district_board(
     request: Request,
     vessel_type: VesselType = Query(VesselType.COUNTRY_CRAFT, description="Vessel type profile"),
+    current_user: UserSession = Depends(get_current_user),
 ) -> DistrictBoardResponse:
     """
     Returns immediate status, 0-100 Sea-Venture Safety Index, boundary clearance,
@@ -472,6 +578,7 @@ def list_harbours_sync() -> List[HarbourInfo]:
 async def get_demo_scenario(
     request: Request,
     scenario: ScenarioType = Query(ScenarioType.SAFE, description="Scenario key: safe | danger | cyclone | pfz | route"),
+    current_user: UserSession = Depends(get_current_user),
 ) -> ChatResponse:
     """
     Serves the 5 canonical SIH26176 evaluation scenarios with strict enum validation (INPUT_VALIDATION):
@@ -514,14 +621,14 @@ async def get_demo_scenario(
 
 
 @app.get("/api/v1/geofences/imbl", summary="Get IMBL GeoJSON", tags=["Geofences"])
-async def get_imbl_geofence(request: Request) -> Dict[str, Any]:
+async def get_imbl_geofence(request: Request, current_user: UserSession = Depends(get_current_user)) -> Dict[str, Any]:
     """Returns Indo-Sri Lanka and Indo-Pak IMBL boundaries as GeoJSON."""
     with open(IMBL_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 @app.get("/api/v1/geofences/mpa", summary="Get MPA GeoJSON", tags=["Geofences"])
-async def get_mpa_geofence(request: Request) -> Dict[str, Any]:
+async def get_mpa_geofence(request: Request, current_user: UserSession = Depends(get_current_user)) -> Dict[str, Any]:
     """Returns Marine Protected Area polygons as GeoJSON."""
     with open(MPA_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
@@ -538,7 +645,11 @@ _CHAT_CACHE: Dict[str, Tuple[float, ChatResponse]] = {}
     tags=["Multi-Agent Reasoning"],
 )
 @limiter.limit("10/minute")
-async def chat_endpoint(request: Request, chat_request: ChatRequest) -> ChatResponse:
+async def chat_endpoint(
+    request: Request,
+    chat_request: ChatRequest,
+    current_user: UserSession = Depends(get_current_user),
+) -> ChatResponse:
     """
     Main conversational agent endpoint for SIH 2026 Problem Statement #20.
     - Content-Type validation: requires application/json (HTTP 415 on mismatch).

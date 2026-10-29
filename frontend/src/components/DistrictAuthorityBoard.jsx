@@ -25,7 +25,7 @@ export default function DistrictAuthorityBoard({
   const fetchBoardData = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/v1/district-board?vessel_type=${vesselType}`);
+      const res = await fetch(`/api/v1/district-board?vessel_type=${vesselType}`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setBoardData(data);
