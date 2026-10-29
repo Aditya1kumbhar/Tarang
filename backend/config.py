@@ -90,9 +90,9 @@ FALLBACK_GRID_FILE = DATA_DIR / "fallback" / "indian_ocean_grid.json"
 
 # API Keys & LLM settings
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
 DEFAULT_HARBOUR_ID = "rameswaram"
-AI_TIMEOUT_SECONDS = float(os.getenv("AI_TIMEOUT_SECONDS", "20.0"))
+AI_TIMEOUT_SECONDS = float(os.getenv("AI_TIMEOUT_SECONDS", "25.0"))
 AI_DAILY_BUDGET = int(os.getenv("AI_DAILY_BUDGET", "500"))
 AI_CACHE_TTL_SECONDS = int(os.getenv("AI_CACHE_TTL_SECONDS", "300"))
 
