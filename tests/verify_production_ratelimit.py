@@ -5,7 +5,6 @@ and multi-worker shared storage.
 """
 
 import os
-import sys
 
 # Ensure production environment flags are set before importing application
 os.environ["ENVIRONMENT"] = "production"
@@ -14,7 +13,7 @@ os.environ["RATE_LIMIT_DB_PATH"] = "backend/data/rate_limit_shared.db"
 
 from fastapi.testclient import TestClient
 from backend.main import app
-from backend.rate_limiter import limiter, get_real_client_ip
+from backend.rate_limiter import limiter
 
 def run_production_verification():
     print("==================================================================")

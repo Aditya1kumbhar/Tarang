@@ -68,16 +68,6 @@
   color: #7dd3fc !important;
 }
 
-/* Pulsing and Radar Animations */
-@keyframes radar-sweep {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.animate-radar {
-  animation: radar-sweep 4s linear infinite;
-}
-
 @keyframes pulse-ring {
   0% { transform: scale(0.95); opacity: 0.8; }
   50% { transform: scale(1.4); opacity: 0.2; }

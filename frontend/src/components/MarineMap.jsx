@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import { Layers, Compass, Anchor, Navigation, Crosshair, Map as MapIcon } from 'lucide-react';
+import { Layers, Crosshair, Map as MapIcon } from 'lucide-react';
 
 const CARTO_API_KEY = import.meta.env.VITE_CARTO_API_KEY || '';
 
@@ -37,7 +37,6 @@ export default function MarineMap({
   activeHarbour = null,
   onSelectHarbour = () => {},
   mapPayload = null,
-  activeRoute = null,
   theme = 'ocean',
 }) {
   const mapContainerRef = useRef(null);
