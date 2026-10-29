@@ -186,7 +186,11 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
 
       {/* Main Authentication Bento Card */}
       <main className="w-full max-w-md my-auto py-4 z-10">
-        <div className="p-6 sm:p-9 rounded-3xl xdr-surface transition-all duration-300">
+        <div className={`p-6 sm:p-9 rounded-3xl transition-all duration-300 ${
+          isLight
+            ? 'bg-white border border-black/[0.08] shadow-xl text-[#1D1D1F]'
+            : 'bg-white/[0.04] border border-white/[0.08] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_20px_45px_-15px_rgba(0,0,0,0.85)] backdrop-blur-2xl'
+        }`}>
           {/* Card Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4 glass-icon">

@@ -588,7 +588,11 @@ export default function MarineMap({
         </div>
 
         {/* Layer & Basemap Bento Panel (Toggleable on mobile, persistent on tablet/desktop) */}
-        <div className={`${isLayersOpen ? 'block' : 'hidden sm:block'} xdr-surface rounded-2xl p-3.5 text-xs max-w-[245px] transition-all`}>
+        <div className={`${isLayersOpen ? 'block' : 'hidden sm:block'} rounded-2xl p-3.5 text-xs max-w-[245px] transition-all ${
+          theme === 'chart'
+            ? 'bg-white/95 border border-black/[0.08] text-[#1D1D1F] shadow-lg backdrop-blur-xl'
+            : 'bg-black/90 border border-white/[0.12] text-white shadow-2xl backdrop-blur-2xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)]'
+        }`}>
           {/* Basemap Selection */}
           <div className="mb-3 pb-2.5 border-b border-black/[0.08] dark:border-white/[0.08]">
             <div className="flex items-center justify-between text-[#86868b] dark:text-[#A1A1A6] font-semibold uppercase tracking-[0.08em] text-[10px] mb-2">

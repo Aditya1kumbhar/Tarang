@@ -72,7 +72,9 @@ export default function SafetyAlertBanner({
     ? isRed
       ? 'mt-2.5 pt-2 text-xs font-normal leading-relaxed bg-white/95 p-3.5 rounded-xl border border-[#fecaca] text-[#991b1b] shadow-xs max-h-36 sm:max-h-48 overflow-y-auto touch-momentum'
       : 'mt-2.5 pt-2 text-xs font-normal leading-relaxed bg-white/95 p-3.5 rounded-xl border border-[#fde68a] text-[#78350f] shadow-xs max-h-36 sm:max-h-48 overflow-y-auto touch-momentum'
-    : 'mt-2.5 pt-2 text-xs font-normal leading-relaxed xdr-surface p-3.5 rounded-xl text-[#F5F5F7] max-h-36 sm:max-h-48 overflow-y-auto touch-momentum';
+    : isRed
+      ? 'mt-2.5 pt-2 text-xs font-normal leading-relaxed bg-red-950/40 border border-red-500/30 p-3.5 rounded-xl text-red-200 max-h-36 sm:max-h-48 overflow-y-auto touch-momentum backdrop-blur-xl'
+      : 'mt-2.5 pt-2 text-xs font-normal leading-relaxed bg-amber-950/40 border border-amber-500/30 p-3.5 rounded-xl text-amber-200 max-h-36 sm:max-h-48 overflow-y-auto touch-momentum backdrop-blur-xl';
 
   return (
     <div className={`transition-all duration-300 backdrop-blur-xl ${containerClasses}`}>

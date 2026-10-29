@@ -356,7 +356,11 @@ export default function ChatPanel({
         </div>
 
         {/* Stage 2: Risk Assessment & Operational Schedule Bento Card (Liquid Retina XDR Gauge) */}
-        <div className="xdr-surface rounded-2xl p-3.5 flex items-center justify-between gap-3.5 transition-all">
+        <div className={`rounded-2xl p-3.5 flex items-center justify-between gap-3.5 transition-all ${
+          isChartTheme
+            ? 'bg-white border border-black/[0.08] shadow-xs text-[#1D1D1F]'
+            : 'bg-white/[0.04] border border-white/[0.08] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]'
+        }`}>
           <div className="flex items-center gap-3.5">
             {/* Luminous Risk Score Anchor */}
             <div className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center text-center p-2 transition-all ${
@@ -495,7 +499,11 @@ export default function ChatPanel({
                 </div>
               </div>
             ) : (
-              <div className="max-w-[95%] w-full rounded-2xl rounded-bl-xs p-4 text-xs space-y-3.5 xdr-surface">
+              <div className={`max-w-[95%] w-full rounded-2xl rounded-bl-xs p-4 text-xs space-y-3.5 transition-all ${
+                isChartTheme
+                  ? 'bg-white border border-black/[0.08] shadow-xs text-[#1D1D1F]'
+                  : 'bg-white/[0.04] border border-white/[0.08] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]'
+              }`}>
                 {/* Agent Header with Safety Badge */}
                 <div className={`flex items-center justify-between border-b pb-2.5 ${
                   isChartTheme ? 'border-black/[0.06]' : 'border-white/[0.08]'

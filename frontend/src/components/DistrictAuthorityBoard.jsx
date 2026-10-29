@@ -127,7 +127,11 @@ export default function DistrictAuthorityBoard({
 
       {/* 2. Top Executive Summary Bento Grid (Apple Liquid Retina XDR Hardware Spec Style) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <div className="xdr-surface p-4 rounded-2xl relative">
+        <div className={`p-4 rounded-2xl relative transition-all ${
+          isChartTheme
+            ? 'bg-white border border-black/[0.08] shadow-xs text-[#1D1D1F]'
+            : 'bg-white/[0.04] border border-white/[0.08] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]'
+        }`}>
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-semibold uppercase tracking-[0.08em] block text-[#86868b] dark:text-[#6E6E73]">
               Monitored
@@ -143,7 +147,9 @@ export default function DistrictAuthorityBoard({
         <div className={`p-4 rounded-2xl transition-all relative ${
           redCount > 0
             ? 'xdr-jewel-red'
-            : 'xdr-surface'
+            : isChartTheme
+            ? 'bg-white border border-black/[0.08] shadow-xs text-[#1D1D1F]'
+            : 'bg-white/[0.04] border border-white/[0.08] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]'
         }`}>
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-semibold uppercase tracking-[0.08em] block text-[#86868b] dark:text-[#6E6E73]">
@@ -160,7 +166,9 @@ export default function DistrictAuthorityBoard({
         <div className={`p-4 rounded-2xl transition-all relative ${
           amberCount > 0
             ? 'xdr-jewel-amber'
-            : 'xdr-surface'
+            : isChartTheme
+            ? 'bg-white border border-black/[0.08] shadow-xs text-[#1D1D1F]'
+            : 'bg-white/[0.04] border border-white/[0.08] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]'
         }`}>
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-semibold uppercase tracking-[0.08em] block text-[#86868b] dark:text-[#6E6E73]">
@@ -174,7 +182,11 @@ export default function DistrictAuthorityBoard({
           <span className="text-[11px] text-[#86868b] dark:text-[#A1A1A6] mt-0.5 block">{amberCount > 0 ? 'Advisory' : 'None'}</span>
         </div>
 
-        <div className="xdr-surface p-4 rounded-2xl relative">
+        <div className={`p-4 rounded-2xl relative transition-all ${
+          isChartTheme
+            ? 'bg-white border border-black/[0.08] shadow-xs text-[#1D1D1F]'
+            : 'bg-white/[0.04] border border-white/[0.08] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]'
+        }`}>
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-semibold uppercase tracking-[0.08em] block text-[#86868b] dark:text-[#6E6E73]">
               Clear
@@ -218,8 +230,8 @@ export default function DistrictAuthorityBoard({
               key={h.harbour_id}
               className={`p-3.5 rounded-2xl border transition-all ${
                 isChartTheme
-                  ? 'bg-white border-black/[0.08] shadow-xs'
-                  : 'xdr-surface'
+                  ? 'bg-white border-black/[0.08] shadow-xs text-[#1D1D1F]'
+                  : 'bg-white/[0.04] border-white/[0.08] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]'
               } ${isRed ? (isChartTheme ? 'bg-red-500/5 border-red-500/20' : 'bg-red-950/20 border-red-500/30 shadow-[0_0_20px_rgba(255,69,58,0.15)]') : ''}`}
             >
               <div className="flex items-center justify-between gap-2 mb-2">
@@ -270,7 +282,9 @@ export default function DistrictAuthorityBoard({
 
       {/* 5. Desktop High-Density Authority Matrix Table (>= md) */}
       <div className={`hidden md:block rounded-2xl border overflow-hidden transition-all ${
-        isChartTheme ? 'border-black/[0.08] bg-white shadow-xs' : 'xdr-surface'
+        isChartTheme
+          ? 'border-black/[0.08] bg-white shadow-xs text-[#1D1D1F]'
+          : 'border-white/[0.08] bg-[#0c0d11] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]'
       }`}>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
@@ -348,11 +362,11 @@ export default function DistrictAuthorityBoard({
                     {/* Wave & Wind */}
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3 font-mono text-[11px] text-[#86868b] tracking-[0.02em] tabular-nums">
-                        <span className="flex items-center gap-1 text-[#f5f5f7]">
+                        <span className={`flex items-center gap-1 ${isChartTheme ? 'text-[#1D1D1F]' : 'text-white'}`}>
                           <Waves className="w-3 h-3 text-[#86868b]" />
                           {h.wave_height_m}m
                         </span>
-                        <span className="flex items-center gap-1 text-[#f5f5f7]">
+                        <span className={`flex items-center gap-1 ${isChartTheme ? 'text-[#1D1D1F]' : 'text-white'}`}>
                           <Wind className="w-3 h-3 text-[#86868b]" />
                           {h.wind_speed_kmh} km/h
                         </span>

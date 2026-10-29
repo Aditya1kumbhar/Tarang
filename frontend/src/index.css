@@ -257,82 +257,83 @@
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.25), 0 2px 8px -2px rgba(0, 0, 0, 0.35);
-  color: inherit;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.glass-icon:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.22);
-  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.35), 0 4px 12px -2px rgba(0, 0, 0, 0.45);
-}
-
-:not(.dark) .glass-icon {
   background: rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.8), 0 1px 3px 0 rgba(0, 0, 0, 0.06);
   color: inherit;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-:not(.dark) .glass-icon-emerald {
+.glass-icon:hover {
+  background: rgba(0, 0, 0, 0.07);
+  border-color: rgba(0, 0, 0, 0.14);
+}
+
+.glass-icon-emerald {
   background: rgba(16, 185, 129, 0.12);
   border: 1px solid rgba(16, 185, 129, 0.32);
   box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.8), 0 2px 6px -1px rgba(16, 185, 129, 0.2);
   color: #047857 !important;
 }
 
-:not(.dark) .glass-icon-amber {
+.glass-icon-amber {
   background: rgba(245, 158, 11, 0.12);
   border: 1px solid rgba(245, 158, 11, 0.32);
   box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.8), 0 2px 6px -1px rgba(245, 158, 11, 0.2);
   color: #b45309 !important;
 }
 
-:not(.dark) .glass-icon-red {
+.glass-icon-red {
   background: rgba(239, 68, 68, 0.12);
   border: 1px solid rgba(239, 68, 68, 0.32);
   box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.8), 0 2px 6px -1px rgba(239, 68, 68, 0.2);
   color: #b91c1c !important;
 }
 
-:not(.dark) .glass-icon-blue {
+.glass-icon-blue {
   background: rgba(0, 113, 227, 0.12);
   border: 1px solid rgba(0, 113, 227, 0.32);
   box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.8), 0 2px 6px -1px rgba(0, 113, 227, 0.2);
   color: #0071e3 !important;
 }
 
-.dark .glass-icon-emerald,
-.glass-icon-emerald {
+/* Dark Mode Overrides for Glass Icons */
+.dark .glass-icon {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.25), 0 2px 8px -2px rgba(0, 0, 0, 0.35);
+  color: inherit;
+}
+
+.dark .glass-icon:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.dark .glass-icon-emerald {
   background: rgba(16, 185, 129, 0.16);
   border: 1px solid rgba(52, 211, 153, 0.35);
   box-shadow: inset 0 1px 1px 0 rgba(52, 211, 153, 0.3), 0 2px 8px -2px rgba(16, 185, 129, 0.25);
   color: #34d399 !important;
 }
 
-.dark .glass-icon-amber,
-.glass-icon-amber {
+.dark .glass-icon-amber {
   background: rgba(245, 158, 11, 0.16);
   border: 1px solid rgba(251, 191, 36, 0.35);
   box-shadow: inset 0 1px 1px 0 rgba(251, 191, 36, 0.3), 0 2px 8px -2px rgba(245, 158, 11, 0.25);
   color: #fbbf24 !important;
 }
 
-.dark .glass-icon-red,
-.glass-icon-red {
+.dark .glass-icon-red {
   background: rgba(239, 68, 68, 0.16);
   border: 1px solid rgba(248, 113, 113, 0.35);
   box-shadow: inset 0 1px 1px 0 rgba(248, 113, 113, 0.3), 0 2px 8px -2px rgba(239, 68, 68, 0.25);
   color: #f87171 !important;
 }
 
-.dark .glass-icon-blue,
-.glass-icon-blue {
+.dark .glass-icon-blue {
   background: rgba(41, 151, 255, 0.16);
   border: 1px solid rgba(41, 151, 255, 0.35);
   box-shadow: inset 0 1px 1px 0 rgba(41, 151, 255, 0.3), 0 2px 8px -2px rgba(41, 151, 255, 0.25);
@@ -387,125 +388,136 @@ button, a, [role="button"], .tab, .chip, .glass-icon, input[type="submit"] {
    Extreme Dynamic Range Contrast, Specular Rim Highlights, Translucent Depth
    ============================================================================== */
 
+/* Base (Light Mode) Surface */
 .xdr-surface {
-  background: rgba(255, 255, 255, 0.035);
-  backdrop-filter: blur(24px) saturate(190%);
-  -webkit-backdrop-filter: blur(24px) saturate(190%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12), 0 20px 45px -15px rgba(0, 0, 0, 0.85);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.xdr-surface:hover {
-  border-color: rgba(255, 255, 255, 0.14);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2), 0 25px 50px -15px rgba(0, 0, 0, 0.95);
-}
-
-:not(.dark) .xdr-surface {
   background: #FFFFFF;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.8), 0 10px 25px -5px rgba(0, 0, 0, 0.04);
+  color: #1D1D1F;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-:not(.dark) .xdr-surface:hover {
+.xdr-surface:hover {
   border-color: rgba(0, 0, 0, 0.14);
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.9), 0 15px 30px -5px rgba(0, 0, 0, 0.06);
 }
 
+/* Dark Mode Liquid Retina XDR Surface */
+.dark .xdr-surface {
+  background: rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12), 0 20px 45px -15px rgba(0, 0, 0, 0.85);
+  color: #FFFFFF;
+}
+
+.dark .xdr-surface:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2), 0 25px 50px -15px rgba(0, 0, 0, 0.95);
+}
+
+/* Base (Light Mode) Pill */
 .xdr-pill {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(0, 0, 0, 0.03);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+  color: #1D1D1F;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .xdr-pill:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.16);
-}
-
-:not(.dark) .xdr-pill {
-  background: rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
-}
-
-:not(.dark) .xdr-pill:hover {
   background: rgba(0, 0, 0, 0.06);
   border-color: rgba(0, 0, 0, 0.14);
 }
 
-.xdr-gradient-text {
-  background: linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 65%, rgba(255, 255, 255, 0.65) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+/* Dark Mode Pill */
+.dark .xdr-pill {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
 }
 
-:not(.dark) .xdr-gradient-text {
+.dark .xdr-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+/* Base (Light Mode) Gradient Text */
+.xdr-gradient-text {
   background: linear-gradient(180deg, #1D1D1F 0%, #1D1D1F 75%, #51545A 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-/* Luminous High Dynamic Range Jewel Badges (1,600 nits peak look) */
+/* Dark Mode Radiant Metallic Text */
+.dark .xdr-gradient-text {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 65%, rgba(255, 255, 255, 0.65) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Base (Light Mode) Jewel Badges */
 .xdr-jewel-emerald {
-  background: rgba(48, 209, 88, 0.12);
-  border: 1px solid rgba(48, 209, 88, 0.28);
-  color: #30D158;
-  box-shadow: 0 0 16px -2px rgba(48, 209, 88, 0.2);
-}
-
-.xdr-jewel-amber {
-  background: rgba(255, 159, 10, 0.12);
-  border: 1px solid rgba(255, 159, 10, 0.28);
-  color: #FF9F0A;
-  box-shadow: 0 0 16px -2px rgba(255, 159, 10, 0.2);
-}
-
-.xdr-jewel-red {
-  background: rgba(255, 69, 58, 0.14);
-  border: 1px solid rgba(255, 69, 58, 0.32);
-  color: #FF453A;
-  box-shadow: 0 0 18px -2px rgba(255, 69, 58, 0.25);
-}
-
-.xdr-jewel-blue {
-  background: rgba(41, 151, 255, 0.12);
-  border: 1px solid rgba(41, 151, 255, 0.28);
-  color: #2997FF;
-  box-shadow: 0 0 16px -2px rgba(41, 151, 255, 0.2);
-}
-
-:not(.dark) .xdr-jewel-emerald {
   background: rgba(22, 128, 61, 0.08);
   border: 1px solid rgba(22, 128, 61, 0.25);
   color: #15803D;
   box-shadow: 0 1px 3px rgba(22, 128, 61, 0.1);
 }
 
-:not(.dark) .xdr-jewel-amber {
+.xdr-jewel-amber {
   background: rgba(183, 110, 0, 0.08);
   border: 1px solid rgba(183, 110, 0, 0.25);
   color: #B76E00;
   box-shadow: 0 1px 3px rgba(183, 110, 0, 0.1);
 }
 
-:not(.dark) .xdr-jewel-red {
+.xdr-jewel-red {
   background: rgba(217, 45, 32, 0.08);
   border: 1px solid rgba(217, 45, 32, 0.25);
   color: #D92D20;
   box-shadow: 0 1px 3px rgba(217, 45, 32, 0.1);
 }
 
-:not(.dark) .xdr-jewel-blue {
+.xdr-jewel-blue {
   background: rgba(0, 113, 227, 0.08);
   border: 1px solid rgba(0, 113, 227, 0.25);
   color: #0071E3;
   box-shadow: 0 1px 3px rgba(0, 113, 227, 0.1);
+}
+
+/* Dark Mode Luminous P3 Jewel Badges (1,600 nits peak look) */
+.dark .xdr-jewel-emerald {
+  background: rgba(48, 209, 88, 0.12);
+  border: 1px solid rgba(48, 209, 88, 0.28);
+  color: #30D158;
+  box-shadow: 0 0 16px -2px rgba(48, 209, 88, 0.25);
+}
+
+.dark .xdr-jewel-amber {
+  background: rgba(255, 159, 10, 0.12);
+  border: 1px solid rgba(255, 159, 10, 0.28);
+  color: #FF9F0A;
+  box-shadow: 0 0 16px -2px rgba(255, 159, 10, 0.25);
+}
+
+.dark .xdr-jewel-red {
+  background: rgba(255, 69, 58, 0.14);
+  border: 1px solid rgba(255, 69, 58, 0.32);
+  color: #FF453A;
+  box-shadow: 0 0 18px -2px rgba(255, 69, 58, 0.3);
+}
+
+.dark .xdr-jewel-blue {
+  background: rgba(41, 151, 255, 0.12);
+  border: 1px solid rgba(41, 151, 255, 0.28);
+  color: #2997FF;
+  box-shadow: 0 0 16px -2px rgba(41, 151, 255, 0.25);
 }
 
 
