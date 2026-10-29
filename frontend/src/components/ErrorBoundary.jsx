@@ -23,16 +23,16 @@ export default class ErrorBoundary extends React.Component {
             <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4 text-amber-400">
               <AlertTriangle className="w-6 h-6" />
             </div>
-            <h1 className="text-base font-semibold tracking-tight mb-2">
+            <h1 className="text-base sm:text-lg font-semibold tracking-[-0.03em] leading-tight mb-2">
               ORCA Interface Recovery
             </h1>
-            <p className="text-xs text-[#86868b] leading-relaxed mb-5">
+            <p className="text-xs text-[#86868b] leading-[1.65] tracking-[-0.01em] mb-5">
               An unexpected display issue occurred in the interface. Click below to reload and restore normal marine operations.
             </p>
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-medium transition-all shadow-md active:scale-95"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-medium tracking-[-0.01em] transition-all shadow-md active:scale-95"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>Reload Interface</span>

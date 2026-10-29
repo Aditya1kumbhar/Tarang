@@ -370,19 +370,19 @@ export default function ChatPanel({
                 ? 'glass-icon glass-icon-amber'
                 : 'glass-icon glass-icon-emerald'
             }`}>
-              <span className={`font-mono font-bold text-2xl leading-none ${
+              <span className={`font-mono font-bold text-2xl leading-none tabular-nums tracking-tight ${
                 currentScore >= 76
                   ? 'text-red-700 dark:text-red-400'
                   : currentScore >= 26
                   ? 'text-amber-700 dark:text-amber-400'
                   : 'text-emerald-700 dark:text-emerald-400'
               }`}>{currentScore}</span>
-              <span className="text-[9px] uppercase tracking-wider font-medium opacity-70 mt-0.5">/100</span>
+              <span className="text-[9px] uppercase tracking-[0.02em] font-mono opacity-70 mt-0.5">/100</span>
             </div>
 
             <div>
               <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                <span className={`text-[10px] font-semibold uppercase tracking-[0.02em] px-2 py-0.5 rounded border ${
                   currentVerdict === 'EXTREME'
                     ? 'bg-red-500/15 border-red-500/30 text-red-700 dark:text-red-400'
                     : currentVerdict === 'HIGH' || currentVerdict === 'MODERATE'
@@ -391,11 +391,11 @@ export default function ChatPanel({
                 }`}>
                   {currentVerdict} RISK
                 </span>
-                <span className="text-[11px] font-normal text-[#86868b]">
+                <span className="text-[11px] font-normal tracking-[-0.01em] text-[#86868b]">
                   {vesselType === 'country_craft' ? 'Country Boat' : 'Trawler (45ft)'}
                 </span>
               </div>
-              <p className={`text-[11px] mt-1 font-normal ${isChartTheme ? 'text-[#1d1d1f]' : 'text-[#d1d1d6]'}`}>
+              <p className={`text-[11px] mt-1 font-normal tracking-[-0.01em] ${isChartTheme ? 'text-[#1d1d1f]' : 'text-[#d1d1d6]'}`}>
                 Departure: <strong>04:30 - 11:30 IST</strong> • Return-by: <strong>13:00 IST</strong>
               </p>
             </div>
@@ -493,8 +493,8 @@ export default function ChatPanel({
           >
             {msg.role === 'user' ? (
               <div className="max-w-[85%] bg-[#0071e3] text-white rounded-2xl rounded-br-sm px-4 py-2.5 text-xs shadow-sm">
-                <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                <div className="mt-1 text-[9px] text-white/70 text-right font-mono">
+                <p className="leading-[1.65] tracking-[-0.01em] whitespace-pre-wrap">{msg.content}</p>
+                <div className="mt-1 text-[9px] text-white/70 text-right font-mono tracking-[0.02em]">
                   {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
@@ -509,10 +509,10 @@ export default function ChatPanel({
                   isChartTheme ? 'border-black/[0.06]' : 'border-white/[0.08]'
                 }`}>
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-xs tracking-tight">ORCA Synthesizer</span>
+                    <span className="font-semibold text-xs tracking-[-0.02em]">ORCA Synthesizer</span>
                     {msg.safety_status && (
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1 border ${
+                        className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-[0.02em] flex items-center gap-1 border ${
                           msg.safety_status === 'RED_ALERT'
                             ? 'bg-red-500/15 border-red-500/30 text-red-700 dark:text-red-400'
                             : msg.safety_status === 'AMBER'
@@ -545,7 +545,7 @@ export default function ChatPanel({
                 </div>
 
                 {/* Direct Recommendation */}
-                <div className={`font-normal leading-relaxed whitespace-pre-wrap text-[13px] ${
+                <div className={`font-normal leading-[1.65] whitespace-pre-wrap text-[13px] tracking-[-0.01em] ${
                   isChartTheme ? 'text-[#1d1d1f]' : 'text-[#f5f5f7]'
                 }`}>
                   {msg.recommendation || msg.content}
@@ -637,7 +637,7 @@ export default function ChatPanel({
             autoCorrect="off"
             autoCapitalize="sentences"
             enterKeyHint="send"
-            className={`flex-1 rounded-lg px-3.5 py-2.5 text-[16px] md:text-xs transition focus:outline-none focus:ring-1 ${
+            className={`flex-1 rounded-lg px-3.5 py-2.5 text-[16px] md:text-xs leading-[1.65] tracking-[-0.01em] transition focus:outline-none focus:ring-1 ${
               isChartTheme
                 ? 'bg-black/[0.03] border border-black/[0.1] focus:border-[#0071e3] text-[#1d1d1f] placeholder-[#86868b] focus:ring-[#0071e3]'
                 : 'bg-white/[0.05] border border-white/[0.1] focus:border-[#2997ff] text-[#f5f5f7] placeholder-[#86868b] focus:ring-[#2997ff]'

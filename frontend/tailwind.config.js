@@ -7,6 +7,32 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['"Geist Sans"', 'var(--font-geist-sans)', 'system-ui', '-apple-system', 'BlinkMacSystemFont', "'Segoe UI'", 'sans-serif'],
+        mono: ['"Geist Mono"', 'var(--font-geist-mono)', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+      },
+      fontWeight: {
+        normal: '400',
+        book: '450',
+        medium: '500',
+        semibold: '600',
+        bold: '700',
+      },
+      letterSpacing: {
+        hero: '-0.055em',
+        section: '-0.04em',
+        subheading: '-0.02em',
+        body: '-0.01em',
+        nav: '-0.01em',
+        button: '-0.01em',
+        meta: '0.02em',
+      },
+      lineHeight: {
+        hero: '1.02',
+        section: '1.08',
+        subheading: '1.3',
+        body: '1.65',
+      },
       colors: {
         ocean: {
           950: '#060c18',

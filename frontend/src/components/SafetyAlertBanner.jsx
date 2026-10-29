@@ -86,15 +86,15 @@ export default function SafetyAlertBanner({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded ${badgeClasses}`}>
+                <span className={`text-[10px] font-semibold uppercase tracking-[0.02em] px-2 py-0.5 rounded ${badgeClasses}`}>
                   {isRed ? 'Circuit Breaker' : 'Caution'}
                 </span>
-                <span className={`text-xs sm:text-sm font-semibold tracking-tight ${titleClasses}`}>
+                <span className={`text-xs sm:text-sm font-semibold tracking-[-0.03em] ${titleClasses}`}>
                   {isRed ? 'Hazardous Sea State' : 'Heightened Risk'}
                 </span>
               </div>
               {!isExpanded && (
-                <p className={`text-xs truncate max-w-xl mt-0.5 ${collapsedSubtextClasses}`}>
+                <p className={`text-xs truncate max-w-xl mt-0.5 leading-[1.65] tracking-[-0.01em] ${collapsedSubtextClasses}`}>
                   {safetyOverrideBanner || (isRed ? 'Do not venture into open sea.' : 'Review vessel limits before sailing.')}
                 </p>
               )}
@@ -114,7 +114,7 @@ export default function SafetyAlertBanner({
 
         {isExpanded && safetyOverrideBanner && (
           <div className={expandedCardClasses}>
-            <p className="whitespace-pre-line font-mono text-xs">{safetyOverrideBanner}</p>
+            <p className="whitespace-pre-line font-mono text-xs leading-[1.65] tracking-[0.02em]">{safetyOverrideBanner}</p>
           </div>
         )}
       </div>

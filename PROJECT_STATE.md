@@ -66,6 +66,11 @@
 - **Backend Server:** Live daemon running on `http://127.0.0.1:8000` (auto-reload active).
 - **Frontend Server:** Live Vite dev server running on `http://localhost:5173`.
 - **Live Production Deployment:** Verified active on Render at `https://tarang-0v0t.onrender.com` (serving unified SPA + FastAPI REST API with live Gemini & Open-Meteo integration).
+- **Premium Variable Typography Upgrade (Geist Sans & Geist Mono):** Apple MacBook Pro inspired typography system:
+  - Primary font: `Geist Sans` variable font (`100–900` weight range) self-hosted via `/fonts/Geist-Variable.woff2` with preloading to eliminate FOIT/layout shift.
+  - Secondary font: `Geist Mono` variable font self-hosted via `/fonts/GeistMono-Variable.woff2` restricted to ~5% usage (technical coordinates, timestamps, tabular telemetry indices, and code identifiers).
+  - Variable tokens: Defined CSS custom properties (`--font-geist-sans`, `--font-geist-mono`, `--type-hero`, `--type-section`, `--type-subheading`, `--type-body`, `--type-nav`, `--type-button`, `--type-meta`) with Apple-calibrated negative letter-spacing (`-0.055em` hero, `-0.04em` section headings, `-0.01em` body) and line-heights (`1.02` to `1.65`).
+  - Zero third-party font requests: Pruned external Google Font dependencies from `index.html` while preserving CSP compliance.
 - **Mobile & Phone Ergonomics Overhaul (Galaxy A33–A75 & iPhone 15–17/Pro/Max):** Rigorous optimization targeting modern 20:9 (Samsung Galaxy A33/A34/A35/A53/A54/A55/A73/A75, viewport 360px–412px width) and 19.5:9 (iPhone 15, 15 Pro, 16, 16 Pro, 17, and Pro Max, viewport 393px–440px width) aspect ratios:
   - Dynamic `100dvh` viewport structure eliminating vertical jitter and browser chrome scroll jumping.
   - Safe-area inset integration: Top header clearing Dynamic Island / camera punch-holes with `pt-[env(safe-area-inset-top,0px)]` and `h-[calc(3.5rem+env(safe-area-inset-top,0px))]`. Bottom floating nav bar padded with `pb-safe` (`env(safe-area-inset-bottom)`).

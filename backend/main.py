@@ -294,6 +294,9 @@ if _DIST_DIR.exists():
     _assets_dir = _DIST_DIR / "assets"
     if _assets_dir.exists():
         app.mount("/assets", StaticFiles(directory=str(_assets_dir)), name="assets")
+    _fonts_dir = _DIST_DIR / "fonts"
+    if _fonts_dir.exists():
+        app.mount("/fonts", StaticFiles(directory=str(_fonts_dir)), name="fonts")
 
 
 # ==============================================================================

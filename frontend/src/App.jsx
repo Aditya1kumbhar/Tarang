@@ -301,10 +301,10 @@ export default function App() {
             <Compass className="w-4 h-4 sm:w-5 sm:h-5 text-[#2997ff]" />
           </div>
           <div>
-            <h1 className="font-bold text-base sm:text-lg tracking-tight leading-tight">
+            <h1 className="font-semibold text-base sm:text-lg tracking-[-0.03em] leading-tight">
               ORCA
             </h1>
-            <p className="text-[10px] sm:text-xs text-[#86868b] block font-normal leading-tight">
+            <p className="text-[10px] sm:text-xs text-[#86868b] block font-normal leading-tight tracking-[-0.01em]">
               Marine Intelligence
             </p>
           </div>
@@ -323,7 +323,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setPersonaMode('fisher')}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1 rounded-md text-xs font-medium tracking-[-0.01em] transition-all flex items-center gap-1.5 ${
                 personaMode === 'fisher'
                   ? (themeMode === 'chart'
                       ? 'bg-white text-[#1d1d1f] shadow-sm'
@@ -337,7 +337,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setPersonaMode('district')}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1 rounded-md text-xs font-medium tracking-[-0.01em] transition-all flex items-center gap-1.5 ${
                 personaMode === 'district'
                   ? (themeMode === 'chart'
                       ? 'bg-white text-[#1d1d1f] shadow-sm'
@@ -361,27 +361,27 @@ export default function App() {
             >
               <div className="flex items-center gap-1.5" title="Sea Surface Temperature">
                 <Thermometer className="w-3.5 h-3.5 text-[#86868b]" />
-                <span className="font-medium tracking-tight">{liveWeather.sst_c}°C</span>
-                <span className="text-[10px] text-[#86868b] uppercase tracking-wider">SST</span>
+                <span className="font-medium tracking-[-0.01em] tabular-nums">{liveWeather.sst_c}°C</span>
+                <span className="text-[10px] text-[#86868b] uppercase tracking-[0.02em] font-medium font-mono">SST</span>
               </div>
               <span className="text-black/20 dark:text-white/20">|</span>
               <div className="flex items-center gap-1.5" title="Significant Wave Height">
                 <Waves className="w-3.5 h-3.5 text-[#86868b]" />
-                <span className="font-medium tracking-tight">{liveWeather.wave_height_m}m</span>
-                <span className="text-[10px] text-[#86868b] uppercase tracking-wider">Waves</span>
+                <span className="font-medium tracking-[-0.01em] tabular-nums">{liveWeather.wave_height_m}m</span>
+                <span className="text-[10px] text-[#86868b] uppercase tracking-[0.02em] font-medium font-mono">Waves</span>
               </div>
               <span className="text-black/20 dark:text-white/20">|</span>
               <div className="flex items-center gap-1.5" title="Surface Wind Speed">
                 <Wind className="w-3.5 h-3.5 text-[#86868b]" />
-                <span className="font-medium tracking-tight">{liveWeather.wind_speed_kmh} km/h</span>
-                <span className="text-[10px] text-[#86868b] uppercase tracking-wider">Wind</span>
+                <span className="font-medium tracking-[-0.01em] tabular-nums">{liveWeather.wind_speed_kmh} km/h</span>
+                <span className="text-[10px] text-[#86868b] uppercase tracking-[0.02em] font-medium font-mono">Wind</span>
               </div>
             </div>
           )}
 
           {/* Circuit Breaker Status Pill */}
           <div
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium tracking-tight transition-colors ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium tracking-[-0.01em] transition-colors ${
               safetyStatus === 'RED_ALERT'
                 ? 'glass-icon glass-icon-red'
                 : safetyStatus === 'AMBER'

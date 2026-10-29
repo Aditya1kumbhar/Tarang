@@ -166,18 +166,18 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-base sm:text-lg tracking-tight">ORCA</span>
-              <span className="text-[9px] sm:text-[10px] uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full border border-black/10 dark:border-white/10 text-[#86868b]">
+              <span className="font-semibold text-base sm:text-lg tracking-[-0.03em]">ORCA</span>
+              <span className="text-[9px] sm:text-[10px] uppercase font-medium tracking-[0.02em] px-1.5 sm:px-2 py-0.5 rounded-full border border-black/10 dark:border-white/10 text-[#86868b]">
                 Gov of India
               </span>
             </div>
-            <p className="text-[10px] sm:text-xs text-[#86868b] tracking-tight">
+            <p className="text-[10px] sm:text-xs text-[#86868b] tracking-[-0.01em]">
               Oceanographic Reasoning & Collaborative Agents
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-[#86868b]">
+        <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-[#86868b] tracking-[-0.01em]">
           <Shield className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
           <span className="hidden sm:inline">Territorial Security Gate</span>
         </div>
@@ -197,10 +197,10 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4 glass-icon">
               <Lock className="w-5 h-5 text-current" />
             </div>
-            <h1 className="text-xl font-semibold tracking-tight mb-2">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-[-0.04em] leading-[1.08] mb-2">
               Maritime Access Control
             </h1>
-            <p className="text-xs text-[#86868b] leading-relaxed max-w-xs mx-auto">
+            <p className="text-xs text-[#86868b] leading-[1.65] tracking-[-0.01em] max-w-xs mx-auto">
               Sign in with your verified Google / Gmail account to access real-time marine intelligence, live coastal radar, and safety circuit breakers.
             </p>
           </div>
@@ -236,8 +236,8 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
                     <AlertCircle className="w-3.5 h-3.5" />
                     <span>Google Client ID Setup</span>
                   </div>
-                  <p className="text-[11px] text-[#86868b] leading-normal">
-                    To enable live Google Sign-In, add <code className="font-mono text-current">GOOGLE_CLIENT_ID</code> to your environment.
+                  <p className="text-[11px] text-[#86868b] leading-normal tracking-[-0.01em]">
+                    To enable live Google Sign-In, add <code className="font-mono text-current tracking-[0.02em]">GOOGLE_CLIENT_ID</code> to your environment.
                   </p>
                 </div>
 
@@ -245,7 +245,7 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
                   type="button"
                   onClick={handleDevLogin}
                   disabled={isLoading}
-                  className={`w-full py-2.5 px-4 rounded-lg font-medium text-xs tracking-tight border transition-all flex items-center justify-center gap-2 ${
+                  className={`w-full py-2.5 px-4 rounded-lg font-medium text-xs sm:text-[13px] tracking-[-0.01em] border transition-all flex items-center justify-center gap-2 ${
                     isLight
                       ? 'bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white border-transparent'
                       : 'bg-white hover:bg-neutral-100 text-[#1d1d1f] border-transparent'

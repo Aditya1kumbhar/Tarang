@@ -281,7 +281,7 @@ export default function DistrictAuthorityBoard({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className={`border-b text-[10px] uppercase tracking-wider ${
+              <tr className={`border-b text-[10px] uppercase font-medium tracking-[0.02em] ${
                 isChartTheme ? 'bg-black/[0.02] border-black/[0.06] text-[#86868b]' : 'bg-white/[0.03] border-white/[0.06] text-[#86868b]'
               }`}>
                 <th className="py-3 px-4 font-medium">Landing Centre</th>
@@ -311,22 +311,22 @@ export default function DistrictAuthorityBoard({
                         <div className="glass-icon w-6 h-6 shrink-0">
                           <Anchor className="w-3 h-3 text-[#2997ff]" />
                         </div>
-                        <span className="text-sm font-medium">{h.harbour_name}</span>
+                        <span className="text-sm font-medium tracking-[-0.02em]">{h.harbour_name}</span>
                       </div>
-                      <span className="text-[11px] block mt-0.5 text-[#86868b]">
+                      <span className="text-[11px] block mt-0.5 text-[#86868b] tracking-[-0.01em]">
                         {h.local_name}
                       </span>
                     </td>
 
                     {/* State */}
-                    <td className="py-3 px-4 font-normal text-[#86868b]">
+                    <td className="py-3 px-4 font-normal text-[#86868b] tracking-[-0.01em]">
                       {h.state}
                     </td>
 
                     {/* Safety Index Gauge */}
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2.5">
-                        <span className="font-mono font-medium text-sm w-7">
+                        <span className="font-mono font-medium text-sm w-7 tabular-nums tracking-tight">
                           {h.safety_index}
                         </span>
                         <div className="w-24 h-1.5 bg-black/[0.08] dark:bg-white/[0.08] rounded-full overflow-hidden shrink-0">
@@ -353,7 +353,7 @@ export default function DistrictAuthorityBoard({
 
                     {/* Wave & Wind */}
                     <td className="py-3 px-4">
-                      <div className="flex items-center gap-3 font-mono text-[11px] text-[#86868b]">
+                      <div className="flex items-center gap-3 font-mono text-[11px] text-[#86868b] tracking-[0.02em] tabular-nums">
                         <span className="flex items-center gap-1 text-[#f5f5f7]">
                           <Waves className="w-3 h-3 text-[#86868b]" />
                           {h.wave_height_m}m
@@ -366,7 +366,7 @@ export default function DistrictAuthorityBoard({
                     </td>
 
                     {/* Boundary Clearance */}
-                    <td className="py-3 px-4 font-mono text-[11px]">
+                    <td className="py-3 px-4 font-mono text-[11px] tracking-[0.02em] tabular-nums">
                       <span className={h.nearest_boundary_distance_nm <= 1.5 ? 'text-red-400 font-medium' : 'text-[#86868b]'}>
                         {h.nearest_boundary_distance_nm.toFixed(1)} NM
                       </span>

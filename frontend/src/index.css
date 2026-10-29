@@ -2,17 +2,153 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==============================================================================
+   GEIST VARIABLE FONT FACES (Self-Hosted WOFF2 Variable Fonts)
+   ============================================================================== */
+
+@font-face {
+  font-family: 'Geist Sans';
+  src: url('/fonts/Geist-Variable.woff2') format('woff2-variations'),
+       url('/fonts/Geist-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/GeistMono-Variable.woff2') format('woff2-variations'),
+       url('/fonts/GeistMono-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
+  :root {
+    --font-geist-sans: "Geist Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-geist-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+    /* Typographic Hierarchy Tokens */
+    --type-hero-size: clamp(2.75rem, 6vw, 5.75rem);
+    --type-hero-weight: 600;
+    --type-hero-leading: 1.02;
+    --type-hero-tracking: -0.055em;
+
+    --type-section-size: clamp(2rem, 4vw, 3.5rem);
+    --type-section-weight: 600;
+    --type-section-leading: 1.08;
+    --type-section-tracking: -0.04em;
+
+    --type-subheading-size: clamp(1.2rem, 2vw, 1.65rem);
+    --type-subheading-weight: 500;
+    --type-subheading-leading: 1.3;
+    --type-subheading-tracking: -0.02em;
+
+    --type-body-size: 1rem;
+    --type-body-weight: 400;
+    --type-body-leading: 1.65;
+    --type-body-tracking: -0.01em;
+
+    --type-nav-size: 0.875rem;
+    --type-nav-weight: 500;
+    --type-nav-tracking: -0.01em;
+
+    --type-button-size: 0.9375rem;
+    --type-button-weight: 500;
+    --type-button-tracking: -0.01em;
+
+    --type-meta-size: 0.75rem;
+    --type-meta-weight: 400;
+    --type-meta-tracking: 0.02em;
+  }
+
+  html {
+    font-family: var(--font-geist-sans);
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", sans-serif;
-    letter-spacing: -0.012em;
+    font-family: var(--font-geist-sans);
+    font-weight: 400;
+    line-height: 1.65;
+    letter-spacing: -0.01em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
   h1, h2, h3, h4, h5, h6 {
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Outfit", "Inter", sans-serif;
-    letter-spacing: -0.022em;
+    font-family: var(--font-geist-sans);
+    letter-spacing: -0.04em;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+
+  p, li, blockquote {
+    letter-spacing: -0.01em;
+  }
+
+  code, kbd, samp, pre, .font-mono {
+    font-family: var(--font-geist-mono);
+    letter-spacing: 0.02em;
+    font-feature-settings: "liga" 0, "calt" 0;
+  }
+}
+
+/* Precision Typography System Helper Tokens */
+.type-hero {
+  font-family: var(--font-geist-sans);
+  font-size: var(--type-hero-size);
+  font-weight: var(--type-hero-weight);
+  line-height: var(--type-hero-leading);
+  letter-spacing: var(--type-hero-tracking);
+}
+
+.type-section {
+  font-family: var(--font-geist-sans);
+  font-size: var(--type-section-size);
+  font-weight: var(--type-section-weight);
+  line-height: var(--type-section-leading);
+  letter-spacing: var(--type-section-tracking);
+}
+
+.type-subheading {
+  font-family: var(--font-geist-sans);
+  font-size: var(--type-subheading-size);
+  font-weight: var(--type-subheading-weight);
+  line-height: var(--type-subheading-leading);
+  letter-spacing: var(--type-subheading-tracking);
+}
+
+.type-body {
+  font-family: var(--font-geist-sans);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-weight);
+  line-height: var(--type-body-leading);
+  letter-spacing: var(--type-body-tracking);
+}
+
+.type-nav {
+  font-family: var(--font-geist-sans);
+  font-size: var(--type-nav-size);
+  font-weight: var(--type-nav-weight);
+  letter-spacing: var(--type-nav-tracking);
+}
+
+.type-button {
+  font-family: var(--font-geist-sans);
+  font-size: var(--type-button-size);
+  font-weight: var(--type-button-weight);
+  letter-spacing: var(--type-button-tracking);
+}
+
+.type-metadata {
+  font-family: var(--font-geist-mono);
+  font-size: var(--type-meta-size);
+  font-weight: var(--type-meta-weight);
+  letter-spacing: var(--type-meta-tracking);
 }
 
 /* Apple-style Ultra-Minimal Scrollbar */
@@ -34,7 +170,7 @@
 /* Leaflet Custom Overrides for Oceanic Dark Theme */
 .leaflet-container {
   background-color: #070e1c !important;
-  font-family: 'Inter', sans-serif !important;
+  font-family: var(--font-geist-sans) !important;
 }
 
 .leaflet-popup-content-wrapper {
