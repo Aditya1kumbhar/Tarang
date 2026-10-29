@@ -68,9 +68,9 @@ export default function SafetyAlertBanner({
 
   const expandedCardClasses = isLight
     ? isRed
-      ? 'mt-2.5 pt-2 text-xs font-normal leading-relaxed bg-white/90 p-3 rounded-lg border border-[#fecaca] text-[#991b1b] shadow-xs'
-      : 'mt-2.5 pt-2 text-xs font-normal leading-relaxed bg-white/90 p-3 rounded-lg border border-[#fde68a] text-[#78350f] shadow-xs'
-    : 'mt-2.5 pt-2 text-xs font-normal leading-relaxed bg-black/40 p-3 rounded-lg border border-white/[0.06] text-[#e1e1e6]';
+      ? 'mt-2.5 pt-2 text-xs font-normal leading-relaxed bg-white/90 p-3 rounded-lg border border-[#fecaca] text-[#991b1b] shadow-xs max-h-36 sm:max-h-48 overflow-y-auto touch-momentum'
+      : 'mt-2.5 pt-2 text-xs font-normal leading-relaxed bg-white/90 p-3 rounded-lg border border-[#fde68a] text-[#78350f] shadow-xs max-h-36 sm:max-h-48 overflow-y-auto touch-momentum'
+    : 'mt-2.5 pt-2 text-xs font-normal leading-relaxed bg-black/40 p-3 rounded-lg border border-white/[0.06] text-[#e1e1e6] max-h-36 sm:max-h-48 overflow-y-auto touch-momentum';
 
   return (
     <div className={`transition-all duration-300 backdrop-blur-xl ${containerClasses}`}>

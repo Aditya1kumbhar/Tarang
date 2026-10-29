@@ -297,7 +297,7 @@ export default function ChatPanel({
                 const found = harbours.find((h) => h.id === e.target.value);
                 if (found) onSelectHarbour(found);
               }}
-              className={`w-full rounded-lg px-1.5 sm:px-2.5 py-1.5 text-[11px] sm:text-xs truncate focus:outline-none transition ${
+              className={`w-full rounded-lg px-1.5 sm:px-2.5 py-1.5 text-[16px] md:text-xs truncate focus:outline-none transition ${
                 isChartTheme
                   ? 'bg-black/[0.03] border border-black/[0.1] text-[#1d1d1f] focus:border-[#0071e3]'
                   : 'bg-white/[0.05] border border-white/[0.1] text-[#f5f5f7] focus:border-[#2997ff]'
@@ -319,7 +319,7 @@ export default function ChatPanel({
             <select
               value={vesselType}
               onChange={(e) => onChangeVesselType(e.target.value)}
-              className={`w-full rounded-lg px-1.5 sm:px-2.5 py-1.5 text-[11px] sm:text-xs truncate focus:outline-none transition ${
+              className={`w-full rounded-lg px-1.5 sm:px-2.5 py-1.5 text-[16px] md:text-xs truncate focus:outline-none transition ${
                 isChartTheme
                   ? 'bg-black/[0.03] border border-black/[0.1] text-[#1d1d1f] focus:border-[#0071e3]'
                   : 'bg-white/[0.05] border border-white/[0.1] text-[#f5f5f7] focus:border-[#2997ff]'
@@ -338,7 +338,7 @@ export default function ChatPanel({
             <select
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
-              className={`w-full rounded-lg px-1.5 sm:px-2.5 py-1.5 text-[11px] sm:text-xs truncate focus:outline-none transition ${
+              className={`w-full rounded-lg px-1.5 sm:px-2.5 py-1.5 text-[16px] md:text-xs truncate focus:outline-none transition ${
                 isChartTheme
                   ? 'bg-black/[0.03] border border-black/[0.1] text-[#1d1d1f] focus:border-[#0071e3]'
                   : 'bg-white/[0.05] border border-white/[0.1] text-[#f5f5f7] focus:border-[#2997ff]'
@@ -420,7 +420,7 @@ export default function ChatPanel({
       </div>
 
       {/* 3. Rehearsed Demo Scenarios */}
-      <div className={`px-3 py-1.5 border-b flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs transition-colors ${
+      <div className={`px-3 py-1.5 border-b flex items-center gap-1.5 overflow-x-auto no-scrollbar touch-momentum text-xs transition-colors ${
         isChartTheme ? 'bg-black/[0.02] border-black/[0.06]' : 'bg-black/20 border-white/[0.06]'
       }`}>
         <span className="text-[10px] font-medium uppercase tracking-wider shrink-0 text-[#86868b]">
@@ -431,7 +431,7 @@ export default function ChatPanel({
             key={dm.id}
             onClick={() => handleScenarioClick(dm)}
             disabled={isLoading}
-            className={`shrink-0 px-2.5 py-0.5 rounded-lg text-[11px] font-medium transition border ${
+            className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-medium transition border active:scale-[0.96] ${
               isChartTheme
                 ? 'bg-white hover:bg-black/[0.04] border-black/[0.08] text-[#1d1d1f]'
                 : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] text-[#e1e1e6]'
@@ -451,7 +451,7 @@ export default function ChatPanel({
           <Compass className="w-3 h-3 text-[#86868b]" />
           <span>Scenarios</span>
         </div>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar touch-momentum">
           {SIH_SCENARIOS.map((sc) => (
             <button
               key={sc.id}
@@ -602,21 +602,22 @@ export default function ChatPanel({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 4. Text & Voice Input Bar */}
-      <form onSubmit={handleSend} className={`p-2.5 sm:p-3 pb-safe border-t transition-colors backdrop-blur-xl ${
+      {/* 4. Text & Voice Input Bar (Touch-Optimized, Safe Keyboard Handling) */}
+      <form onSubmit={handleSend} className={`p-2 sm:p-3 border-t transition-colors backdrop-blur-xl shrink-0 ${
         isChartTheme
-          ? 'bg-white/80 border-black/[0.08]'
-          : 'bg-black/60 border-white/[0.08]'
+          ? 'bg-white/95 border-black/[0.08]'
+          : 'bg-black/80 border-white/[0.08]'
       }`}>
         <div className="relative flex items-center gap-2">
           {/* Speech-to-Text Toggle Button */}
           <button
             type="button"
             onClick={toggleListening}
-            className={`p-2.5 rounded-lg transition ${
+            className={`p-2.5 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center transition active:scale-[0.96] ${
               isListening ? 'glass-icon glass-icon-red' : 'glass-icon'
             }`}
             title={isListening ? 'Listening...' : 'Voice Input'}
+            aria-label="Voice Input"
           >
             {isListening ? <MicOff className="w-4 h-4 text-red-400" /> : <Mic className="w-4 h-4 text-[#86868b]" />}
           </button>
@@ -632,7 +633,11 @@ export default function ChatPanel({
                 : 'Ask ORCA in any language...'
             }
             disabled={isLoading}
-            className={`flex-1 rounded-lg px-3.5 py-2.5 text-xs transition focus:outline-none focus:ring-1 ${
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="sentences"
+            enterKeyHint="send"
+            className={`flex-1 rounded-lg px-3.5 py-2.5 text-[16px] md:text-xs transition focus:outline-none focus:ring-1 ${
               isChartTheme
                 ? 'bg-black/[0.03] border border-black/[0.1] focus:border-[#0071e3] text-[#1d1d1f] placeholder-[#86868b] focus:ring-[#0071e3]'
                 : 'bg-white/[0.05] border border-white/[0.1] focus:border-[#2997ff] text-[#f5f5f7] placeholder-[#86868b] focus:ring-[#2997ff]'
@@ -643,8 +648,9 @@ export default function ChatPanel({
           <button
             type="submit"
             disabled={!inputText.trim() || isLoading}
-            className="glass-icon glass-icon-blue p-2.5 rounded-lg font-medium transition shadow-sm disabled:opacity-30"
+            className="glass-icon glass-icon-blue p-2.5 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center font-medium transition shadow-sm disabled:opacity-30 active:scale-[0.96]"
             title="Send Query"
+            aria-label="Send Query"
           >
             <Send className="w-4 h-4 text-current" />
           </button>

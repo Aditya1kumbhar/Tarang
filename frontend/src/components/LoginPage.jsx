@@ -60,6 +60,8 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
       // Clear previous children in case of re-render
       googleBtnRef.current.innerHTML = '';
 
+      const btnWidth = Math.min(280, Math.max(220, window.innerWidth - 80));
+
       window.google.accounts.id.renderButton(googleBtnRef.current, {
         theme: themeMode === 'chart' ? 'outline' : 'filled_black',
         size: 'large',
@@ -67,7 +69,7 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
         shape: 'rectangular',
         text: 'signin_with',
         logo_alignment: 'left',
-        width: 300,
+        width: btnWidth,
       });
     } catch (err) {
       console.error('Failed to render Google Identity Services button:', err);
@@ -147,7 +149,7 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
 
   return (
     <div
-      className={`min-h-[100dvh] w-screen flex flex-col justify-between items-center px-4 py-8 select-none transition-colors duration-300 ${
+      className={`min-h-[100dvh] w-screen flex flex-col justify-between items-center px-4 py-5 sm:py-8 pt-safe pb-safe select-none transition-colors duration-300 overflow-y-auto ${
         isLight
           ? 'bg-[#f5f5f7] text-[#1d1d1f]'
           : 'bg-[#030712] text-[#f5f5f7]'
@@ -158,33 +160,33 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
 
       {/* Top Header Identity */}
       <header className="w-full max-w-5xl flex items-center justify-between z-10">
-        <div className="flex items-center gap-3">
-          <div className="glass-icon w-9 h-9 flex items-center justify-center">
-            <Compass className="w-5 h-5 text-current" />
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="glass-icon w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center">
+            <Compass className="w-4 h-4 sm:w-5 sm:h-5 text-current" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-lg tracking-tight">ORCA</span>
-              <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border border-black/10 dark:border-white/10 text-[#86868b]">
+              <span className="font-bold text-base sm:text-lg tracking-tight">ORCA</span>
+              <span className="text-[9px] sm:text-[10px] uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full border border-black/10 dark:border-white/10 text-[#86868b]">
                 Gov of India
               </span>
             </div>
-            <p className="text-xs text-[#86868b] tracking-tight">
+            <p className="text-[10px] sm:text-xs text-[#86868b] tracking-tight">
               Oceanographic Reasoning & Collaborative Agents
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-[#86868b]">
-          <Shield className="w-3.5 h-3.5 text-emerald-500" />
+        <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-[#86868b]">
+          <Shield className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
           <span className="hidden sm:inline">Territorial Security Gate</span>
         </div>
       </header>
 
       {/* Main Authentication Card */}
-      <main className="w-full max-w-md my-auto z-10">
+      <main className="w-full max-w-md my-auto py-4 z-10">
         <div
-          className={`p-8 rounded-2xl border transition-all duration-300 ${
+          className={`p-5 sm:p-8 rounded-2xl border transition-all duration-300 ${
             isLight
               ? 'bg-white/80 border-black/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.06)] backdrop-blur-2xl'
               : 'bg-white/[0.03] border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-2xl'

@@ -90,7 +90,7 @@ export default function DistrictAuthorityBoard({
   };
 
   return (
-    <div className={`flex flex-col h-full w-full overflow-y-auto p-4 md:p-6 transition-colors ${
+    <div className={`flex flex-col h-full w-full overflow-y-auto p-4 md:p-6 pb-28 md:pb-6 touch-momentum transition-colors ${
       isChartTheme ? 'bg-[#f5f5f7] text-[#1d1d1f]' : 'bg-[#0a0a0c] text-[#f5f5f7]'
     }`}>
       {/* 1. Header & Quick Metrics */}

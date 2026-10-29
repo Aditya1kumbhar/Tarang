@@ -167,11 +167,47 @@
   color: #38bdf8 !important;
 }
 
-/* Mobile Safe Area Insets for iOS Notches & Home Indicators */
+/* Mobile Ergonomics & Native Touch Feel (Galaxy A33-A75 & iPhone 15-17 Pro/Max) */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  overscroll-behavior: none;
+}
+
+button, a, [role="button"], .tab, .chip, .glass-icon, input[type="submit"] {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Eliminate iOS Safari automatic zoom on inputs/selects/textareas */
+@media (pointer: coarse) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Smooth momentum scrolling on touch devices */
+.touch-momentum {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+/* Safe Area Insets for iOS Dynamic Island, Notches & Home Indicators */
 .pb-safe {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
 }
 .pt-safe {
-  padding-top: env(safe-area-inset-top, 0px);
+  padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
 }
+.pl-safe {
+  padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
+}
+.pr-safe {
+  padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
+}
+
 

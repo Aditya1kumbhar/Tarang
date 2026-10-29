@@ -287,24 +287,24 @@ export default function App() {
         themeMode === 'ocean' ? 'dark bg-[#0a0a0c] text-[#f5f5f7]' : 'bg-[#f5f5f7] text-[#1d1d1f]'
       }`}
     >
-      {/* 1. Apple-Minimalist Frosted Command Header */}
+      {/* 1. Apple-Minimalist Frosted Command Header (Safe Area Padded for Dynamic Island & Status Bars) */}
       <header
-        className={`h-14 px-4 sm:px-6 flex items-center justify-between shrink-0 z-30 transition-colors backdrop-blur-xl border-b ${
+        className={`min-h-14 h-[calc(3.5rem+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] px-3 sm:px-6 flex items-center justify-between shrink-0 z-30 transition-colors backdrop-blur-xl border-b ${
           themeMode === 'chart'
             ? 'bg-white/80 border-black/[0.08] text-[#1d1d1f]'
             : 'bg-black/75 border-white/[0.08] text-[#f5f5f7]'
         }`}
       >
         {/* Brand & Identity */}
-        <div className="flex items-center gap-3">
-          <div className="glass-icon w-9 h-9">
-            <Compass className="w-5 h-5 text-[#2997ff]" />
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="glass-icon w-8 h-8 sm:w-9 sm:h-9">
+            <Compass className="w-4 h-4 sm:w-5 sm:h-5 text-[#2997ff]" />
           </div>
           <div>
             <h1 className="font-bold text-base sm:text-lg tracking-tight leading-tight">
               ORCA
             </h1>
-            <p className="text-xs text-[#86868b] hidden sm:block font-normal leading-tight">
+            <p className="text-[10px] sm:text-xs text-[#86868b] block font-normal leading-tight">
               Marine Intelligence
             </p>
           </div>
@@ -518,9 +518,9 @@ export default function App() {
         </div>
       )}
 
-      {/* 4. Mobile Bottom Tab Navigation Bar (Phone Only) */}
+      {/* 4. Mobile Bottom Tab Navigation Bar (Safe Area Aligned for Home Indicators) */}
       <nav
-        className={`md:hidden shrink-0 border-t backdrop-blur-xl px-2 py-1 pb-safe flex items-center justify-around z-30 select-none transition-colors ${
+        className={`md:hidden shrink-0 border-t backdrop-blur-xl px-2 pt-1 pb-safe flex items-center justify-around z-30 select-none transition-colors ${
           themeMode === 'chart'
             ? 'bg-white/95 border-black/[0.08] text-[#1d1d1f]'
             : 'bg-[#0a0a0c]/95 border-white/[0.08] text-[#f5f5f7]'
@@ -532,7 +532,7 @@ export default function App() {
             setPersonaMode('fisher');
             setMobileTab('map');
           }}
-          className={`flex-1 py-1 px-2 rounded-lg flex flex-col items-center gap-1 text-[10px] font-medium transition ${
+          className={`flex-1 py-1 px-2 rounded-lg min-h-[48px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition active:scale-[0.96] ${
             personaMode === 'fisher' && mobileTab === 'map'
               ? (themeMode === 'chart' ? 'text-[#0071e3] bg-black/[0.05]' : 'text-[#2997ff] bg-white/[0.08]')
               : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7]'
@@ -548,7 +548,7 @@ export default function App() {
             setPersonaMode('fisher');
             setMobileTab('chat');
           }}
-          className={`flex-1 py-1 px-2 rounded-lg flex flex-col items-center gap-1 text-[10px] font-medium transition relative ${
+          className={`flex-1 py-1 px-2 rounded-lg min-h-[48px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition relative active:scale-[0.96] ${
             personaMode === 'fisher' && mobileTab === 'chat'
               ? (themeMode === 'chart' ? 'text-[#0071e3] bg-black/[0.05]' : 'text-[#2997ff] bg-white/[0.08]')
               : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7]'
@@ -566,7 +566,7 @@ export default function App() {
         <button
           type="button"
           onClick={() => setPersonaMode('district')}
-          className={`flex-1 py-1 px-2 rounded-lg flex flex-col items-center gap-1 text-[10px] font-medium transition ${
+          className={`flex-1 py-1 px-2 rounded-lg min-h-[48px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition active:scale-[0.96] ${
             personaMode === 'district'
               ? (themeMode === 'chart' ? 'text-[#0071e3] bg-black/[0.05]' : 'text-[#2997ff] bg-white/[0.08]')
               : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7]'
