@@ -287,37 +287,43 @@ export default function App() {
         themeMode === 'ocean' ? 'dark bg-[#0a0a0c] text-[#f5f5f7]' : 'bg-[#f5f5f7] text-[#1d1d1f]'
       }`}
     >
-      {/* 1. Apple-Minimalist Frosted Command Header (Safe Area Padded for Dynamic Island & Status Bars) */}
+      {/* 1. Apple macOS Operational Header (Calm, Unified Hierarchy) */}
       <header
         className={`min-h-14 h-[calc(3.5rem+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] px-3 sm:px-6 flex items-center justify-between shrink-0 z-30 transition-colors backdrop-blur-xl border-b ${
           themeMode === 'chart'
-            ? 'bg-white/80 border-black/[0.08] text-[#1d1d1f]'
-            : 'bg-black/75 border-white/[0.08] text-[#f5f5f7]'
+            ? 'bg-white/85 border-black/[0.08] text-[#1d1d1f]'
+            : 'bg-[#0B0C0F]/90 border-white/[0.08] text-[#f5f5f7]'
         }`}
       >
-        {/* Brand & Identity */}
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="glass-icon w-8 h-8 sm:w-9 sm:h-9">
-            <Compass className="w-4 h-4 sm:w-5 sm:h-5 text-[#2997ff]" />
+        {/* Left: Brand Identity & Primary Views */}
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center shadow-xs">
+              <Compass className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#0071e3] dark:text-[#0A84FF]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <h1 className="font-semibold text-base sm:text-lg tracking-[-0.03em] leading-tight">
+                  ORCA
+                </h1>
+                <span className="hidden sm:inline-block text-[9px] uppercase font-medium tracking-[0.02em] px-1.5 py-0.2 rounded bg-black/[0.04] dark:bg-white/[0.06] text-[#86868b]">
+                  Gov of India
+                </span>
+              </div>
+              <p className="text-[10px] sm:text-xs text-[#86868b] block font-normal leading-tight tracking-[-0.01em]">
+                Marine Intelligence
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-semibold text-base sm:text-lg tracking-[-0.03em] leading-tight">
-              ORCA
-            </h1>
-            <p className="text-[10px] sm:text-xs text-[#86868b] block font-normal leading-tight tracking-[-0.01em]">
-              Marine Intelligence
-            </p>
-          </div>
-        </div>
 
-        {/* Center: Apple Segmented Persona Switch & Telemetry Ribbon */}
-        <div className="hidden md:flex items-center gap-3 text-xs">
-          {/* Apple Segmented Control */}
+          <div className="h-5 w-px bg-black/[0.08] dark:bg-white/[0.08] hidden md:block" />
+
+          {/* Primary View Switcher (macOS Segmented Control) */}
           <div
-            className={`flex items-center p-0.5 rounded-lg border transition-colors ${
+            className={`hidden md:inline-flex items-center p-0.5 rounded-lg border transition-colors ${
               themeMode === 'chart'
-                ? 'bg-black/[0.05] border-black/[0.08]'
-                : 'bg-white/[0.06] border-white/[0.08]'
+                ? 'bg-black/[0.04] border-black/[0.06]'
+                : 'bg-white/[0.05] border-white/[0.06]'
             }`}
           >
             <button
@@ -326,8 +332,8 @@ export default function App() {
               className={`px-3 py-1 rounded-md text-xs font-medium tracking-[-0.01em] transition-all flex items-center gap-1.5 ${
                 personaMode === 'fisher'
                   ? (themeMode === 'chart'
-                      ? 'bg-white text-[#1d1d1f] shadow-sm'
-                      : 'bg-white/[0.16] text-white shadow-sm')
+                      ? 'bg-white text-[#1d1d1f] shadow-xs'
+                      : 'bg-white/[0.14] text-white shadow-xs')
                   : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7]'
               }`}
             >
@@ -340,8 +346,8 @@ export default function App() {
               className={`px-3 py-1 rounded-md text-xs font-medium tracking-[-0.01em] transition-all flex items-center gap-1.5 ${
                 personaMode === 'district'
                   ? (themeMode === 'chart'
-                      ? 'bg-white text-[#1d1d1f] shadow-sm'
-                      : 'bg-white/[0.16] text-white shadow-sm')
+                      ? 'bg-white text-[#1d1d1f] shadow-xs'
+                      : 'bg-white/[0.14] text-white shadow-xs')
                   : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7]'
               }`}
             >
@@ -349,44 +355,46 @@ export default function App() {
               <span>District Board</span>
             </button>
           </div>
+        </div>
 
-          {/* Live Telemetry Ribbon (Apple Spec Callouts) */}
+        {/* Center: Live Environmental Telemetry & Breaker Status Group */}
+        <div className="hidden xl:flex items-center gap-4 text-xs">
           {liveWeather && (
-            <div
-              className={`flex items-center gap-3 px-3 py-1 rounded-lg border text-xs transition-colors ${
-                themeMode === 'chart'
-                  ? 'bg-black/[0.03] border-black/[0.06] text-[#1d1d1f]'
-                  : 'bg-white/[0.04] border-white/[0.08] text-[#f5f5f7]'
-              }`}
-            >
+            <div className="flex items-center gap-4 text-[#86868b]">
               <div className="flex items-center gap-1.5" title="Sea Surface Temperature">
-                <Thermometer className="w-3.5 h-3.5 text-[#86868b]" />
-                <span className="font-medium tracking-[-0.01em] tabular-nums">{liveWeather.sst_c}°C</span>
-                <span className="text-[10px] text-[#86868b] uppercase tracking-[0.02em] font-medium font-mono">SST</span>
+                <Thermometer className="w-3.5 h-3.5" />
+                <span className="font-medium tracking-[-0.01em] tabular-nums text-[#1d1d1f] dark:text-[#f5f5f7]">
+                  {liveWeather.sst_c}°C
+                </span>
+                <span className="text-[10px] uppercase tracking-[0.02em] font-mono text-[#86868b]">SST</span>
               </div>
-              <span className="text-black/20 dark:text-white/20">|</span>
+              <span className="text-black/15 dark:text-white/15">•</span>
               <div className="flex items-center gap-1.5" title="Significant Wave Height">
-                <Waves className="w-3.5 h-3.5 text-[#86868b]" />
-                <span className="font-medium tracking-[-0.01em] tabular-nums">{liveWeather.wave_height_m}m</span>
-                <span className="text-[10px] text-[#86868b] uppercase tracking-[0.02em] font-medium font-mono">Waves</span>
+                <Waves className="w-3.5 h-3.5" />
+                <span className="font-medium tracking-[-0.01em] tabular-nums text-[#1d1d1f] dark:text-[#f5f5f7]">
+                  {liveWeather.wave_height_m}m
+                </span>
+                <span className="text-[10px] uppercase tracking-[0.02em] font-mono text-[#86868b]">Waves</span>
               </div>
-              <span className="text-black/20 dark:text-white/20">|</span>
+              <span className="text-black/15 dark:text-white/15">•</span>
               <div className="flex items-center gap-1.5" title="Surface Wind Speed">
-                <Wind className="w-3.5 h-3.5 text-[#86868b]" />
-                <span className="font-medium tracking-[-0.01em] tabular-nums">{liveWeather.wind_speed_kmh} km/h</span>
-                <span className="text-[10px] text-[#86868b] uppercase tracking-[0.02em] font-medium font-mono">Wind</span>
+                <Wind className="w-3.5 h-3.5" />
+                <span className="font-medium tracking-[-0.01em] tabular-nums text-[#1d1d1f] dark:text-[#f5f5f7]">
+                  {liveWeather.wind_speed_kmh} km/h
+                </span>
+                <span className="text-[10px] uppercase tracking-[0.02em] font-mono text-[#86868b]">Wind</span>
               </div>
             </div>
           )}
 
-          {/* Circuit Breaker Status Pill */}
+          {/* Restrained Circuit Breaker Status Indicator */}
           <div
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium tracking-[-0.01em] transition-colors ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium tracking-[-0.01em] transition-colors border ${
               safetyStatus === 'RED_ALERT'
-                ? 'glass-icon glass-icon-red'
+                ? 'bg-red-500/10 border-red-500/25 text-red-600 dark:text-red-400'
                 : safetyStatus === 'AMBER'
-                ? 'glass-icon glass-icon-amber'
-                : 'glass-icon glass-icon-emerald'
+                ? 'bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-400'
+                : 'bg-emerald-500/10 border-emerald-500/25 text-emerald-700 dark:text-emerald-400'
             }`}
           >
             {safetyStatus === 'RED_ALERT' ? (
@@ -398,31 +406,31 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right Tools & Theme Toggle */}
-        <div className="flex items-center gap-1.5 sm:gap-2 text-xs">
+        {/* Right: Secondary Actions, Theme Toggle & Officer Identity */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 text-xs">
           {/* Theme Switch */}
           <button
             type="button"
             onClick={() => setThemeMode((prev) => (prev === 'chart' ? 'ocean' : 'chart'))}
-            className="glass-icon px-2.5 py-1 text-xs gap-1.5 active:scale-[0.97] transition-transform"
+            className="p-1.5 sm:px-2.5 sm:py-1 rounded-md text-xs gap-1.5 flex items-center text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition"
             title="Toggle Visual Theme (Light vs Dark)"
           >
             {themeMode === 'chart' ? (
               <>
-                <Sun className="w-3.5 h-3.5 text-[#86868b]" />
-                <span className="hidden sm:inline">Light</span>
+                <Sun className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline font-medium text-[11px]">Light</span>
               </>
             ) : (
               <>
-                <Moon className="w-3.5 h-3.5 text-[#86868b]" />
-                <span className="hidden sm:inline">Dark</span>
+                <Moon className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline font-medium text-[11px]">Dark</span>
               </>
             )}
           </button>
 
           {/* Authenticated User Session Badge & Sign Out */}
           {currentUser && (
-            <div className="flex items-center gap-1.5 pl-1 border-l border-black/[0.08] dark:border-white/[0.08]">
+            <div className="flex items-center gap-1.5 pl-1.5 border-l border-black/[0.08] dark:border-white/[0.08]">
               <div
                 className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08]"
                 title={`Signed in as ${currentUser.name} (${currentUser.email})`}
@@ -439,7 +447,7 @@ export default function App() {
                     {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                   </div>
                 )}
-                <span className="hidden lg:inline text-[11px] font-medium text-[#1d1d1f] dark:text-[#f5f5f7] max-w-[110px] truncate">
+                <span className="hidden lg:inline text-[11px] font-medium text-[#1d1d1f] dark:text-[#f5f5f7] max-w-[120px] truncate">
                   {currentUser.name || currentUser.email}
                 </span>
               </div>
@@ -447,7 +455,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="glass-icon p-1.5 text-[#86868b] hover:text-[#e11d48] dark:hover:text-[#f43f5e] active:scale-[0.97] transition"
+                className="p-1.5 rounded-md text-[#86868b] hover:text-[#e11d48] dark:hover:text-[#f43f5e] hover:bg-red-500/10 active:scale-[0.97] transition"
                 title={`Sign Out (${currentUser.email})`}
                 aria-label="Sign Out"
               >

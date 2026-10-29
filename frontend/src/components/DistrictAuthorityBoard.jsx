@@ -206,7 +206,7 @@ export default function DistrictAuthorityBoard({
             onClick={() => setStateFilter(st)}
             className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
               stateFilter === st
-                ? (isChartTheme ? 'bg-[#1d1d1f] text-white shadow-sm' : 'bg-white text-black shadow-sm')
+                ? (isChartTheme ? 'bg-[#0071e3] text-white shadow-xs' : 'bg-[#0A84FF] text-white shadow-xs')
                 : (isChartTheme ? 'bg-black/[0.04] hover:bg-black/[0.08] text-[#86868b]' : 'bg-white/[0.04] hover:bg-white/[0.08] text-[#86868b] hover:text-[#f5f5f7]')
             }`}
           >
@@ -224,8 +224,8 @@ export default function DistrictAuthorityBoard({
               key={h.harbour_id}
               className={`p-3.5 rounded-xl border transition-colors ${
                 isChartTheme
-                  ? 'bg-white border-black/[0.08] shadow-sm'
-                  : 'bg-white/[0.03] border-white/[0.08]'
+                  ? 'bg-white border-black/[0.08] shadow-xs'
+                  : 'bg-[#121418] border-white/[0.08]'
               } ${isRed ? (isChartTheme ? 'bg-red-500/5 border-red-500/20' : 'bg-red-950/20 border-red-500/30') : ''}`}
             >
               <div className="flex items-center justify-between gap-2 mb-2">
@@ -276,7 +276,7 @@ export default function DistrictAuthorityBoard({
 
       {/* 5. Desktop High-Density Authority Matrix Table (>= md) */}
       <div className={`hidden md:block rounded-xl border overflow-hidden transition-colors ${
-        isChartTheme ? 'border-black/[0.08] bg-white shadow-sm' : 'border-white/[0.08] bg-white/[0.02]'
+        isChartTheme ? 'border-black/[0.08] bg-white shadow-xs' : 'border-white/[0.08] bg-[#121418]'
       }`}>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">

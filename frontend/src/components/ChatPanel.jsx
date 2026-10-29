@@ -11,6 +11,7 @@ import {
   ShieldAlert,
   ChevronDown,
   ChevronRight,
+  MapPin,
 } from 'lucide-react';
 
 const SIH_SCENARIOS = [
@@ -257,16 +258,17 @@ export default function ChatPanel({
         : 'bg-[#0a0a0c] text-[#f5f5f7] border-white/[0.08]'
     }`}>
       {/* 1. Header & Configuration Controls */}
+      {/* Stage 1 & 2: Operational Context & Risk Assessment */}
       <div className={`p-3.5 border-b space-y-3 transition-colors ${
         isChartTheme
-          ? 'bg-white/80 border-black/[0.08] backdrop-blur-md'
-          : 'bg-black/40 border-white/[0.08] backdrop-blur-md'
+          ? 'bg-white border-black/[0.08]'
+          : 'bg-[#121418] border-white/[0.08]'
       }`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${isChartTheme ? 'bg-[#0071e3]' : 'bg-[#2997ff]'}`}></div>
-            <h2 className={`font-semibold text-xs tracking-tight uppercase ${isChartTheme ? 'text-[#1d1d1f]' : 'text-[#f5f5f7]'}`}>
-              ORCA Console
+            <div className={`w-1.5 h-1.5 rounded-full ${isChartTheme ? 'bg-[#0071e3]' : 'bg-[#0A84FF]'}`}></div>
+            <h2 className={`font-semibold text-xs tracking-[-0.02em] ${isChartTheme ? 'text-[#1D1D1F]' : 'text-[#F5F5F7]'}`}>
+              ORCA Operational Console
             </h2>
           </div>
           {onViewMap && (
@@ -274,7 +276,7 @@ export default function ChatPanel({
               <button
                 type="button"
                 onClick={onViewMap}
-                className="glass-icon px-2.5 py-1 text-xs font-medium gap-1 text-[#2997ff]"
+                className="px-2.5 py-1 text-xs font-medium gap-1 text-[#0071e3] dark:text-[#0A84FF] bg-black/[0.04] dark:bg-white/[0.06] rounded-md flex items-center"
                 title="Switch to Marine Map"
               >
                 <Compass className="w-3.5 h-3.5" />
@@ -284,11 +286,11 @@ export default function ChatPanel({
           )}
         </div>
 
-        {/* Operating Controls Grid */}
-        <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-xs">
+        {/* Context Selectors Grid */}
+        <div className="grid grid-cols-3 gap-2 text-xs">
           {/* Harbour Selector */}
           <div>
-            <label className="block text-[9px] sm:text-[10px] font-medium uppercase tracking-wider mb-1 text-[#86868b] truncate">
+            <label className="block text-[10px] font-medium uppercase tracking-[0.02em] mb-1 text-[#858B95] truncate">
               Harbour
             </label>
             <select
@@ -297,14 +299,14 @@ export default function ChatPanel({
                 const found = harbours.find((h) => h.id === e.target.value);
                 if (found) onSelectHarbour(found);
               }}
-              className={`w-full rounded-lg px-1.5 sm:px-2.5 py-1.5 text-[16px] md:text-xs truncate focus:outline-none transition ${
+              className={`w-full rounded-lg px-2 py-1.5 text-[16px] md:text-xs truncate focus:outline-none transition ${
                 isChartTheme
-                  ? 'bg-black/[0.03] border border-black/[0.1] text-[#1d1d1f] focus:border-[#0071e3]'
-                  : 'bg-white/[0.05] border border-white/[0.1] text-[#f5f5f7] focus:border-[#2997ff]'
+                  ? 'bg-black/[0.03] border border-black/[0.08] text-[#1D1D1F] focus:border-[#0071e3]'
+                  : 'bg-white/[0.04] border border-white/[0.08] text-[#F5F5F7] focus:border-[#0A84FF]'
               }`}
             >
               {harbours.map((h) => (
-                <option key={h.id} value={h.id} className={isChartTheme ? "bg-white text-[#1d1d1f]" : "bg-[#141417] text-white"}>
+                <option key={h.id} value={h.id} className={isChartTheme ? "bg-white text-[#1D1D1F]" : "bg-[#191C21] text-white"}>
                   {h.name}
                 </option>
               ))}
@@ -313,39 +315,39 @@ export default function ChatPanel({
 
           {/* Vessel Selector */}
           <div>
-            <label className="block text-[9px] sm:text-[10px] font-medium uppercase tracking-wider mb-1 text-[#86868b] truncate">
+            <label className="block text-[10px] font-medium uppercase tracking-[0.02em] mb-1 text-[#858B95] truncate">
               Vessel
             </label>
             <select
               value={vesselType}
               onChange={(e) => onChangeVesselType(e.target.value)}
-              className={`w-full rounded-lg px-1.5 sm:px-2.5 py-1.5 text-[16px] md:text-xs truncate focus:outline-none transition ${
+              className={`w-full rounded-lg px-2 py-1.5 text-[16px] md:text-xs truncate focus:outline-none transition ${
                 isChartTheme
-                  ? 'bg-black/[0.03] border border-black/[0.1] text-[#1d1d1f] focus:border-[#0071e3]'
-                  : 'bg-white/[0.05] border border-white/[0.1] text-[#f5f5f7] focus:border-[#2997ff]'
+                  ? 'bg-black/[0.03] border border-black/[0.08] text-[#1D1D1F] focus:border-[#0071e3]'
+                  : 'bg-white/[0.04] border border-white/[0.08] text-[#F5F5F7] focus:border-[#0A84FF]'
               }`}
             >
-              <option value="country_craft" className={isChartTheme ? "bg-white text-[#1d1d1f]" : "bg-[#141417] text-white"}>Country Craft</option>
-              <option value="mechanized_trawler" className={isChartTheme ? "bg-white text-[#1d1d1f]" : "bg-[#141417] text-white"}>Trawler (45ft)</option>
+              <option value="country_craft" className={isChartTheme ? "bg-white text-[#1D1D1F]" : "bg-[#191C21] text-white"}>Country Craft</option>
+              <option value="mechanized_trawler" className={isChartTheme ? "bg-white text-[#1D1D1F]" : "bg-[#191C21] text-white"}>Trawler (45ft)</option>
             </select>
           </div>
 
           {/* Language Selector */}
           <div>
-            <label className="block text-[9px] sm:text-[10px] font-medium uppercase tracking-wider mb-1 text-[#86868b] truncate">
+            <label className="block text-[10px] font-medium uppercase tracking-[0.02em] mb-1 text-[#858B95] truncate">
               Language
             </label>
             <select
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
-              className={`w-full rounded-lg px-1.5 sm:px-2.5 py-1.5 text-[16px] md:text-xs truncate focus:outline-none transition ${
+              className={`w-full rounded-lg px-2 py-1.5 text-[16px] md:text-xs truncate focus:outline-none transition ${
                 isChartTheme
-                  ? 'bg-black/[0.03] border border-black/[0.1] text-[#1d1d1f] focus:border-[#0071e3]'
-                  : 'bg-white/[0.05] border border-white/[0.1] text-[#f5f5f7] focus:border-[#2997ff]'
+                  ? 'bg-black/[0.03] border border-black/[0.08] text-[#1D1D1F] focus:border-[#0071e3]'
+                  : 'bg-white/[0.04] border border-white/[0.08] text-[#F5F5F7] focus:border-[#0A84FF]'
               }`}
             >
               {LANGUAGES.map((lang) => (
-                <option key={lang.code} value={lang.code} className={isChartTheme ? "bg-white text-[#1d1d1f]" : "bg-[#141417] text-white"}>
+                <option key={lang.code} value={lang.code} className={isChartTheme ? "bg-white text-[#1D1D1F]" : "bg-[#191C21] text-white"}>
                   {lang.label.split(' ')[0]}
                 </option>
               ))}
@@ -353,30 +355,26 @@ export default function ChatPanel({
           </div>
         </div>
 
-        {/* 2. Static DOM Sea-Venture Safety Dial (40px) & Regional TTS Briefing Bar */}
+        {/* Stage 2: Risk Assessment & Operational Schedule Card */}
         <div className={`p-3 rounded-xl border flex items-center justify-between gap-3 transition-colors ${
           isChartTheme
-            ? 'bg-white border-black/[0.08] shadow-sm'
+            ? 'bg-black/[0.02] border-black/[0.08]'
             : 'bg-white/[0.03] border-white/[0.08]'
         }`}>
           <div className="flex items-center gap-3">
-            {/* 40px Dial */}
-            <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center text-center transition-colors ${
+            {/* Risk Score Anchor */}
+            <div className={`w-13 h-13 rounded-xl flex flex-col items-center justify-center text-center p-2 border ${
               currentScore >= 76
-                ? 'glass-icon glass-icon-red'
+                ? 'bg-red-500/10 border-red-500/25 text-red-700 dark:text-red-400'
                 : currentScore >= 51
-                ? 'glass-icon glass-icon-amber'
+                ? 'bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-400'
                 : currentScore >= 26
-                ? 'glass-icon glass-icon-amber'
-                : 'glass-icon glass-icon-emerald'
+                ? 'bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-400'
+                : 'bg-emerald-500/10 border-emerald-500/25 text-emerald-700 dark:text-emerald-400'
             }`}>
-              <span className={`font-mono font-bold text-2xl leading-none tabular-nums tracking-tight ${
-                currentScore >= 76
-                  ? 'text-red-700 dark:text-red-400'
-                  : currentScore >= 26
-                  ? 'text-amber-700 dark:text-amber-400'
-                  : 'text-emerald-700 dark:text-emerald-400'
-              }`}>{currentScore}</span>
+              <span className="font-mono font-bold text-2xl leading-none tabular-nums tracking-tight">
+                {currentScore}
+              </span>
               <span className="text-[9px] uppercase tracking-[0.02em] font-mono opacity-70 mt-0.5">/100</span>
             </div>
 
@@ -391,67 +389,75 @@ export default function ChatPanel({
                 }`}>
                   {currentVerdict} RISK
                 </span>
-                <span className="text-[11px] font-normal tracking-[-0.01em] text-[#86868b]">
+                <span className="text-[11px] font-normal tracking-[-0.01em] text-[#858B95]">
                   {vesselType === 'country_craft' ? 'Country Boat' : 'Trawler (45ft)'}
                 </span>
               </div>
-              <p className={`text-[11px] mt-1 font-normal tracking-[-0.01em] ${isChartTheme ? 'text-[#1d1d1f]' : 'text-[#d1d1d6]'}`}>
+              <p className={`text-[11px] mt-1 font-normal tracking-[-0.01em] ${isChartTheme ? 'text-[#1D1D1F]' : 'text-[#D1D5DB]'}`}>
                 Departure: <strong>04:30 - 11:30 IST</strong> • Return-by: <strong>13:00 IST</strong>
               </p>
             </div>
           </div>
 
-          {/* Prominent Listen Audio Briefing Button */}
+          {/* Listen Action Button */}
           <button
             onClick={() => {
               const latestMsg = messages.filter((m) => m.role === 'assistant').slice(-1)[0];
               const textToRead = latestMsg?.recommendation || latestMsg?.content || `${selectedHarbour?.name || 'Harbour'}: Sea-Venture Safety Index is ${currentScore} out of 100, verdict is ${currentVerdict} risk.`;
               handleSpeak(textToRead, 9999);
             }}
-            className={`glass-icon px-3 py-2 text-xs font-medium gap-2 shrink-0 ${
-              speakingMessageIndex === 9999 ? 'glass-icon-blue animate-pulse' : ''
+            className={`p-2 rounded-lg text-xs font-medium gap-1.5 shrink-0 flex items-center transition border ${
+              speakingMessageIndex === 9999
+                ? 'bg-[#0071e3]/15 border-[#0071e3]/30 text-[#0071e3] dark:text-[#0A84FF] animate-pulse'
+                : 'text-[#0071e3] dark:text-[#0A84FF] hover:bg-[#0071e3]/10 border-transparent hover:border-[#0071e3]/20'
             }`}
             title="Read live sea-venture advisory aloud (TTS)"
           >
-            <Volume2 className="w-4 h-4 text-[#2997ff]" />
-            <span className="tracking-wide">Listen</span>
+            <Volume2 className="w-4 h-4 text-current" />
+            <span className="tracking-tight hidden sm:inline">Listen</span>
           </button>
         </div>
       </div>
 
-      {/* 3. Rehearsed Demo Scenarios */}
-      <div className={`px-3 py-1.5 border-b flex items-center gap-1.5 overflow-x-auto no-scrollbar touch-momentum text-xs transition-colors ${
-        isChartTheme ? 'bg-black/[0.02] border-black/[0.06]' : 'bg-black/20 border-white/[0.06]'
+      {/* Stage 3: Quick Destination Shortcuts */}
+      <div className={`px-3.5 py-2 border-b flex items-center gap-1.5 overflow-x-auto no-scrollbar touch-momentum text-xs transition-colors ${
+        isChartTheme ? 'bg-[#FAFAFC] border-black/[0.06]' : 'bg-[#191C21]/60 border-white/[0.06]'
       }`}>
-        <span className="text-[10px] font-medium uppercase tracking-wider shrink-0 text-[#86868b]">
-          Demo:
+        <span className="text-[10px] font-medium uppercase tracking-[0.02em] shrink-0 text-[#858B95] mr-1 flex items-center gap-1">
+          <MapPin className="w-3 h-3 text-[#858B95]" />
+          Ports:
         </span>
-        {DEMO_SCENARIOS.map((dm) => (
-          <button
-            key={dm.id}
-            onClick={() => handleScenarioClick(dm)}
-            disabled={isLoading}
-            className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-medium transition border active:scale-[0.96] ${
-              isChartTheme
-                ? 'bg-white hover:bg-black/[0.04] border-black/[0.08] text-[#1d1d1f]'
-                : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] text-[#e1e1e6]'
-            } disabled:opacity-50`}
-            title={dm.query}
-          >
-            {dm.label}
-          </button>
-        ))}
+        {DEMO_SCENARIOS.map((dm) => {
+          const isSelected = selectedHarbour?.id === dm.harbourId;
+          return (
+            <button
+              key={dm.id}
+              onClick={() => handleScenarioClick(dm)}
+              disabled={isLoading}
+              className={`shrink-0 px-2.5 py-1 rounded-md text-[11px] font-medium transition active:scale-[0.97] border ${
+                isSelected
+                  ? 'bg-[#0071e3]/10 dark:bg-[#0A84FF]/15 text-[#0071e3] dark:text-[#0A84FF] border-[#0071e3]/30 dark:border-[#0A84FF]/30'
+                  : isChartTheme
+                  ? 'bg-transparent hover:bg-black/[0.04] border-transparent text-[#51545A]'
+                  : 'bg-transparent hover:bg-white/[0.06] border-transparent text-[#B0B4BC]'
+              } disabled:opacity-50`}
+              title={dm.query}
+            >
+              {dm.label}
+            </button>
+          );
+        })}
       </div>
 
-      {/* 4. SIH 2026 Problem Statement Benchmark Chips */}
-      <div className={`px-3 py-2 border-b transition-colors ${
-        isChartTheme ? 'bg-[#fbfbfd] border-black/[0.08]' : 'bg-black/30 border-white/[0.06]'
+      {/* Stage 4: Operational Scenarios Selector */}
+      <div className={`px-3.5 py-2 border-b transition-colors ${
+        isChartTheme ? 'bg-white border-black/[0.06]' : 'bg-[#121418] border-white/[0.06]'
       }`}>
-        <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider mb-1.5 text-[#86868b]">
-          <Compass className="w-3 h-3 text-[#86868b]" />
-          <span>Scenarios</span>
+        <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.02em] mb-1.5 text-[#858B95]">
+          <Compass className="w-3 h-3 text-[#858B95]" />
+          <span>Operational Scenarios</span>
         </div>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar touch-momentum">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar touch-momentum">
           {SIH_SCENARIOS.map((sc) => (
             <button
               key={sc.id}
@@ -460,8 +466,8 @@ export default function ChatPanel({
               title={sc.query}
               className={`shrink-0 px-2.5 py-1 rounded-lg text-xs font-normal transition flex items-center gap-1 disabled:opacity-50 border ${
                 isChartTheme
-                  ? 'bg-white hover:bg-black/[0.04] border-black/[0.08] text-[#1d1d1f]'
-                  : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] text-[#e1e1e6]'
+                  ? 'bg-black/[0.02] hover:bg-black/[0.05] border-black/[0.08] text-[#1D1D1F]'
+                  : 'bg-white/[0.03] hover:bg-white/[0.08] border-white/[0.08] text-[#E1E1E6]'
               }`}
             >
               <span>{sc.label}</span>
@@ -499,14 +505,14 @@ export default function ChatPanel({
                 </div>
               </div>
             ) : (
-              <div className={`max-w-[95%] w-full rounded-2xl rounded-bl-sm p-4 text-xs shadow-sm space-y-3 border transition-colors ${
+              <div className={`max-w-[95%] w-full rounded-2xl rounded-bl-sm p-4 text-xs shadow-xs space-y-3 border transition-colors ${
                 isChartTheme
-                  ? 'bg-white border-black/[0.08] text-[#1d1d1f]'
-                  : 'bg-white/[0.04] border-white/[0.08] text-[#f5f5f7]'
+                  ? 'bg-white border-black/[0.08] text-[#1D1D1F]'
+                  : 'bg-[#121418] border-white/[0.08] text-[#F5F5F7]'
               }`}>
                 {/* Agent Header with Safety Badge */}
                 <div className={`flex items-center justify-between border-b pb-2.5 ${
-                  isChartTheme ? 'border-black/[0.06]' : 'border-white/[0.08]'
+                  isChartTheme ? 'border-black/[0.06]' : 'border-white/[0.06]'
                 }`}>
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-xs tracking-[-0.02em]">ORCA Synthesizer</span>
@@ -532,11 +538,11 @@ export default function ChatPanel({
                     {/* TTS Button */}
                     <button
                       onClick={() => handleSpeak(msg.recommendation || msg.content, idx)}
-                      className="p-1 rounded-md hover:bg-white/[0.08] text-[#86868b] hover:text-[#f5f5f7] transition"
+                      className="p-1 rounded-md hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-[#858B95] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] transition"
                       title={speakingMessageIndex === idx ? 'Stop Speaking' : 'Read Aloud (TTS)'}
                     >
                       {speakingMessageIndex === idx ? (
-                        <VolumeX className="w-3.5 h-3.5 text-[#2997ff]" />
+                        <VolumeX className="w-3.5 h-3.5 text-[#0071e3] dark:text-[#0A84FF]" />
                       ) : (
                         <Volume2 className="w-3.5 h-3.5" />
                       )}
@@ -546,7 +552,7 @@ export default function ChatPanel({
 
                 {/* Direct Recommendation */}
                 <div className={`font-normal leading-[1.65] whitespace-pre-wrap text-[13px] tracking-[-0.01em] ${
-                  isChartTheme ? 'text-[#1d1d1f]' : 'text-[#f5f5f7]'
+                  isChartTheme ? 'text-[#1D1D1F]' : 'text-[#F5F5F7]'
                 }`}>
                   {msg.recommendation || msg.content}
                 </div>
@@ -554,11 +560,11 @@ export default function ChatPanel({
                 {/* Evidence & Physical Reasoning Accordion */}
                 {msg.evidence_and_reasoning && msg.evidence_and_reasoning.length > 0 && (
                   <div className={`pt-2.5 border-t ${
-                    isChartTheme ? 'border-black/[0.06]' : 'border-white/[0.08]'
+                    isChartTheme ? 'border-black/[0.06]' : 'border-white/[0.06]'
                   }`}>
                     <button
                       onClick={() => toggleEvidence(idx)}
-                      className="flex items-center gap-1.5 text-[11px] font-medium text-[#86868b] hover:text-[#f5f5f7] transition"
+                      className="flex items-center gap-1.5 text-xs font-medium text-[#858B95] hover:text-[#0071e3] dark:hover:text-[#0A84FF] transition"
                     >
                       {expandedEvidence[idx] ? (
                         <ChevronDown className="w-3.5 h-3.5" />
@@ -569,13 +575,13 @@ export default function ChatPanel({
                     </button>
 
                     {expandedEvidence[idx] && (
-                      <div className={`mt-2 space-y-1.5 p-3 rounded-lg border text-[11px] font-mono ${
+                      <div className={`mt-2 space-y-1.5 p-3 rounded-lg border text-xs font-mono tracking-[0.01em] ${
                         isChartTheme
-                          ? 'bg-black/[0.02] border-black/[0.08] text-[#1d1d1f]'
-                          : 'bg-black/40 border-white/[0.08] text-[#d1d1d6]'
+                          ? 'bg-black/[0.02] border-black/[0.06] text-[#1D1D1F]'
+                          : 'bg-black/30 border-white/[0.06] text-[#D1D5DB]'
                       }`}>
                         {msg.evidence_and_reasoning.map((ev, i) => (
-                          <div key={i} className="border-l border-[#2997ff]/60 pl-2.5 py-0.5">
+                          <div key={i} className="border-l-2 border-[#0071e3]/60 dark:border-[#0A84FF]/60 pl-2.5 py-0.5">
                             {ev}
                           </div>
                         ))}
@@ -591,10 +597,10 @@ export default function ChatPanel({
         {isLoading && (
           <div className={`flex items-center gap-2.5 p-3 rounded-xl border text-xs transition-colors ${
             isChartTheme
-              ? 'bg-black/[0.02] border-black/[0.08] text-[#1d1d1f]'
-              : 'bg-white/[0.04] border-white/[0.08] text-[#f5f5f7]'
+              ? 'bg-black/[0.02] border-black/[0.08] text-[#1D1D1F]'
+              : 'bg-white/[0.04] border-white/[0.08] text-[#F5F5F7]'
           }`}>
-            <div className="w-3.5 h-3.5 border-2 border-[#2997ff] border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-3.5 h-3.5 border-2 border-[#0071e3] dark:border-[#0A84FF] border-t-transparent rounded-full animate-spin"></div>
             <span>Evaluating sea state...</span>
           </div>
         )}
@@ -602,24 +608,28 @@ export default function ChatPanel({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 4. Text & Voice Input Bar (Touch-Optimized, Safe Keyboard Handling) */}
-      <form onSubmit={handleSend} className={`p-2 sm:p-3 border-t transition-colors backdrop-blur-xl shrink-0 ${
+      {/* Stage 7: Text & Voice Input Bar (Refined Apple Operational Composer) */}
+      <form onSubmit={handleSend} className={`p-2.5 sm:p-3 border-t transition-colors backdrop-blur-xl shrink-0 ${
         isChartTheme
           ? 'bg-white/95 border-black/[0.08]'
-          : 'bg-black/80 border-white/[0.08]'
+          : 'bg-[#0B0C0F]/95 border-white/[0.08]'
       }`}>
         <div className="relative flex items-center gap-2">
           {/* Speech-to-Text Toggle Button */}
           <button
             type="button"
             onClick={toggleListening}
-            className={`p-2.5 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center transition active:scale-[0.96] ${
-              isListening ? 'glass-icon glass-icon-red' : 'glass-icon'
+            className={`p-2.5 rounded-lg min-w-[42px] min-h-[42px] flex items-center justify-center transition border active:scale-[0.96] ${
+              isListening
+                ? 'bg-red-500/15 border-red-500/30 text-red-500'
+                : isChartTheme
+                ? 'bg-black/[0.03] border-black/[0.08] text-[#858B95] hover:text-[#1D1D1F]'
+                : 'bg-white/[0.04] border-white/[0.08] text-[#858B95] hover:text-[#F5F5F7]'
             }`}
             title={isListening ? 'Listening...' : 'Voice Input'}
             aria-label="Voice Input"
           >
-            {isListening ? <MicOff className="w-4 h-4 text-red-400" /> : <Mic className="w-4 h-4 text-[#86868b]" />}
+            {isListening ? <MicOff className="w-4 h-4 text-red-400" /> : <Mic className="w-4 h-4" />}
           </button>
 
           {/* Text Input Field */}
@@ -639,8 +649,8 @@ export default function ChatPanel({
             enterKeyHint="send"
             className={`flex-1 rounded-lg px-3.5 py-2.5 text-[16px] md:text-xs leading-[1.65] tracking-[-0.01em] transition focus:outline-none focus:ring-1 ${
               isChartTheme
-                ? 'bg-black/[0.03] border border-black/[0.1] focus:border-[#0071e3] text-[#1d1d1f] placeholder-[#86868b] focus:ring-[#0071e3]'
-                : 'bg-white/[0.05] border border-white/[0.1] focus:border-[#2997ff] text-[#f5f5f7] placeholder-[#86868b] focus:ring-[#2997ff]'
+                ? 'bg-black/[0.02] border border-black/[0.1] focus:border-[#0071e3] text-[#1D1D1F] placeholder-[#858B95] focus:ring-[#0071e3]/20'
+                : 'bg-white/[0.03] border border-white/[0.1] focus:border-[#0A84FF] text-[#F5F5F7] placeholder-[#858B95] focus:ring-[#0A84FF]/20'
             }`}
           />
 
@@ -648,11 +658,11 @@ export default function ChatPanel({
           <button
             type="submit"
             disabled={!inputText.trim() || isLoading}
-            className="glass-icon glass-icon-blue p-2.5 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center font-medium transition shadow-sm disabled:opacity-30 active:scale-[0.96]"
+            className="p-2.5 rounded-lg min-w-[42px] min-h-[42px] flex items-center justify-center font-medium transition shadow-xs bg-[#0071e3] dark:bg-[#0A84FF] text-white hover:opacity-95 disabled:opacity-30 active:scale-[0.96]"
             title="Send Query"
             aria-label="Send Query"
           >
-            <Send className="w-4 h-4 text-current" />
+            <Send className="w-4 h-4 text-white" />
           </button>
         </div>
       </form>

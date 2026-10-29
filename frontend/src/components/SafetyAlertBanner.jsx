@@ -26,19 +26,19 @@ export default function SafetyAlertBanner({
   // Dynamic Theme Palette
   const containerClasses = isLight
     ? isRed
-      ? 'bg-[#fef2f2]/95 border-b border-[#fecaca] text-[#991b1b]'
-      : 'bg-[#fffbeb]/95 border-b border-[#fde68a] text-[#78350f]'
+      ? 'bg-[#fef2f2] border-b border-[#fecaca] text-[#991b1b]'
+      : 'bg-[#fffbeb] border-b border-[#fde68a] text-[#78350f]'
     : isRed
-      ? 'bg-[#120809]/95 border-b border-red-500/30 text-[#f5f5f7]'
-      : 'bg-[#141008]/95 border-b border-amber-500/30 text-[#f5f5f7]';
+      ? 'bg-[#181112] border-b border-red-500/20 text-[#fca5a5]'
+      : 'bg-[#181510] border-b border-amber-500/20 text-[#fbbf24]';
 
   const iconContainerClasses = isLight
     ? isRed
-      ? 'w-8 h-8 rounded-lg shrink-0 flex items-center justify-center bg-[#fee2e2] border border-[#fca5a5] shadow-xs'
-      : 'w-8 h-8 rounded-lg shrink-0 flex items-center justify-center bg-[#fef3c7] border border-[#fde68a] shadow-xs'
+      ? 'w-7 h-7 rounded-lg shrink-0 flex items-center justify-center bg-[#fee2e2] text-[#dc2626]'
+      : 'w-7 h-7 rounded-lg shrink-0 flex items-center justify-center bg-[#fef3c7] text-[#d97706]'
     : isRed
-      ? 'w-8 h-8 rounded-lg shrink-0 glass-icon glass-icon-red'
-      : 'w-8 h-8 rounded-lg shrink-0 glass-icon glass-icon-amber';
+      ? 'w-7 h-7 rounded-lg shrink-0 flex items-center justify-center bg-red-500/15 text-red-400'
+      : 'w-7 h-7 rounded-lg shrink-0 flex items-center justify-center bg-amber-500/15 text-amber-400';
 
   const badgeClasses = isLight
     ? isRed
@@ -52,56 +52,58 @@ export default function SafetyAlertBanner({
     ? isRed
       ? 'text-[#991b1b]'
       : 'text-[#78350f]'
-    : 'text-[#f5f5f7]';
+    : isRed
+      ? 'text-[#fca5a5]'
+      : 'text-[#fef3c7]';
 
   const collapsedSubtextClasses = isLight
     ? isRed
-      ? 'text-[#b91c1c]/80'
-      : 'text-[#92400e]/80'
-    : 'text-[#86868b]';
+      ? 'text-[#b91c1c]/90'
+      : 'text-[#92400e]/90'
+    : 'text-[#d1d5db]';
 
   const buttonClasses = isLight
     ? isRed
-      ? 'p-1 rounded-md hover:bg-[#fecaca]/60 text-[#b91c1c] hover:text-[#991b1b] transition-colors'
-      : 'p-1 rounded-md hover:bg-[#fde68a]/60 text-[#92400e] hover:text-[#78350f] transition-colors'
-    : 'p-1 rounded-md hover:bg-white/[0.08] text-[#86868b] hover:text-[#f5f5f7] transition-colors';
+      ? 'p-1 rounded-md hover:bg-[#fee2e2] text-[#991b1b] transition-colors'
+      : 'p-1 rounded-md hover:bg-[#fef3c7] text-[#78350f] transition-colors'
+    : 'p-1 rounded-md hover:bg-white/[0.08] text-[#858B95] hover:text-[#F5F5F7] transition-colors';
 
   const expandedCardClasses = isLight
     ? isRed
-      ? 'mt-2.5 pt-2 text-xs font-normal leading-relaxed bg-white/90 p-3 rounded-lg border border-[#fecaca] text-[#991b1b] shadow-xs max-h-36 sm:max-h-48 overflow-y-auto touch-momentum'
-      : 'mt-2.5 pt-2 text-xs font-normal leading-relaxed bg-white/90 p-3 rounded-lg border border-[#fde68a] text-[#78350f] shadow-xs max-h-36 sm:max-h-48 overflow-y-auto touch-momentum'
-    : 'mt-2.5 pt-2 text-xs font-normal leading-relaxed bg-black/40 p-3 rounded-lg border border-white/[0.06] text-[#e1e1e6] max-h-36 sm:max-h-48 overflow-y-auto touch-momentum';
+      ? 'mt-2 pt-2 text-xs font-normal leading-relaxed bg-white/95 p-3 rounded-lg border border-[#fecaca] text-[#991b1b] shadow-xs max-h-36 sm:max-h-48 overflow-y-auto touch-momentum'
+      : 'mt-2 pt-2 text-xs font-normal leading-relaxed bg-white/95 p-3 rounded-lg border border-[#fde68a] text-[#78350f] shadow-xs max-h-36 sm:max-h-48 overflow-y-auto touch-momentum'
+    : 'mt-2 pt-2 text-xs font-normal leading-relaxed bg-[#121418] p-3 rounded-lg border border-white/[0.08] text-[#e1e1e6] max-h-36 sm:max-h-48 overflow-y-auto touch-momentum';
 
   return (
     <div className={`transition-all duration-300 backdrop-blur-xl ${containerClasses}`}>
-      <div className="max-w-7xl mx-auto px-4 py-2.5">
+      <div className="max-w-7xl mx-auto px-4 py-2">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <div className={iconContainerClasses}>
               {isRed ? (
-                <ShieldAlert className={`w-4 h-4 ${isLight ? 'text-[#dc2626]' : 'text-red-400'}`} />
+                <ShieldAlert className="w-4 h-4 text-current" />
               ) : (
-                <AlertTriangle className={`w-4 h-4 ${isLight ? 'text-[#d97706]' : 'text-amber-400'}`} />
+                <AlertTriangle className="w-4 h-4 text-current" />
               )}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-semibold uppercase tracking-[0.02em] px-2 py-0.5 rounded ${badgeClasses}`}>
+                <span className={`text-[10px] font-semibold uppercase tracking-[0.02em] px-1.5 py-0.5 rounded ${badgeClasses}`}>
                   {isRed ? 'Circuit Breaker' : 'Caution'}
                 </span>
-                <span className={`text-xs sm:text-sm font-semibold tracking-[-0.03em] ${titleClasses}`}>
-                  {isRed ? 'Hazardous Sea State' : 'Heightened Risk'}
+                <span className={`text-xs sm:text-[13px] font-semibold tracking-[-0.02em] ${titleClasses}`}>
+                  {isRed ? 'Hazardous Sea State' : 'Heightened Risk Advisory'}
                 </span>
               </div>
               {!isExpanded && (
-                <p className={`text-xs truncate max-w-xl mt-0.5 leading-[1.65] tracking-[-0.01em] ${collapsedSubtextClasses}`}>
+                <p className={`text-xs truncate max-w-2xl mt-0.5 leading-normal tracking-[-0.01em] ${collapsedSubtextClasses}`}>
                   {safetyOverrideBanner || (isRed ? 'Do not venture into open sea.' : 'Review vessel limits before sailing.')}
                 </p>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
               className={buttonClasses}
@@ -114,7 +116,7 @@ export default function SafetyAlertBanner({
 
         {isExpanded && safetyOverrideBanner && (
           <div className={expandedCardClasses}>
-            <p className="whitespace-pre-line font-mono text-xs leading-[1.65] tracking-[0.02em]">{safetyOverrideBanner}</p>
+            <p className="whitespace-pre-line font-sans text-xs sm:text-[13px] leading-[1.65] tracking-[-0.01em]">{safetyOverrideBanner}</p>
           </div>
         )}
       </div>

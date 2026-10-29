@@ -42,7 +42,21 @@ export default function MarineMap({
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const currentTileLayerRef = useRef(null);
-  const [activeBasemap, setActiveBasemap] = useState('voyager'); // CARTO Voyager default as requested
+  const userExplicitSelectionRef = useRef(false);
+
+  // Basemap strategy: automatically synchronizes with app theme on startup, but respects explicit user selection
+  const [activeBasemap, setActiveBasemap] = useState(() => (theme === 'ocean' ? 'dark' : 'voyager'));
+
+  useEffect(() => {
+    if (!userExplicitSelectionRef.current) {
+      setActiveBasemap(theme === 'ocean' ? 'dark' : 'voyager');
+    }
+  }, [theme]);
+
+  const handleBasemapSelect = (basemapKey) => {
+    userExplicitSelectionRef.current = true;
+    setActiveBasemap(basemapKey);
+  };
 
   const layersRef = useRef({
     harbours: L.layerGroup(),
@@ -574,48 +588,59 @@ export default function MarineMap({
         </div>
 
         {/* Layer & Basemap Panel (Toggleable on mobile, persistent on tablet/desktop) */}
-        <div className={`${isLayersOpen ? 'block' : 'hidden sm:block'} bg-black/80 border border-white/[0.1] rounded-xl p-3 shadow-2xl backdrop-blur-xl text-xs text-[#f5f5f7] max-w-[240px]`}>
+        <div className={`${isLayersOpen ? 'block' : 'hidden sm:block'} ${
+          theme === 'chart'
+            ? 'bg-white/92 border-black/[0.1] text-[#1D1D1F] shadow-lg'
+            : 'bg-[#121418]/92 border-white/[0.1] text-[#F5F5F7] shadow-xl'
+        } border rounded-xl p-3 backdrop-blur-xl text-xs max-w-[240px] transition-colors`}>
           {/* Basemap Selection */}
-          <div className="mb-2.5 pb-2 border-b border-white/[0.08]">
-            <div className="flex items-center justify-between text-[#86868b] font-medium uppercase tracking-wider text-[10px] mb-1.5">
+          <div className="mb-2.5 pb-2.5 border-b border-black/[0.08] dark:border-white/[0.08]">
+            <div className="flex items-center justify-between text-[#86868b] font-medium uppercase tracking-[0.02em] text-[10px] mb-1.5">
               <span className="flex items-center gap-1.5">
-                <MapIcon className="w-3 h-3 text-[#2997ff]" />
+                <MapIcon className="w-3 h-3 text-[#0071e3] dark:text-[#0A84FF]" />
                 Basemap
               </span>
-              <span className="text-[9px] text-[#38bdf8] font-mono">CARTO API</span>
+              <span className="text-[9px] text-[#0071e3] dark:text-[#38bdf8] font-mono tracking-wider">CARTO</span>
             </div>
-            <div className="grid grid-cols-3 gap-1">
+            {/* macOS Segmented Basemap Switcher */}
+            <div className="grid grid-cols-3 gap-0.5 p-0.5 rounded-lg bg-black/[0.05] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08]">
               <button
                 type="button"
-                onClick={() => setActiveBasemap('voyager')}
-                className={`px-1.5 py-1 rounded text-center text-[10px] font-medium transition ${
+                onClick={() => handleBasemapSelect('voyager')}
+                className={`px-1.5 py-1 rounded-md text-center text-[10px] transition ${
                   activeBasemap === 'voyager'
-                    ? 'bg-[#0071e3] text-white shadow-sm'
-                    : 'bg-white/[0.06] hover:bg-white/[0.12] text-[#d1d1d6]'
+                    ? (theme === 'chart'
+                        ? 'bg-white text-[#1D1D1F] shadow-xs font-medium'
+                        : 'bg-white/20 text-white shadow-xs font-medium')
+                    : 'text-[#86868b] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]'
                 }`}
-                title="CARTO Voyager Nautical Basemap (Active API Key)"
+                title="CARTO Voyager Nautical Basemap"
               >
                 Voyager
               </button>
               <button
                 type="button"
-                onClick={() => setActiveBasemap('dark')}
-                className={`px-1.5 py-1 rounded text-center text-[10px] font-medium transition ${
+                onClick={() => handleBasemapSelect('dark')}
+                className={`px-1.5 py-1 rounded-md text-center text-[10px] transition ${
                   activeBasemap === 'dark'
-                    ? 'bg-[#0071e3] text-white shadow-sm'
-                    : 'bg-white/[0.06] hover:bg-white/[0.12] text-[#d1d1d6]'
+                    ? (theme === 'chart'
+                        ? 'bg-white text-[#1D1D1F] shadow-xs font-medium'
+                        : 'bg-white/20 text-white shadow-xs font-medium')
+                    : 'text-[#86868b] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]'
                 }`}
-                title="CARTO Dark Matter Basemap (Active API Key)"
+                title="CARTO Dark Matter Basemap"
               >
                 Dark
               </button>
               <button
                 type="button"
-                onClick={() => setActiveBasemap('esri')}
-                className={`px-1.5 py-1 rounded text-center text-[10px] font-medium transition ${
+                onClick={() => handleBasemapSelect('esri')}
+                className={`px-1.5 py-1 rounded-md text-center text-[10px] transition ${
                   activeBasemap === 'esri'
-                    ? 'bg-[#0071e3] text-white shadow-sm'
-                    : 'bg-white/[0.06] hover:bg-white/[0.12] text-[#d1d1d6]'
+                    ? (theme === 'chart'
+                        ? 'bg-white text-[#1D1D1F] shadow-xs font-medium'
+                        : 'bg-white/20 text-white shadow-xs font-medium')
+                    : 'text-[#86868b] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]'
                 }`}
                 title="Esri Oceanic Gray Basemap"
               >
@@ -624,14 +649,12 @@ export default function MarineMap({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-[#86868b] font-medium mb-2 pb-1.5 border-b border-white/[0.08] uppercase tracking-wider text-[10px]">
-            <div className="glass-icon w-5 h-5">
-              <Layers className="w-3 h-3 text-[#2997ff]" />
-            </div>
-            <span>Layers</span>
+          <div className="flex items-center gap-1.5 text-[#86868b] font-medium mb-2 pb-1.5 border-b border-black/[0.08] dark:border-white/[0.08] uppercase tracking-[0.02em] text-[10px]">
+            <Layers className="w-3 h-3 text-[#0071e3] dark:text-[#0A84FF]" />
+            <span>GIS Layers</span>
           </div>
           <div className="space-y-1.5">
-            <label className="flex items-center gap-2 cursor-pointer hover:text-white transition">
+            <label className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition select-none">
               <input
                 type="checkbox"
                 checked={layersVisible.harbours}
@@ -639,11 +662,11 @@ export default function MarineMap({
                 className="rounded accent-[#0071e3] w-3.5 h-3.5"
               />
               <span className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#2997ff]"></span>
-                <span className="font-normal text-xs text-[#e1e1e6]">Harbours</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0071e3] dark:bg-[#2997ff]"></span>
+                <span className="font-normal text-xs text-inherit">Harbours</span>
               </span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer hover:text-white transition">
+            <label className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition select-none">
               <input
                 type="checkbox"
                 checked={layersVisible.pfz}
@@ -651,11 +674,11 @@ export default function MarineMap({
                 className="rounded accent-[#0071e3] w-3.5 h-3.5"
               />
               <span className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                <span className="font-normal text-xs text-[#e1e1e6]">PFZ Hotspots</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
+                <span className="font-normal text-xs text-inherit">PFZ Hotspots</span>
               </span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer hover:text-white transition">
+            <label className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition select-none">
               <input
                 type="checkbox"
                 checked={layersVisible.route}
@@ -663,11 +686,11 @@ export default function MarineMap({
                 className="rounded accent-[#0071e3] w-3.5 h-3.5"
               />
               <span className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#2997ff]"></span>
-                <span className="font-normal text-xs text-[#e1e1e6]">Safe Route</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0071e3] dark:bg-[#2997ff]"></span>
+                <span className="font-normal text-xs text-inherit">Safe Route</span>
               </span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer hover:text-white transition">
+            <label className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition select-none">
               <input
                 type="checkbox"
                 checked={layersVisible.imbl}
@@ -675,11 +698,11 @@ export default function MarineMap({
                 className="rounded accent-[#0071e3] w-3.5 h-3.5"
               />
               <span className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
-                <span className="font-normal text-xs text-[#e1e1e6]">IMBL Border</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 dark:bg-red-400"></span>
+                <span className="font-normal text-xs text-inherit">IMBL Border</span>
               </span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer hover:text-white transition">
+            <label className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition select-none">
               <input
                 type="checkbox"
                 checked={layersVisible.mpa}
@@ -687,35 +710,39 @@ export default function MarineMap({
                 className="rounded accent-[#0071e3] w-3.5 h-3.5"
               />
               <span className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
-                <span className="font-normal text-xs text-[#e1e1e6]">MPA Sanctuaries</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-500 dark:bg-sky-400"></span>
+                <span className="font-normal text-xs text-inherit">MPA Sanctuaries</span>
               </span>
             </label>
           </div>
         </div>
       </div>
 
-      {/* Map Legend Overlay (Bottom Left) */}
-      <div className="absolute bottom-4 left-4 z-20 bg-black/75 border border-white/[0.1] rounded-lg px-3 py-1.5 shadow-xl backdrop-blur-xl text-[11px] hidden sm:block">
-        <div className="flex flex-wrap items-center gap-3 text-[#d1d1d6]">
+      {/* Map Legend Overlay (Bottom Left - Refined Operational Glass Capsule) */}
+      <div className={`absolute bottom-4 left-4 z-20 ${
+        theme === 'chart'
+          ? 'bg-white/92 border-black/[0.08] text-[#51545A] shadow-md'
+          : 'bg-[#121418]/92 border-white/[0.08] text-[#B0B4BC] shadow-lg'
+      } border rounded-lg px-3 py-1.5 backdrop-blur-xl text-[11px] hidden sm:block transition-colors`}>
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-1 bg-red-400 rounded-sm"></span>
-            <span>IMBL</span>
+            <span className="w-2.5 h-1 bg-red-500 dark:bg-red-400 rounded-xs"></span>
+            <span className="font-medium">IMBL</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-1 border-b-2 border-dashed border-amber-400"></span>
+            <span className="w-2.5 h-1 border-b-2 border-dashed border-amber-500 dark:border-amber-400"></span>
             <span>5 NM Buffer</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 bg-sky-400/30 border border-sky-400 rounded-sm"></span>
+            <span className="w-2 h-2 bg-sky-500/20 border border-sky-500 dark:border-sky-400 rounded-xs"></span>
             <span>MPA</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-sm bg-emerald-400"></span>
+            <span className="w-2 h-2 rounded-xs bg-emerald-500 dark:bg-emerald-400"></span>
             <span>PFZ</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-1 border-b-2 border-dashed border-[#2997ff]"></span>
+            <span className="w-2.5 h-1 border-b-2 border-dashed border-[#0071e3] dark:border-[#2997ff]"></span>
             <span>Route</span>
           </div>
         </div>

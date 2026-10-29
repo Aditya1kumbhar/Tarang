@@ -34,6 +34,23 @@ export default {
         body: '1.65',
       },
       colors: {
+        orca: {
+          bg: 'var(--color-bg)',
+          surface: 'var(--color-surface)',
+          'surface-subtle': 'var(--color-surface-subtle)',
+          'surface-elevated': 'var(--color-surface-elevated)',
+          border: 'var(--color-border)',
+          'border-subtle': 'var(--color-border-subtle)',
+          text: 'var(--color-text)',
+          'text-secondary': 'var(--color-text-secondary)',
+          'text-muted': 'var(--color-text-muted)',
+          accent: 'var(--color-accent)',
+          'accent-hover': 'var(--color-accent-hover)',
+          focus: 'var(--color-focus)',
+          warning: 'var(--color-warning)',
+          danger: 'var(--color-danger)',
+          success: 'var(--color-success)',
+        },
         ocean: {
           950: '#060c18',
           900: '#0a1324',
