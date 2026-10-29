@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Compass, Shield, Lock, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 
-export default function LoginPage({ onLoginSuccess, themeMode = 'ocean', onOpenPrivacy, onOpenTerms }) {
+export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
   const [authConfig, setAuthConfig] = useState({ google_client_id: '', is_configured: false });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -285,38 +285,17 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean', onOpenP
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-              <span>Full compliance with India DPDP Act 2023 & UNCLOS</span>
+              <span>Real-time territorial IMBL and sanctuary geofencing</span>
             </div>
           </div>
         </div>
       </main>
 
       {/* Statutory Footer */}
-      <footer className="w-full max-w-5xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#86868b] z-10 pt-4">
-        <p className="text-center sm:text-left text-[11px]">
+      <footer className="w-full max-w-5xl flex items-center justify-center text-xs text-[#86868b] z-10 pt-4">
+        <p className="text-center text-[11px]">
           Statutory Security Notice: National Maritime Intelligence Platform. Unauthorized access is prohibited under IT Act 2000.
         </p>
-
-        <div className="flex items-center gap-4 text-[11px]">
-          {onOpenPrivacy && (
-            <button
-              type="button"
-              onClick={onOpenPrivacy}
-              className="hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7] transition"
-            >
-              Privacy Policy (DPDP Act)
-            </button>
-          )}
-          {onOpenTerms && (
-            <button
-              type="button"
-              onClick={onOpenTerms}
-              className="hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7] transition"
-            >
-              Terms of Use (UNCLOS)
-            </button>
-          )}
-        </div>
       </footer>
     </div>
   );

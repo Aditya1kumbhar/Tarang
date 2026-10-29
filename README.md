@@ -98,8 +98,7 @@ Tarang/
 │       │   ├── ChatPanel.jsx       # Multilingual chat, 40px numeric safety dial, 1-click SIH & Demo chips, LISTEN TTS
 │       │   ├── DistrictAuthorityBoard.jsx # Coast-wide fleet surveillance board across all 12 Indian landing centres
 │       │   ├── AgentTraceDrawer.jsx # Multi-agent DAG timeline, latency meters, and Evidence Ledger viewer
-│       │   ├── SafetyAlertBanner.jsx # High-visibility Red/Amber circuit breaker header
-│       │   └── LegalModals.jsx     # Statutory Privacy Policy and Terms of Use compliance dialogs
+│       │   └── SafetyAlertBanner.jsx # High-visibility Red/Amber circuit breaker header
 ├── tests/
 │   ├── test_tools.py               # 18 unit tests for deterministic marine math, geofences, and safety index
 │   └── test_api.py                 # 14 integration tests covering all 8 SIH benchmark queries & endpoints

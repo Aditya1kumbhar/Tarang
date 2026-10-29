@@ -57,7 +57,6 @@ ORCA (Oceanographic Reasoning & Collaborative Agents) for SIH 2026 PS #20 (ID 26
     - `components/DistrictAuthorityBoard.jsx`: Coast-wide 12-harbour table with live safety dials, state filtering, and instant transition to Fisher View.
     - `components/AgentTraceDrawer.jsx`: Multi-agent DAG timeline, latency meters (ms), confidence scores, Pydantic provenance inspector, and Evidence Ledger viewer.
     - `components/SafetyAlertBanner.jsx`: High-visibility Red/Amber maritime circuit breaker advisory header.
-    - `components/LegalModals.jsx`: Statutory Privacy Policy and Terms of Use compliance dialogs.
 - `tests/`:
   - `test_tools.py`: 18 unit tests covering all deterministic marine tools, 0-100 safety index tiers, and evidence ledger entries.
   - `test_api.py`: 14 integration tests covering all 8 SIH evaluation queries, district-board endpoint, and demo-scenarios endpoint.
