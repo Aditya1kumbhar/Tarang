@@ -558,61 +558,57 @@ export default function MarineMap({
   };
 
   return (
-    <div className="relative w-full h-full bg-[#0a0a0c] overflow-hidden select-none">
+    <div className="relative w-full h-full bg-black overflow-hidden select-none">
       {/* Map DOM Container */}
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
-      {/* Map Control Overlay (Top Left: Apple-Style Layer Switcher & Controls) */}
-      <div className="absolute top-3 left-3 z-20 flex flex-col gap-2 max-w-[calc(100vw-24px)]">
-        {/* Mobile Toolbar Pills */}
-        <div className="flex items-center gap-1.5 flex-wrap">
+      {/* Map Control Overlay (Top Left: Apple Liquid Retina XDR HUD Layer Controls) */}
+      <div className="absolute top-3.5 left-3.5 z-20 flex flex-col gap-2 max-w-[calc(100vw-24px)]">
+        {/* Mobile & Quick Toolbar Pills */}
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => setIsLayersOpen((prev) => !prev)}
-            className="glass-icon px-2.5 py-1.5 text-xs font-medium gap-1.5 shadow-lg text-[#f5f5f7] sm:hidden"
+            className="xdr-pill px-3 py-1.5 text-xs font-medium gap-1.5 text-[#1D1D1F] dark:text-white sm:hidden rounded-full flex items-center active:scale-[0.96]"
             title="Toggle Map Layers & Basemaps"
           >
-            <Layers className="w-3.5 h-3.5 text-[#2997ff]" />
+            <Layers className="w-3.5 h-3.5 text-[#2997FF]" />
             <span>Layers</span>
           </button>
 
           <button
             onClick={handleResetView}
-            className="glass-icon px-2.5 sm:px-3 py-1.5 text-xs font-medium gap-1.5 shadow-lg text-[#f5f5f7]"
+            className="xdr-pill px-3.5 py-1.5 text-xs font-medium gap-1.5 text-[#1D1D1F] dark:text-white rounded-full flex items-center active:scale-[0.96]"
             title="Center Map on Active Harbour"
           >
-            <Crosshair className="w-3.5 h-3.5 text-[#2997ff]" />
+            <Crosshair className="w-3.5 h-3.5 text-[#2997FF]" />
             <span className="hidden sm:inline">Center: {activeHarbour?.name || 'Coast'}</span>
             <span className="sm:hidden">Center</span>
           </button>
         </div>
 
-        {/* Layer & Basemap Panel (Toggleable on mobile, persistent on tablet/desktop) */}
-        <div className={`${isLayersOpen ? 'block' : 'hidden sm:block'} ${
-          theme === 'chart'
-            ? 'bg-white/92 border-black/[0.1] text-[#1D1D1F] shadow-lg'
-            : 'bg-[#121418]/92 border-white/[0.1] text-[#F5F5F7] shadow-xl'
-        } border rounded-xl p-3 backdrop-blur-xl text-xs max-w-[240px] transition-colors`}>
+        {/* Layer & Basemap Bento Panel (Toggleable on mobile, persistent on tablet/desktop) */}
+        <div className={`${isLayersOpen ? 'block' : 'hidden sm:block'} xdr-surface rounded-2xl p-3.5 text-xs max-w-[245px] transition-all`}>
           {/* Basemap Selection */}
-          <div className="mb-2.5 pb-2.5 border-b border-black/[0.08] dark:border-white/[0.08]">
-            <div className="flex items-center justify-between text-[#86868b] font-medium uppercase tracking-[0.02em] text-[10px] mb-1.5">
+          <div className="mb-3 pb-2.5 border-b border-black/[0.08] dark:border-white/[0.08]">
+            <div className="flex items-center justify-between text-[#86868b] dark:text-[#A1A1A6] font-semibold uppercase tracking-[0.08em] text-[10px] mb-2">
               <span className="flex items-center gap-1.5">
-                <MapIcon className="w-3 h-3 text-[#0071e3] dark:text-[#0A84FF]" />
+                <MapIcon className="w-3 h-3 text-[#0071e3] dark:text-[#2997FF]" />
                 Basemap
               </span>
-              <span className="text-[9px] text-[#0071e3] dark:text-[#38bdf8] font-mono tracking-wider">CARTO</span>
+              <span className="text-[9px] text-[#0071e3] dark:text-[#2997FF] font-mono tracking-wider">CARTO</span>
             </div>
-            {/* macOS Segmented Basemap Switcher */}
-            <div className="grid grid-cols-3 gap-0.5 p-0.5 rounded-lg bg-black/[0.05] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08]">
+            {/* Apple Floating Segmented Basemap Switcher */}
+            <div className="grid grid-cols-3 gap-1 p-1 rounded-full bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08]">
               <button
                 type="button"
                 onClick={() => handleBasemapSelect('voyager')}
-                className={`px-1.5 py-1 rounded-md text-center text-[10px] transition ${
+                className={`px-2 py-1 rounded-full text-center text-[10px] transition-all active:scale-[0.96] ${
                   activeBasemap === 'voyager'
                     ? (theme === 'chart'
                         ? 'bg-white text-[#1D1D1F] shadow-xs font-medium'
-                        : 'bg-white/20 text-white shadow-xs font-medium')
-                    : 'text-[#86868b] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]'
+                        : 'bg-white/20 text-white shadow-xs font-medium border border-white/20')
+                    : 'text-[#86868b] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white'
                 }`}
                 title="CARTO Voyager Nautical Basemap"
               >
@@ -621,12 +617,12 @@ export default function MarineMap({
               <button
                 type="button"
                 onClick={() => handleBasemapSelect('dark')}
-                className={`px-1.5 py-1 rounded-md text-center text-[10px] transition ${
+                className={`px-2 py-1 rounded-full text-center text-[10px] transition-all active:scale-[0.96] ${
                   activeBasemap === 'dark'
                     ? (theme === 'chart'
                         ? 'bg-white text-[#1D1D1F] shadow-xs font-medium'
-                        : 'bg-white/20 text-white shadow-xs font-medium')
-                    : 'text-[#86868b] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]'
+                        : 'bg-white/20 text-white shadow-xs font-medium border border-white/20')
+                    : 'text-[#86868b] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white'
                 }`}
                 title="CARTO Dark Matter Basemap"
               >
@@ -635,12 +631,12 @@ export default function MarineMap({
               <button
                 type="button"
                 onClick={() => handleBasemapSelect('esri')}
-                className={`px-1.5 py-1 rounded-md text-center text-[10px] transition ${
+                className={`px-2 py-1 rounded-full text-center text-[10px] transition-all active:scale-[0.96] ${
                   activeBasemap === 'esri'
                     ? (theme === 'chart'
                         ? 'bg-white text-[#1D1D1F] shadow-xs font-medium'
-                        : 'bg-white/20 text-white shadow-xs font-medium')
-                    : 'text-[#86868b] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]'
+                        : 'bg-white/20 text-white shadow-xs font-medium border border-white/20')
+                    : 'text-[#86868b] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white'
                 }`}
                 title="Esri Oceanic Gray Basemap"
               >
@@ -649,12 +645,12 @@ export default function MarineMap({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 text-[#86868b] font-medium mb-2 pb-1.5 border-b border-black/[0.08] dark:border-white/[0.08] uppercase tracking-[0.02em] text-[10px]">
-            <Layers className="w-3 h-3 text-[#0071e3] dark:text-[#0A84FF]" />
+          <div className="flex items-center gap-1.5 text-[#86868b] dark:text-[#A1A1A6] font-semibold mb-2.5 pb-1.5 border-b border-black/[0.08] dark:border-white/[0.08] uppercase tracking-[0.08em] text-[10px]">
+            <Layers className="w-3 h-3 text-[#0071e3] dark:text-[#2997FF]" />
             <span>GIS Layers</span>
           </div>
           <div className="space-y-1.5">
-            <label className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition select-none">
+            <label className="flex items-center gap-2 cursor-pointer hover:opacity-85 transition select-none">
               <input
                 type="checkbox"
                 checked={layersVisible.harbours}
@@ -662,11 +658,11 @@ export default function MarineMap({
                 className="rounded accent-[#0071e3] w-3.5 h-3.5"
               />
               <span className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#0071e3] dark:bg-[#2997ff]"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0071e3] dark:bg-[#2997FF]"></span>
                 <span className="font-normal text-xs text-inherit">Harbours</span>
               </span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition select-none">
+            <label className="flex items-center gap-2 cursor-pointer hover:opacity-85 transition select-none">
               <input
                 type="checkbox"
                 checked={layersVisible.pfz}
@@ -678,7 +674,7 @@ export default function MarineMap({
                 <span className="font-normal text-xs text-inherit">PFZ Hotspots</span>
               </span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition select-none">
+            <label className="flex items-center gap-2 cursor-pointer hover:opacity-85 transition select-none">
               <input
                 type="checkbox"
                 checked={layersVisible.route}
@@ -686,11 +682,11 @@ export default function MarineMap({
                 className="rounded accent-[#0071e3] w-3.5 h-3.5"
               />
               <span className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#0071e3] dark:bg-[#2997ff]"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0071e3] dark:bg-[#2997FF]"></span>
                 <span className="font-normal text-xs text-inherit">Safe Route</span>
               </span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition select-none">
+            <label className="flex items-center gap-2 cursor-pointer hover:opacity-85 transition select-none">
               <input
                 type="checkbox"
                 checked={layersVisible.imbl}
@@ -702,7 +698,7 @@ export default function MarineMap({
                 <span className="font-normal text-xs text-inherit">IMBL Border</span>
               </span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition select-none">
+            <label className="flex items-center gap-2 cursor-pointer hover:opacity-85 transition select-none">
               <input
                 type="checkbox"
                 checked={layersVisible.mpa}
@@ -718,16 +714,12 @@ export default function MarineMap({
         </div>
       </div>
 
-      {/* Map Legend Overlay (Bottom Left - Refined Operational Glass Capsule) */}
-      <div className={`absolute bottom-4 left-4 z-20 ${
-        theme === 'chart'
-          ? 'bg-white/92 border-black/[0.08] text-[#51545A] shadow-md'
-          : 'bg-[#121418]/92 border-white/[0.08] text-[#B0B4BC] shadow-lg'
-      } border rounded-lg px-3 py-1.5 backdrop-blur-xl text-[11px] hidden sm:block transition-colors`}>
-        <div className="flex flex-wrap items-center gap-3">
+      {/* Map Legend Overlay (Bottom Left - Apple HUD Capsule) */}
+      <div className="absolute bottom-4 left-4 z-20 xdr-pill rounded-full px-4 py-1.5 text-[11px] hidden sm:block transition-all text-[#51545A] dark:text-[#A1A1A6]">
+        <div className="flex flex-wrap items-center gap-3.5">
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-1 bg-red-500 dark:bg-red-400 rounded-xs"></span>
-            <span className="font-medium">IMBL</span>
+            <span className="w-2.5 h-1 bg-red-500 dark:bg-red-400 rounded-full"></span>
+            <span className="font-medium text-[#1D1D1F] dark:text-white">IMBL</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-1 border-b-2 border-dashed border-amber-500 dark:border-amber-400"></span>
@@ -738,11 +730,11 @@ export default function MarineMap({
             <span>MPA</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-xs bg-emerald-500 dark:bg-emerald-400"></span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
             <span>PFZ</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-1 border-b-2 border-dashed border-[#0071e3] dark:border-[#2997ff]"></span>
+            <span className="w-2.5 h-1 border-b-2 border-dashed border-[#0071e3] dark:border-[#2997FF]"></span>
             <span>Route</span>
           </div>
         </div>

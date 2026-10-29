@@ -81,22 +81,22 @@
   }
 
   .dark {
-    /* Theme Tokens (Dark Mode - Apple MacBook Pro Operational Dark) */
-    --color-bg: #0B0C0F;
-    --color-surface: #121418;
-    --color-surface-subtle: #191C21;
-    --color-surface-elevated: #20242A;
-    --color-border: #30353D;
-    --color-border-subtle: #252A31;
-    --color-text: #F5F5F7;
-    --color-text-secondary: #B0B4BC;
-    --color-text-muted: #858B95;
-    --color-accent: #0A84FF;
-    --color-accent-hover: #409CFF;
-    --color-focus: #64B5FF;
-    --color-warning: #FFB84D;
-    --color-danger: #FF6961;
-    --color-success: #32D583;
+    /* Theme Tokens (Dark Mode - Apple MacBook Pro Liquid Retina XDR Display) */
+    --color-bg: #000000;
+    --color-surface: #08090C;
+    --color-surface-subtle: #0E1014;
+    --color-surface-elevated: #15171D;
+    --color-border: rgba(255, 255, 255, 0.08);
+    --color-border-subtle: rgba(255, 255, 255, 0.05);
+    --color-text: #FFFFFF;
+    --color-text-secondary: #A1A1A6;
+    --color-text-muted: #6E6E73;
+    --color-accent: #2997FF;
+    --color-accent-hover: #47A3FF;
+    --color-focus: #2997FF;
+    --color-warning: #FF9F0A;
+    --color-danger: #FF453A;
+    --color-success: #30D158;
   }
 
   html {
@@ -380,6 +380,132 @@ button, a, [role="button"], .tab, .chip, .glass-icon, input[type="submit"] {
 }
 .pr-safe {
   padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
+}
+
+/* ==============================================================================
+   APPLE MACBOOK PRO LIQUID RETINA XDR DISPLAY SYSTEM TOKENS & UTILITIES
+   Extreme Dynamic Range Contrast, Specular Rim Highlights, Translucent Depth
+   ============================================================================== */
+
+.xdr-surface {
+  background: rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12), 0 20px 45px -15px rgba(0, 0, 0, 0.85);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.xdr-surface:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2), 0 25px 50px -15px rgba(0, 0, 0, 0.95);
+}
+
+:not(.dark) .xdr-surface {
+  background: #FFFFFF;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.8), 0 10px 25px -5px rgba(0, 0, 0, 0.04);
+}
+
+:not(.dark) .xdr-surface:hover {
+  border-color: rgba(0, 0, 0, 0.14);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.9), 0 15px 30px -5px rgba(0, 0, 0, 0.06);
+}
+
+.xdr-pill {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.xdr-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+:not(.dark) .xdr-pill {
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+}
+
+:not(.dark) .xdr-pill:hover {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.14);
+}
+
+.xdr-gradient-text {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 65%, rgba(255, 255, 255, 0.65) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+:not(.dark) .xdr-gradient-text {
+  background: linear-gradient(180deg, #1D1D1F 0%, #1D1D1F 75%, #51545A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Luminous High Dynamic Range Jewel Badges (1,600 nits peak look) */
+.xdr-jewel-emerald {
+  background: rgba(48, 209, 88, 0.12);
+  border: 1px solid rgba(48, 209, 88, 0.28);
+  color: #30D158;
+  box-shadow: 0 0 16px -2px rgba(48, 209, 88, 0.2);
+}
+
+.xdr-jewel-amber {
+  background: rgba(255, 159, 10, 0.12);
+  border: 1px solid rgba(255, 159, 10, 0.28);
+  color: #FF9F0A;
+  box-shadow: 0 0 16px -2px rgba(255, 159, 10, 0.2);
+}
+
+.xdr-jewel-red {
+  background: rgba(255, 69, 58, 0.14);
+  border: 1px solid rgba(255, 69, 58, 0.32);
+  color: #FF453A;
+  box-shadow: 0 0 18px -2px rgba(255, 69, 58, 0.25);
+}
+
+.xdr-jewel-blue {
+  background: rgba(41, 151, 255, 0.12);
+  border: 1px solid rgba(41, 151, 255, 0.28);
+  color: #2997FF;
+  box-shadow: 0 0 16px -2px rgba(41, 151, 255, 0.2);
+}
+
+:not(.dark) .xdr-jewel-emerald {
+  background: rgba(22, 128, 61, 0.08);
+  border: 1px solid rgba(22, 128, 61, 0.25);
+  color: #15803D;
+  box-shadow: 0 1px 3px rgba(22, 128, 61, 0.1);
+}
+
+:not(.dark) .xdr-jewel-amber {
+  background: rgba(183, 110, 0, 0.08);
+  border: 1px solid rgba(183, 110, 0, 0.25);
+  color: #B76E00;
+  box-shadow: 0 1px 3px rgba(183, 110, 0, 0.1);
+}
+
+:not(.dark) .xdr-jewel-red {
+  background: rgba(217, 45, 32, 0.08);
+  border: 1px solid rgba(217, 45, 32, 0.25);
+  color: #D92D20;
+  box-shadow: 0 1px 3px rgba(217, 45, 32, 0.1);
+}
+
+:not(.dark) .xdr-jewel-blue {
+  background: rgba(0, 113, 227, 0.08);
+  border: 1px solid rgba(0, 113, 227, 0.25);
+  color: #0071E3;
+  box-shadow: 0 1px 3px rgba(0, 113, 227, 0.1);
 }
 
 

@@ -149,65 +149,60 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
 
   return (
     <div
-      className={`min-h-[100dvh] w-screen flex flex-col justify-between items-center px-4 py-5 sm:py-8 pt-safe pb-safe select-none transition-colors duration-300 overflow-y-auto ${
+      className={`min-h-[100dvh] w-screen flex flex-col justify-between items-center px-4 py-5 sm:py-8 pt-safe pb-safe select-none transition-colors duration-300 overflow-y-auto relative ${
         isLight
-          ? 'bg-[#f5f5f7] text-[#1d1d1f]'
-          : 'bg-[#030712] text-[#f5f5f7]'
+          ? 'bg-[#F5F5F7] text-[#1D1D1F]'
+          : 'bg-black text-white'
       }`}
     >
-      {/* Background Subtle Nautical Grid Accent */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px]" />
+      {/* Liquid Retina XDR Radial Gradient Aura */}
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_80%_80%_at_50%_-15%,rgba(41,151,255,0.12),rgba(0,0,0,0))]" />
+      <div className="absolute inset-0 pointer-events-none opacity-[0.025] bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px]" />
 
       {/* Top Header Identity */}
       <header className="w-full max-w-5xl flex items-center justify-between z-10">
         <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="glass-icon w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center">
-            <Compass className="w-4 h-4 sm:w-5 sm:h-5 text-current" />
+          <div className="glass-icon w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center">
+            <Compass className="w-4 h-4 sm:w-5 sm:h-5 text-[#2997FF]" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-base sm:text-lg tracking-[-0.03em]">ORCA</span>
-              <span className="text-[9px] sm:text-[10px] uppercase font-medium tracking-[0.02em] px-1.5 sm:px-2 py-0.5 rounded-full border border-black/10 dark:border-white/10 text-[#86868b]">
+              <span className="font-semibold text-base sm:text-lg tracking-[-0.03em] xdr-gradient-text">ORCA</span>
+              <span className="text-[9px] sm:text-[10px] uppercase font-semibold tracking-[0.06em] px-2 py-0.5 rounded-full border border-black/10 dark:border-white/10 text-[#86868b] dark:text-[#A1A1A6]">
                 Gov of India
               </span>
             </div>
-            <p className="text-[10px] sm:text-xs text-[#86868b] tracking-[-0.01em]">
+            <p className="text-[10px] sm:text-xs text-[#86868b] dark:text-[#A1A1A6] tracking-[-0.01em]">
               Oceanographic Reasoning & Collaborative Agents
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-[#86868b] tracking-[-0.01em]">
-          <Shield className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+        <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-[#86868b] dark:text-[#A1A1A6] tracking-[-0.01em]">
+          <Shield className="w-3.5 h-3.5 text-[#30D158] shrink-0" />
           <span className="hidden sm:inline">Territorial Security Gate</span>
         </div>
       </header>
 
-      {/* Main Authentication Card */}
+      {/* Main Authentication Bento Card */}
       <main className="w-full max-w-md my-auto py-4 z-10">
-        <div
-          className={`p-5 sm:p-8 rounded-2xl border transition-all duration-300 ${
-            isLight
-              ? 'bg-white/80 border-black/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.06)] backdrop-blur-2xl'
-              : 'bg-white/[0.03] border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-2xl'
-          }`}
-        >
+        <div className="p-6 sm:p-9 rounded-3xl xdr-surface transition-all duration-300">
           {/* Card Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4 glass-icon">
-              <Lock className="w-5 h-5 text-current" />
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4 glass-icon">
+              <Lock className="w-5 h-5 text-[#2997FF]" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-[-0.04em] leading-[1.08] mb-2">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-[-0.04em] leading-[1.08] mb-2 xdr-gradient-text">
               Maritime Access Control
             </h1>
-            <p className="text-xs text-[#86868b] leading-[1.65] tracking-[-0.01em] max-w-xs mx-auto">
+            <p className="text-xs text-[#86868b] dark:text-[#A1A1A6] leading-[1.65] tracking-[-0.01em] max-w-xs mx-auto">
               Sign in with your verified Google / Gmail account to access real-time marine intelligence, live coastal radar, and safety circuit breakers.
             </p>
           </div>
 
           {/* Error Alert Banner */}
           {errorMessage && (
-            <div className="mb-6 p-3 rounded-lg border text-xs flex items-start gap-2.5 bg-red-500/10 border-red-500/20 text-red-400">
+            <div className="mb-6 p-3 rounded-xl border text-xs flex items-start gap-2.5 xdr-jewel-red">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{errorMessage}</span>
             </div>
@@ -220,23 +215,19 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
                 {/* Official Google Identity Services Render Target */}
                 <div ref={googleBtnRef} className="min-h-[44px] flex items-center justify-center w-full" />
                 {!gisLoaded && (
-                  <div className="text-[11px] text-[#86868b] animate-pulse">
+                  <div className="text-[11px] text-[#86868b] dark:text-[#A1A1A6] animate-pulse">
                     Connecting to Google Identity Services...
                   </div>
                 )}
               </div>
             ) : (
               <div className="w-full flex flex-col gap-3">
-                <div
-                  className={`p-3.5 rounded-lg border text-left text-xs ${
-                    isLight ? 'bg-amber-500/5 border-amber-500/20' : 'bg-amber-500/10 border-amber-500/20'
-                  }`}
-                >
-                  <div className="font-medium text-amber-500 mb-1 flex items-center gap-1.5">
+                <div className="p-3.5 rounded-2xl xdr-jewel-amber text-left text-xs">
+                  <div className="font-semibold mb-1 flex items-center gap-1.5 text-current">
                     <AlertCircle className="w-3.5 h-3.5" />
                     <span>Google Client ID Setup</span>
                   </div>
-                  <p className="text-[11px] text-[#86868b] leading-normal tracking-[-0.01em]">
+                  <p className="text-[11px] leading-normal tracking-[-0.01em] opacity-90">
                     To enable live Google Sign-In, add <code className="font-mono text-current tracking-[0.02em]">GOOGLE_CLIENT_ID</code> to your environment.
                   </p>
                 </div>
@@ -245,10 +236,10 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
                   type="button"
                   onClick={handleDevLogin}
                   disabled={isLoading}
-                  className={`w-full py-2.5 px-4 rounded-lg font-medium text-xs sm:text-[13px] tracking-[-0.01em] border transition-all flex items-center justify-center gap-2 ${
+                  className={`w-full py-3 px-4 rounded-xl font-medium text-xs sm:text-[13px] tracking-[-0.01em] transition-all flex items-center justify-center gap-2 active:scale-[0.96] shadow-md ${
                     isLight
-                      ? 'bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white border-transparent'
-                      : 'bg-white hover:bg-neutral-100 text-[#1d1d1f] border-transparent'
+                      ? 'bg-[#1D1D1F] hover:bg-[#2D2D2F] text-white'
+                      : 'bg-white hover:bg-neutral-100 text-[#1D1D1F]'
                   }`}
                 >
                   {isLoading ? (
@@ -268,7 +259,7 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
               <button
                 type="button"
                 onClick={handleDevLogin}
-                className="text-[11px] text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7] underline underline-offset-4 transition mt-2"
+                className="text-[11px] text-[#86868b] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white underline underline-offset-4 transition mt-2 active:scale-[0.97]"
               >
                 Sign in with authorized officer credential
               </button>
@@ -276,17 +267,17 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
           </div>
 
           {/* Security Guarantee List */}
-          <div className="mt-8 pt-6 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#86868b] space-y-2">
+          <div className="mt-8 pt-6 border-t border-black/[0.06] dark:border-white/[0.08] text-[11px] text-[#86868b] dark:text-[#A1A1A6] space-y-2.5">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#30D158] shrink-0" />
               <span>End-to-end cryptographic session signing (HMAC-SHA256)</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#30D158] shrink-0" />
               <span>Zero credentials stored in browser localStorage</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#30D158] shrink-0" />
               <span>Real-time territorial IMBL and sanctuary geofencing</span>
             </div>
           </div>
@@ -294,7 +285,7 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
       </main>
 
       {/* Statutory Footer */}
-      <footer className="w-full max-w-5xl flex items-center justify-center text-xs text-[#86868b] z-10 pt-4">
+      <footer className="w-full max-w-5xl flex items-center justify-center text-xs text-[#86868b] dark:text-[#6E6E73] z-10 pt-4">
         <p className="text-center text-[11px]">
           Statutory Security Notice: National Maritime Intelligence Platform. Unauthorized access is prohibited under IT Act 2000.
         </p>

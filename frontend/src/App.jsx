@@ -284,33 +284,33 @@ export default function App() {
   return (
     <div
       className={`flex flex-col h-screen h-[100dvh] w-screen overflow-hidden font-sans transition-colors ${
-        themeMode === 'ocean' ? 'dark bg-[#0a0a0c] text-[#f5f5f7]' : 'bg-[#f5f5f7] text-[#1d1d1f]'
+        themeMode === 'ocean' ? 'dark bg-black text-[#FFFFFF]' : 'bg-[#F5F5F7] text-[#1D1D1F]'
       }`}
     >
-      {/* 1. Apple macOS Operational Header (Calm, Unified Hierarchy) */}
+      {/* 1. Apple MacBook Pro Liquid Retina XDR Display Bar (Ultra-Translucent, Specular Depth) */}
       <header
-        className={`min-h-14 h-[calc(3.5rem+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] px-3 sm:px-6 flex items-center justify-between shrink-0 z-30 transition-colors backdrop-blur-xl border-b ${
+        className={`min-h-14 h-[calc(3.5rem+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] px-3 sm:px-6 flex items-center justify-between shrink-0 z-30 transition-colors backdrop-blur-2xl border-b ${
           themeMode === 'chart'
-            ? 'bg-white/85 border-black/[0.08] text-[#1d1d1f]'
-            : 'bg-[#0B0C0F]/90 border-white/[0.08] text-[#f5f5f7]'
+            ? 'bg-white/80 border-black/[0.08] text-[#1D1D1F] shadow-[0_1px_0_0_rgba(255,255,255,0.8)]'
+            : 'bg-black/75 border-white/[0.08] text-[#FFFFFF] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_10px_30px_rgba(0,0,0,0.8)]'
         }`}
       >
         {/* Left: Brand Identity & Primary Views */}
         <div className="flex items-center gap-3 sm:gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-center shadow-xs">
-              <Compass className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#0071e3] dark:text-[#0A84FF]" />
+            <div className="glass-icon w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-xl shadow-xs">
+              <Compass className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#0071e3] dark:text-[#2997FF]" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h1 className="font-semibold text-base sm:text-lg tracking-[-0.03em] leading-tight">
+                <h1 className="font-semibold text-base sm:text-lg tracking-[-0.03em] leading-tight xdr-gradient-text">
                   ORCA
                 </h1>
-                <span className="hidden sm:inline-block text-[9px] uppercase font-medium tracking-[0.02em] px-1.5 py-0.2 rounded bg-black/[0.04] dark:bg-white/[0.06] text-[#86868b]">
+                <span className="hidden sm:inline-block text-[9px] uppercase font-semibold tracking-[0.06em] px-1.5 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.08] text-[#86868b] dark:text-[#A1A1A6] border border-black/[0.04] dark:border-white/[0.06]">
                   Gov of India
                 </span>
               </div>
-              <p className="text-[10px] sm:text-xs text-[#86868b] block font-normal leading-tight tracking-[-0.01em]">
+              <p className="text-[10px] sm:text-xs text-[#86868b] dark:text-[#A1A1A6] block font-normal leading-tight tracking-[-0.01em]">
                 Marine Intelligence
               </p>
             </div>
@@ -318,23 +318,23 @@ export default function App() {
 
           <div className="h-5 w-px bg-black/[0.08] dark:bg-white/[0.08] hidden md:block" />
 
-          {/* Primary View Switcher (macOS Segmented Control) */}
+          {/* Primary View Switcher (Apple Floating Capsule Control) */}
           <div
-            className={`hidden md:inline-flex items-center p-0.5 rounded-lg border transition-colors ${
+            className={`hidden md:inline-flex items-center p-1 rounded-full border transition-all ${
               themeMode === 'chart'
-                ? 'bg-black/[0.04] border-black/[0.06]'
-                : 'bg-white/[0.05] border-white/[0.06]'
+                ? 'bg-black/[0.03] border-black/[0.06]'
+                : 'bg-white/[0.05] border-white/[0.08] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]'
             }`}
           >
             <button
               type="button"
               onClick={() => setPersonaMode('fisher')}
-              className={`px-3 py-1 rounded-md text-xs font-medium tracking-[-0.01em] transition-all flex items-center gap-1.5 ${
+              className={`px-3.5 py-1 rounded-full text-xs font-medium tracking-[-0.01em] transition-all flex items-center gap-1.5 active:scale-[0.96] ${
                 personaMode === 'fisher'
                   ? (themeMode === 'chart'
-                      ? 'bg-white text-[#1d1d1f] shadow-xs'
-                      : 'bg-white/[0.14] text-white shadow-xs')
-                  : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7]'
+                      ? 'bg-white text-[#1D1D1F] shadow-xs'
+                      : 'bg-white/15 text-white shadow-[0_2px_8px_rgba(0,0,0,0.5)] border border-white/20')
+                  : 'text-[#86868b] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white'
               }`}
             >
               <Anchor className="w-3.5 h-3.5" />
@@ -343,12 +343,12 @@ export default function App() {
             <button
               type="button"
               onClick={() => setPersonaMode('district')}
-              className={`px-3 py-1 rounded-md text-xs font-medium tracking-[-0.01em] transition-all flex items-center gap-1.5 ${
+              className={`px-3.5 py-1 rounded-full text-xs font-medium tracking-[-0.01em] transition-all flex items-center gap-1.5 active:scale-[0.96] ${
                 personaMode === 'district'
                   ? (themeMode === 'chart'
-                      ? 'bg-white text-[#1d1d1f] shadow-xs'
-                      : 'bg-white/[0.14] text-white shadow-xs')
-                  : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7]'
+                      ? 'bg-white text-[#1D1D1F] shadow-xs'
+                      : 'bg-white/15 text-white shadow-[0_2px_8px_rgba(0,0,0,0.5)] border border-white/20')
+                  : 'text-[#86868b] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white'
               }`}
             >
               <Building2 className="w-3.5 h-3.5" />
@@ -360,41 +360,41 @@ export default function App() {
         {/* Center: Live Environmental Telemetry & Breaker Status Group */}
         <div className="hidden xl:flex items-center gap-4 text-xs">
           {liveWeather && (
-            <div className="flex items-center gap-4 text-[#86868b]">
+            <div className="flex items-center gap-4 text-[#86868b] dark:text-[#A1A1A6]">
               <div className="flex items-center gap-1.5" title="Sea Surface Temperature">
-                <Thermometer className="w-3.5 h-3.5" />
-                <span className="font-medium tracking-[-0.01em] tabular-nums text-[#1d1d1f] dark:text-[#f5f5f7]">
+                <Thermometer className="w-3.5 h-3.5 text-[#2997FF]" />
+                <span className="font-semibold tracking-[-0.01em] tabular-nums text-[#1D1D1F] dark:text-white">
                   {liveWeather.sst_c}°C
                 </span>
-                <span className="text-[10px] uppercase tracking-[0.02em] font-mono text-[#86868b]">SST</span>
+                <span className="text-[10px] uppercase tracking-[0.06em] font-mono text-[#86868b] dark:text-[#6E6E73]">SST</span>
               </div>
-              <span className="text-black/15 dark:text-white/15">•</span>
+              <span className="text-black/15 dark:text-white/20">•</span>
               <div className="flex items-center gap-1.5" title="Significant Wave Height">
-                <Waves className="w-3.5 h-3.5" />
-                <span className="font-medium tracking-[-0.01em] tabular-nums text-[#1d1d1f] dark:text-[#f5f5f7]">
+                <Waves className="w-3.5 h-3.5 text-[#2997FF]" />
+                <span className="font-semibold tracking-[-0.01em] tabular-nums text-[#1D1D1F] dark:text-white">
                   {liveWeather.wave_height_m}m
                 </span>
-                <span className="text-[10px] uppercase tracking-[0.02em] font-mono text-[#86868b]">Waves</span>
+                <span className="text-[10px] uppercase tracking-[0.06em] font-mono text-[#86868b] dark:text-[#6E6E73]">Waves</span>
               </div>
-              <span className="text-black/15 dark:text-white/15">•</span>
+              <span className="text-black/15 dark:text-white/20">•</span>
               <div className="flex items-center gap-1.5" title="Surface Wind Speed">
-                <Wind className="w-3.5 h-3.5" />
-                <span className="font-medium tracking-[-0.01em] tabular-nums text-[#1d1d1f] dark:text-[#f5f5f7]">
+                <Wind className="w-3.5 h-3.5 text-[#2997FF]" />
+                <span className="font-semibold tracking-[-0.01em] tabular-nums text-[#1D1D1F] dark:text-white">
                   {liveWeather.wind_speed_kmh} km/h
                 </span>
-                <span className="text-[10px] uppercase tracking-[0.02em] font-mono text-[#86868b]">Wind</span>
+                <span className="text-[10px] uppercase tracking-[0.06em] font-mono text-[#86868b] dark:text-[#6E6E73]">Wind</span>
               </div>
             </div>
           )}
 
-          {/* Restrained Circuit Breaker Status Indicator */}
+          {/* Luminous High Dynamic Range Breaker Status Indicator */}
           <div
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium tracking-[-0.01em] transition-colors border ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-[-0.01em] transition-all ${
               safetyStatus === 'RED_ALERT'
-                ? 'bg-red-500/10 border-red-500/25 text-red-600 dark:text-red-400'
+                ? 'xdr-jewel-red'
                 : safetyStatus === 'AMBER'
-                ? 'bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-400'
-                : 'bg-emerald-500/10 border-emerald-500/25 text-emerald-700 dark:text-emerald-400'
+                ? 'xdr-jewel-amber'
+                : 'xdr-jewel-emerald'
             }`}
           >
             {safetyStatus === 'RED_ALERT' ? (
@@ -407,22 +407,22 @@ export default function App() {
         </div>
 
         {/* Right: Secondary Actions, Theme Toggle & Officer Identity */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 text-xs">
+        <div className="flex items-center gap-1.5 sm:gap-2 text-xs">
           {/* Theme Switch */}
           <button
             type="button"
             onClick={() => setThemeMode((prev) => (prev === 'chart' ? 'ocean' : 'chart'))}
-            className="p-1.5 sm:px-2.5 sm:py-1 rounded-md text-xs gap-1.5 flex items-center text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition"
+            className="xdr-pill p-1.5 sm:px-3 sm:py-1 rounded-full text-xs gap-1.5 flex items-center text-[#86868b] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white active:scale-[0.96] transition"
             title="Toggle Visual Theme (Light vs Dark)"
           >
             {themeMode === 'chart' ? (
               <>
-                <Sun className="w-3.5 h-3.5" />
+                <Sun className="w-3.5 h-3.5 text-amber-500" />
                 <span className="hidden sm:inline font-medium text-[11px]">Light</span>
               </>
             ) : (
               <>
-                <Moon className="w-3.5 h-3.5" />
+                <Moon className="w-3.5 h-3.5 text-[#2997FF]" />
                 <span className="hidden sm:inline font-medium text-[11px]">Dark</span>
               </>
             )}
@@ -432,7 +432,7 @@ export default function App() {
           {currentUser && (
             <div className="flex items-center gap-1.5 pl-1.5 border-l border-black/[0.08] dark:border-white/[0.08]">
               <div
-                className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08]"
+                className="xdr-pill flex items-center gap-1.5 px-2.5 py-1 rounded-full"
                 title={`Signed in as ${currentUser.name} (${currentUser.email})`}
               >
                 {currentUser.picture ? (
@@ -440,14 +440,14 @@ export default function App() {
                     src={currentUser.picture}
                     alt=""
                     referrerPolicy="no-referrer"
-                    className="w-4 h-4 rounded-full object-cover ring-1 ring-black/10 dark:ring-white/15"
+                    className="w-4 h-4 rounded-full object-cover ring-1 ring-black/10 dark:ring-white/20"
                   />
                 ) : (
                   <div className="w-4 h-4 rounded-full bg-[#0071e3]/15 text-[#0071e3] text-[9px] font-semibold flex items-center justify-center">
                     {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                   </div>
                 )}
-                <span className="hidden lg:inline text-[11px] font-medium text-[#1d1d1f] dark:text-[#f5f5f7] max-w-[120px] truncate">
+                <span className="hidden lg:inline text-[11px] font-medium text-[#1D1D1F] dark:text-[#FFFFFF] max-w-[120px] truncate">
                   {currentUser.name || currentUser.email}
                 </span>
               </div>
@@ -455,7 +455,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="p-1.5 rounded-md text-[#86868b] hover:text-[#e11d48] dark:hover:text-[#f43f5e] hover:bg-red-500/10 active:scale-[0.97] transition"
+                className="p-1.5 rounded-full text-[#86868b] dark:text-[#A1A1A6] hover:text-[#FF453A] dark:hover:text-[#FF453A] hover:bg-red-500/10 active:scale-[0.96] transition"
                 title={`Sign Out (${currentUser.email})`}
                 aria-label="Sign Out"
               >
@@ -528,10 +528,10 @@ export default function App() {
 
       {/* 4. Mobile Bottom Tab Navigation Bar (Safe Area Aligned for Home Indicators) */}
       <nav
-        className={`md:hidden shrink-0 border-t backdrop-blur-xl px-2 pt-1 pb-safe flex items-center justify-around z-30 select-none transition-colors ${
+        className={`md:hidden shrink-0 border-t backdrop-blur-2xl px-2 pt-1.5 pb-safe flex items-center justify-around z-30 select-none transition-colors ${
           themeMode === 'chart'
-            ? 'bg-white/95 border-black/[0.08] text-[#1d1d1f]'
-            : 'bg-[#0a0a0c]/95 border-white/[0.08] text-[#f5f5f7]'
+            ? 'bg-white/85 border-black/[0.08] text-[#1D1D1F]'
+            : 'bg-black/85 border-white/[0.08] text-white shadow-[0_-10px_30px_rgba(0,0,0,0.8)]'
         }`}
       >
         <button
@@ -540,10 +540,10 @@ export default function App() {
             setPersonaMode('fisher');
             setMobileTab('map');
           }}
-          className={`flex-1 py-1 px-2 rounded-lg min-h-[48px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition active:scale-[0.96] ${
+          className={`flex-1 py-1.5 px-2 rounded-xl min-h-[48px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition active:scale-[0.96] ${
             personaMode === 'fisher' && mobileTab === 'map'
-              ? (themeMode === 'chart' ? 'text-[#0071e3] bg-black/[0.05]' : 'text-[#2997ff] bg-white/[0.08]')
-              : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7]'
+              ? (themeMode === 'chart' ? 'text-[#0071e3] bg-black/[0.05]' : 'text-[#2997FF] bg-white/[0.1] shadow-xs border border-white/10')
+              : 'text-[#86868b] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white'
           }`}
         >
           <Compass className="w-4 h-4" />
@@ -556,10 +556,10 @@ export default function App() {
             setPersonaMode('fisher');
             setMobileTab('chat');
           }}
-          className={`flex-1 py-1 px-2 rounded-lg min-h-[48px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition relative active:scale-[0.96] ${
+          className={`flex-1 py-1.5 px-2 rounded-xl min-h-[48px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition relative active:scale-[0.96] ${
             personaMode === 'fisher' && mobileTab === 'chat'
-              ? (themeMode === 'chart' ? 'text-[#0071e3] bg-black/[0.05]' : 'text-[#2997ff] bg-white/[0.08]')
-              : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7]'
+              ? (themeMode === 'chart' ? 'text-[#0071e3] bg-black/[0.05]' : 'text-[#2997FF] bg-white/[0.1] shadow-xs border border-white/10')
+              : 'text-[#86868b] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white'
           }`}
         >
           <div className="relative">
@@ -574,10 +574,10 @@ export default function App() {
         <button
           type="button"
           onClick={() => setPersonaMode('district')}
-          className={`flex-1 py-1 px-2 rounded-lg min-h-[48px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition active:scale-[0.96] ${
+          className={`flex-1 py-1.5 px-2 rounded-xl min-h-[48px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition active:scale-[0.96] ${
             personaMode === 'district'
-              ? (themeMode === 'chart' ? 'text-[#0071e3] bg-black/[0.05]' : 'text-[#2997ff] bg-white/[0.08]')
-              : 'text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-[#f5f5f7]'
+              ? (themeMode === 'chart' ? 'text-[#0071e3] bg-black/[0.05]' : 'text-[#2997FF] bg-white/[0.1] shadow-xs border border-white/10')
+              : 'text-[#86868b] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white'
           }`}
         >
           <Building2 className="w-4 h-4" />

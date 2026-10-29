@@ -23,56 +23,56 @@ export default function SafetyAlertBanner({
 
   const isLight = theme === 'chart';
 
-  // Dynamic Theme Palette
+  // Dynamic Theme Palette (Apple Liquid Retina XDR Alert Styling)
   const containerClasses = isLight
     ? isRed
       ? 'bg-[#fef2f2] border-b border-[#fecaca] text-[#991b1b]'
       : 'bg-[#fffbeb] border-b border-[#fde68a] text-[#78350f]'
     : isRed
-      ? 'bg-[#181112] border-b border-red-500/20 text-[#fca5a5]'
-      : 'bg-[#181510] border-b border-amber-500/20 text-[#fbbf24]';
+      ? 'bg-black/90 border-b border-red-500/25 text-[#FF453A] shadow-[0_4px_20px_rgba(255,69,58,0.15)]'
+      : 'bg-black/90 border-b border-amber-500/25 text-[#FF9F0A] shadow-[0_4px_20px_rgba(255,159,10,0.15)]';
 
   const iconContainerClasses = isLight
     ? isRed
-      ? 'w-7 h-7 rounded-lg shrink-0 flex items-center justify-center bg-[#fee2e2] text-[#dc2626]'
-      : 'w-7 h-7 rounded-lg shrink-0 flex items-center justify-center bg-[#fef3c7] text-[#d97706]'
+      ? 'w-7 h-7 rounded-xl shrink-0 flex items-center justify-center bg-[#fee2e2] text-[#dc2626]'
+      : 'w-7 h-7 rounded-xl shrink-0 flex items-center justify-center bg-[#fef3c7] text-[#d97706]'
     : isRed
-      ? 'w-7 h-7 rounded-lg shrink-0 flex items-center justify-center bg-red-500/15 text-red-400'
-      : 'w-7 h-7 rounded-lg shrink-0 flex items-center justify-center bg-amber-500/15 text-amber-400';
+      ? 'w-7 h-7 rounded-xl shrink-0 flex items-center justify-center xdr-jewel-red'
+      : 'w-7 h-7 rounded-xl shrink-0 flex items-center justify-center xdr-jewel-amber';
 
   const badgeClasses = isLight
     ? isRed
       ? 'bg-[#fee2e2] border border-[#f87171] text-[#b91c1c]'
       : 'bg-[#fef3c7] border border-[#fcd34d] text-[#b45309]'
     : isRed
-      ? 'bg-red-500/15 border border-red-500/30 text-red-400'
-      : 'bg-amber-500/15 border border-amber-500/30 text-amber-400';
+      ? 'xdr-jewel-red'
+      : 'xdr-jewel-amber';
 
   const titleClasses = isLight
     ? isRed
       ? 'text-[#991b1b]'
       : 'text-[#78350f]'
     : isRed
-      ? 'text-[#fca5a5]'
-      : 'text-[#fef3c7]';
+      ? 'text-white'
+      : 'text-white';
 
   const collapsedSubtextClasses = isLight
     ? isRed
       ? 'text-[#b91c1c]/90'
       : 'text-[#92400e]/90'
-    : 'text-[#d1d5db]';
+    : 'text-[#A1A1A6]';
 
   const buttonClasses = isLight
     ? isRed
-      ? 'p-1 rounded-md hover:bg-[#fee2e2] text-[#991b1b] transition-colors'
-      : 'p-1 rounded-md hover:bg-[#fef3c7] text-[#78350f] transition-colors'
-    : 'p-1 rounded-md hover:bg-white/[0.08] text-[#858B95] hover:text-[#F5F5F7] transition-colors';
+      ? 'p-1.5 rounded-full hover:bg-[#fee2e2] text-[#991b1b] transition-colors active:scale-[0.96]'
+      : 'p-1.5 rounded-full hover:bg-[#fef3c7] text-[#78350f] transition-colors active:scale-[0.96]'
+    : 'p-1.5 rounded-full hover:bg-white/[0.08] text-[#86868b] hover:text-white transition-colors active:scale-[0.96]';
 
   const expandedCardClasses = isLight
     ? isRed
-      ? 'mt-2 pt-2 text-xs font-normal leading-relaxed bg-white/95 p-3 rounded-lg border border-[#fecaca] text-[#991b1b] shadow-xs max-h-36 sm:max-h-48 overflow-y-auto touch-momentum'
-      : 'mt-2 pt-2 text-xs font-normal leading-relaxed bg-white/95 p-3 rounded-lg border border-[#fde68a] text-[#78350f] shadow-xs max-h-36 sm:max-h-48 overflow-y-auto touch-momentum'
-    : 'mt-2 pt-2 text-xs font-normal leading-relaxed bg-[#121418] p-3 rounded-lg border border-white/[0.08] text-[#e1e1e6] max-h-36 sm:max-h-48 overflow-y-auto touch-momentum';
+      ? 'mt-2.5 pt-2 text-xs font-normal leading-relaxed bg-white/95 p-3.5 rounded-xl border border-[#fecaca] text-[#991b1b] shadow-xs max-h-36 sm:max-h-48 overflow-y-auto touch-momentum'
+      : 'mt-2.5 pt-2 text-xs font-normal leading-relaxed bg-white/95 p-3.5 rounded-xl border border-[#fde68a] text-[#78350f] shadow-xs max-h-36 sm:max-h-48 overflow-y-auto touch-momentum'
+    : 'mt-2.5 pt-2 text-xs font-normal leading-relaxed xdr-surface p-3.5 rounded-xl text-[#F5F5F7] max-h-36 sm:max-h-48 overflow-y-auto touch-momentum';
 
   return (
     <div className={`transition-all duration-300 backdrop-blur-xl ${containerClasses}`}>

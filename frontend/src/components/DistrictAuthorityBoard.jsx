@@ -61,27 +61,27 @@ export default function DistrictAuthorityBoard({
     switch (verdict) {
       case 'EXTREME':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider bg-red-500/15 text-red-700 dark:text-red-400 border border-red-500/30">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wider xdr-jewel-red">
             <ShieldAlert className="w-3 h-3 text-current" />
             EXTREME ({score})
           </span>
         );
       case 'HIGH':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wider xdr-jewel-amber">
             <AlertTriangle className="w-3 h-3 text-current" />
             HIGH ({score})
           </span>
         );
       case 'MODERATE':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wider xdr-jewel-amber">
             MODERATE ({score})
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wider xdr-jewel-emerald">
             <ShieldCheck className="w-3 h-3 text-current" />
             LOW ({score})
           </span>
@@ -91,25 +91,23 @@ export default function DistrictAuthorityBoard({
 
   return (
     <div className={`flex flex-col h-full w-full overflow-y-auto p-4 md:p-6 pb-28 md:pb-6 touch-momentum transition-colors ${
-      isChartTheme ? 'bg-[#f5f5f7] text-[#1d1d1f]' : 'bg-[#0a0a0c] text-[#f5f5f7]'
+      isChartTheme ? 'bg-[#F5F5F7] text-[#1D1D1F]' : 'bg-black text-white'
     }`}>
       {/* 1. Header & Quick Metrics */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="glass-icon w-8 h-8">
-              <Building2 className="w-4 h-4 text-[#2997ff]" />
+            <div className="glass-icon w-8 h-8 rounded-xl">
+              <Building2 className="w-4 h-4 text-[#2997FF]" />
             </div>
-            <h2 className="text-lg font-semibold tracking-tight">
+            <h2 className="text-lg font-semibold tracking-tight xdr-gradient-text">
               District Board
             </h2>
-            <span className={`text-[10px] px-2 py-0.5 rounded font-medium tracking-wide uppercase border ${
-              isChartTheme ? 'bg-black/[0.04] text-[#86868b] border-black/[0.08]' : 'bg-white/[0.06] text-[#86868b] border-white/[0.1]'
-            }`}>
+            <span className="xdr-pill text-[10px] px-2.5 py-0.5 rounded-full font-semibold tracking-wide uppercase text-[#86868b] dark:text-[#A1A1A6]">
               12 Centres
             </span>
           </div>
-          <p className="text-xs text-[#86868b] mt-0.5 font-normal">
+          <p className="text-xs text-[#86868b] dark:text-[#A1A1A6] mt-0.5 font-normal">
             Fleet status across 12 centres • {lastRefreshed || 'Live'}
           </p>
         </div>
@@ -119,7 +117,7 @@ export default function DistrictAuthorityBoard({
           <button
             onClick={fetchBoardData}
             disabled={isLoading}
-            className="glass-icon px-3 py-1.5 text-xs font-medium gap-1.5"
+            className="xdr-pill px-3.5 py-1.5 rounded-full text-xs font-medium gap-1.5 flex items-center active:scale-[0.96] text-[#1D1D1F] dark:text-white"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
@@ -127,87 +125,83 @@ export default function DistrictAuthorityBoard({
         </div>
       </div>
 
-      {/* 2. Top Executive Summary Tiles (Apple Tech Specs Style with Glassmorphic Icons) */}
+      {/* 2. Top Executive Summary Bento Grid (Apple Liquid Retina XDR Hardware Spec Style) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <div className={`p-4 rounded-xl border transition-colors relative ${
-          isChartTheme ? 'bg-white border-black/[0.08] shadow-sm' : 'bg-white/[0.04] border-white/[0.08]'
-        }`}>
+        <div className="xdr-surface p-4 rounded-2xl relative">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-medium uppercase tracking-wider block text-[#86868b]">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.08em] block text-[#86868b] dark:text-[#6E6E73]">
               Monitored
             </span>
-            <div className="glass-icon w-7 h-7">
-              <Anchor className="w-3.5 h-3.5 text-[#2997ff]" />
+            <div className="glass-icon w-7 h-7 rounded-lg">
+              <Anchor className="w-3.5 h-3.5 text-[#2997FF]" />
             </div>
           </div>
-          <span className="text-3xl font-semibold tracking-tight mt-1.5 block">12</span>
-          <span className="text-[11px] text-[#86868b] mt-0.5 block">Landing centres</span>
+          <span className="text-3xl font-bold tracking-tight mt-1.5 block tabular-nums text-[#1D1D1F] dark:text-white">12</span>
+          <span className="text-[11px] text-[#86868b] dark:text-[#A1A1A6] mt-0.5 block">Landing centres</span>
         </div>
 
-        <div className={`p-4 rounded-xl border transition-colors relative ${
+        <div className={`p-4 rounded-2xl transition-all relative ${
           redCount > 0
-            ? 'bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-400'
-            : (isChartTheme ? 'bg-white border-black/[0.08] shadow-sm' : 'bg-white/[0.04] border-white/[0.08]')
+            ? 'xdr-jewel-red'
+            : 'xdr-surface'
         }`}>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-medium uppercase tracking-wider block text-[#86868b]">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.08em] block text-[#86868b] dark:text-[#6E6E73]">
               Prohibited
             </span>
-            <div className="glass-icon glass-icon-red w-7 h-7">
+            <div className="glass-icon glass-icon-red w-7 h-7 rounded-lg">
               <ShieldAlert className="w-3.5 h-3.5 text-current" />
             </div>
           </div>
-          <span className="text-3xl font-semibold tracking-tight mt-1.5 block">{redCount}</span>
-          <span className="text-[11px] text-[#86868b] mt-0.5 block">{redCount > 0 ? 'Banned' : 'None'}</span>
+          <span className="text-3xl font-bold tracking-tight mt-1.5 block tabular-nums">{redCount}</span>
+          <span className="text-[11px] text-[#86868b] dark:text-[#A1A1A6] mt-0.5 block">{redCount > 0 ? 'Banned' : 'None'}</span>
         </div>
 
-        <div className={`p-4 rounded-xl border transition-colors relative ${
+        <div className={`p-4 rounded-2xl transition-all relative ${
           amberCount > 0
-            ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400'
-            : (isChartTheme ? 'bg-white border-black/[0.08] shadow-sm' : 'bg-white/[0.04] border-white/[0.08]')
+            ? 'xdr-jewel-amber'
+            : 'xdr-surface'
         }`}>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-medium uppercase tracking-wider block text-[#86868b]">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.08em] block text-[#86868b] dark:text-[#6E6E73]">
               Caution
             </span>
-            <div className="glass-icon glass-icon-amber w-7 h-7">
+            <div className="glass-icon glass-icon-amber w-7 h-7 rounded-lg">
               <AlertTriangle className="w-3.5 h-3.5 text-current" />
             </div>
           </div>
-          <span className="text-3xl font-semibold tracking-tight mt-1.5 block">{amberCount}</span>
-          <span className="text-[11px] text-[#86868b] mt-0.5 block">{amberCount > 0 ? 'Advisory' : 'None'}</span>
+          <span className="text-3xl font-bold tracking-tight mt-1.5 block tabular-nums">{amberCount}</span>
+          <span className="text-[11px] text-[#86868b] dark:text-[#A1A1A6] mt-0.5 block">{amberCount > 0 ? 'Advisory' : 'None'}</span>
         </div>
 
-        <div className={`p-4 rounded-xl border transition-colors relative ${
-          isChartTheme ? 'bg-white border-black/[0.08] shadow-sm' : 'bg-white/[0.04] border-white/[0.08]'
-        }`}>
+        <div className="xdr-surface p-4 rounded-2xl relative">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-medium uppercase tracking-wider block text-[#86868b]">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.08em] block text-[#86868b] dark:text-[#6E6E73]">
               Clear
             </span>
-            <div className="glass-icon glass-icon-emerald w-7 h-7">
+            <div className="glass-icon glass-icon-emerald w-7 h-7 rounded-lg">
               <ShieldCheck className="w-3.5 h-3.5 text-current" />
             </div>
           </div>
-          <span className="text-3xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-400 mt-1.5 block">{greenCount}</span>
-          <span className="text-[11px] text-[#86868b] mt-0.5 block">Permitted</span>
+          <span className="text-3xl font-bold tracking-tight text-[#16803D] dark:text-[#30D158] mt-1.5 block tabular-nums">{greenCount}</span>
+          <span className="text-[11px] text-[#86868b] dark:text-[#A1A1A6] mt-0.5 block">Permitted</span>
         </div>
       </div>
 
       {/* 3. State Filter Bar */}
       <div className="flex items-center gap-1.5 flex-wrap mb-4">
-        <span className="text-xs font-medium text-[#86868b] flex items-center gap-1 mr-2">
-          <Filter className="w-3.5 h-3.5" />
+        <span className="text-xs font-semibold text-[#86868b] dark:text-[#6E6E73] flex items-center gap-1 mr-2 uppercase tracking-wider text-[10px]">
+          <Filter className="w-3 h-3 text-[#2997FF]" />
           State:
         </span>
         {states.map((st) => (
           <button
             key={st}
             onClick={() => setStateFilter(st)}
-            className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
+            className={`px-3 py-1 rounded-full text-xs font-medium transition active:scale-[0.96] ${
               stateFilter === st
-                ? (isChartTheme ? 'bg-[#0071e3] text-white shadow-xs' : 'bg-[#0A84FF] text-white shadow-xs')
-                : (isChartTheme ? 'bg-black/[0.04] hover:bg-black/[0.08] text-[#86868b]' : 'bg-white/[0.04] hover:bg-white/[0.08] text-[#86868b] hover:text-[#f5f5f7]')
+                ? 'bg-[#0071E3] dark:bg-[#2997FF] text-white shadow-xs'
+                : 'xdr-pill text-[#86868b] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white'
             }`}
           >
             {st}
@@ -222,38 +216,38 @@ export default function DistrictAuthorityBoard({
           return (
             <div
               key={h.harbour_id}
-              className={`p-3.5 rounded-xl border transition-colors ${
+              className={`p-3.5 rounded-2xl border transition-all ${
                 isChartTheme
                   ? 'bg-white border-black/[0.08] shadow-xs'
-                  : 'bg-[#121418] border-white/[0.08]'
-              } ${isRed ? (isChartTheme ? 'bg-red-500/5 border-red-500/20' : 'bg-red-950/20 border-red-500/30') : ''}`}
+                  : 'xdr-surface'
+              } ${isRed ? (isChartTheme ? 'bg-red-500/5 border-red-500/20' : 'bg-red-950/20 border-red-500/30 shadow-[0_0_20px_rgba(255,69,58,0.15)]') : ''}`}
             >
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
-                  <div className="glass-icon w-7 h-7 shrink-0">
-                    <Anchor className="w-3.5 h-3.5 text-[#2997ff]" />
+                  <div className="glass-icon w-7 h-7 shrink-0 rounded-lg">
+                    <Anchor className="w-3.5 h-3.5 text-[#2997FF]" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-xs tracking-tight">{h.harbour_name}</h3>
-                    <p className="text-[10px] text-[#86868b]">{h.local_name} • {h.state}</p>
+                    <h3 className="font-semibold text-xs tracking-tight text-[#1D1D1F] dark:text-white">{h.harbour_name}</h3>
+                    <p className="text-[10px] text-[#86868b] dark:text-[#A1A1A6]">{h.local_name} • {h.state}</p>
                   </div>
                 </div>
                 {getVerdictBadge(h.risk_verdict, h.safety_index)}
               </div>
 
-              <div className="grid grid-cols-2 gap-2 text-[11px] mb-2.5 py-1.5 px-2.5 rounded-lg bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04] dark:border-white/[0.04]">
+              <div className="grid grid-cols-2 gap-2 text-[11px] mb-2.5 py-1.5 px-2.5 rounded-xl xdr-pill">
                 <div className="flex items-center gap-1.5">
-                  <Waves className="w-3.5 h-3.5 text-[#86868b]" />
-                  <span>{h.wave_height_m}m waves</span>
+                  <Waves className="w-3.5 h-3.5 text-[#2997FF]" />
+                  <span className="tabular-nums">{h.wave_height_m}m waves</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Wind className="w-3.5 h-3.5 text-[#86868b]" />
-                  <span>{h.wind_speed_kmh} km/h wind</span>
+                  <Wind className="w-3.5 h-3.5 text-[#2997FF]" />
+                  <span className="tabular-nums">{h.wind_speed_kmh} km/h wind</span>
                 </div>
               </div>
 
               <div className="flex items-center justify-between pt-0.5">
-                <span className="text-[10px] text-[#86868b]">
+                <span className="text-[10px] text-[#86868b] dark:text-[#A1A1A6]">
                   {h.nearest_boundary_distance_nm <= 1.5 ? (
                     <strong className="text-red-400 font-medium">Border Alert: {h.nearest_boundary_distance_nm.toFixed(1)} NM</strong>
                   ) : (
@@ -263,7 +257,7 @@ export default function DistrictAuthorityBoard({
                 <button
                   type="button"
                   onClick={() => onSelectHarbour && onSelectHarbour(h.harbour_id)}
-                  className="glass-icon glass-icon-blue px-2.5 py-1 text-xs font-medium gap-1 text-[#2997ff]"
+                  className="xdr-pill px-3 py-1 text-xs font-medium gap-1 text-[#0071E3] dark:text-[#2997FF] rounded-full flex items-center active:scale-[0.96]"
                 >
                   <span>Inspect</span>
                   <ArrowRight className="w-3 h-3" />
@@ -275,22 +269,22 @@ export default function DistrictAuthorityBoard({
       </div>
 
       {/* 5. Desktop High-Density Authority Matrix Table (>= md) */}
-      <div className={`hidden md:block rounded-xl border overflow-hidden transition-colors ${
-        isChartTheme ? 'border-black/[0.08] bg-white shadow-xs' : 'border-white/[0.08] bg-[#121418]'
+      <div className={`hidden md:block rounded-2xl border overflow-hidden transition-all ${
+        isChartTheme ? 'border-black/[0.08] bg-white shadow-xs' : 'xdr-surface'
       }`}>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className={`border-b text-[10px] uppercase font-medium tracking-[0.02em] ${
-                isChartTheme ? 'bg-black/[0.02] border-black/[0.06] text-[#86868b]' : 'bg-white/[0.03] border-white/[0.06] text-[#86868b]'
+              <tr className={`border-b text-[10px] uppercase font-semibold tracking-[0.08em] ${
+                isChartTheme ? 'bg-black/[0.02] border-black/[0.06] text-[#86868b]' : 'bg-white/[0.03] border-white/[0.06] text-[#86868b] dark:text-[#6E6E73]'
               }`}>
-                <th className="py-3 px-4 font-medium">Landing Centre</th>
-                <th className="py-3 px-4 font-medium">State</th>
-                <th className="py-3 px-4 font-medium">Safety Index (0-100)</th>
-                <th className="py-3 px-4 font-medium">Verdict</th>
-                <th className="py-3 px-4 font-medium">Wave & Wind</th>
-                <th className="py-3 px-4 font-medium">Boundary Clearance</th>
-                <th className="py-3 px-4 font-medium text-right">Command Action</th>
+                <th className="py-3.5 px-4 font-semibold">Landing Centre</th>
+                <th className="py-3.5 px-4 font-semibold">State</th>
+                <th className="py-3.5 px-4 font-semibold">Safety Index (0-100)</th>
+                <th className="py-3.5 px-4 font-semibold">Verdict</th>
+                <th className="py-3.5 px-4 font-semibold">Wave & Wind</th>
+                <th className="py-3.5 px-4 font-semibold">Boundary Clearance</th>
+                <th className="py-3.5 px-4 font-semibold text-right">Command Action</th>
               </tr>
             </thead>
             <tbody className={`divide-y ${isChartTheme ? 'divide-black/[0.04]' : 'divide-white/[0.04]'}`}>

@@ -66,6 +66,14 @@
 - **Backend Server:** Live daemon running on `http://127.0.0.1:8000` (auto-reload active).
 - **Frontend Server:** Live Vite dev server running on `http://localhost:5173`.
 - **Live Production Deployment:** Verified active on Render at `https://tarang-0v0t.onrender.com` (serving unified SPA + FastAPI REST API with live Gemini & Open-Meteo integration).
+- **Apple MacBook Pro Liquid Retina XDR Display Aesthetic:** Upgraded the entire frontend interface with Apple's iconic Liquid Retina XDR display engineering standards (inspired by Apple MacBook Pro Pro LED / Liquid Retina XDR):
+  - OLED/Mini-LED Pitch Black Canvas (`#000000` dark base) providing extreme 1,000,000:1 contrast ratio against 1000 nits white typography and luminous specular accents.
+  - Specular Rim Highlighting & Frosted Depth (`.xdr-surface`): Micro-cards, bento boxes, and panels engineered with top-lit specular rim highlights (`box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12), 0 20px 45px -15px rgba(0, 0, 0, 0.85)`) and 24px backdrop blur with 190% saturation boost.
+  - Luminous High Dynamic Range Jewel Badges (`.xdr-jewel-*`): Extreme P3 status indicators for Safe/Clear (`#30D158` emerald), Caution (`#FF9F0A` solar amber), Circuit Breaker (`#FF453A` crimson), and Pro Accent (`#2997FF` electric blue) with simulated 1,600 nits radiant ambient auras.
+  - Floating Dynamic Island & Capsule HUD Controls (`.xdr-pill`): Header segmented persona toggle, basemap switcher, map HUD pills, and legend restyled into seamless Apple capsule controls with smooth press physics (`active:scale-[0.96]`).
+  - Metallic Specular Gradient Sheen (`.xdr-gradient-text`): Applied Apple's signature metallic gradient text to primary headings and branding.
+  - Spotlight-Style Operational Composer: Chat input bar refined into a floating command capsule with subtle focus rings and tactile controls.
+  - Full Verification: Clean production build in 1.02s, all 51 automated unit and integration tests passing in 76.61s.
 - **Apple MacBook Pro Operational Interface Refinement:** Completed comprehensive UI refinement directly addressing user-requested visual hierarchy and information clarity:
   - Header Hierarchy (`App.jsx`): Replaced competing horizontal capsule pills with clean spatial separation. Left brand identity and `Fisher View | District Board` segmented control grouped naturally; telemetry status ribbon (`SST`, `Waves`, `Wind` in `tabular-nums` with muted bullets and calm semantic breaker badge) placed center-right; subtle theme toggle and user account session controls placed right.
   - Maritime Safety Alert Banner (`SafetyAlertBanner.jsx`): Replaced terminal-like monospaced uppercase advisory sentences with comfortable `Geist Sans` text (`text-xs sm:text-[13px] leading-[1.65]`), compact padding (`py-2`), and unmistakable severity badges.

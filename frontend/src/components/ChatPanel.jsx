@@ -255,19 +255,19 @@ export default function ChatPanel({
     <div className={`flex flex-col h-full border-l transition-colors select-none ${
       isChartTheme
         ? 'bg-[#fbfbfd] text-[#1d1d1f] border-black/[0.08]'
-        : 'bg-[#0a0a0c] text-[#f5f5f7] border-white/[0.08]'
+        : 'bg-black text-[#FFFFFF] border-white/[0.08]'
     }`}>
       {/* 1. Header & Configuration Controls */}
       {/* Stage 1 & 2: Operational Context & Risk Assessment */}
       <div className={`p-3.5 border-b space-y-3 transition-colors ${
         isChartTheme
           ? 'bg-white border-black/[0.08]'
-          : 'bg-[#121418] border-white/[0.08]'
+          : 'bg-black/90 backdrop-blur-2xl border-white/[0.08]'
       }`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className={`w-1.5 h-1.5 rounded-full ${isChartTheme ? 'bg-[#0071e3]' : 'bg-[#0A84FF]'}`}></div>
-            <h2 className={`font-semibold text-xs tracking-[-0.02em] ${isChartTheme ? 'text-[#1D1D1F]' : 'text-[#F5F5F7]'}`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${isChartTheme ? 'bg-[#0071e3]' : 'bg-[#2997FF]'}`}></div>
+            <h2 className={`font-semibold text-xs tracking-[-0.02em] ${isChartTheme ? 'text-[#1D1D1F]' : 'xdr-gradient-text'}`}>
               ORCA Operational Console
             </h2>
           </div>
@@ -276,7 +276,7 @@ export default function ChatPanel({
               <button
                 type="button"
                 onClick={onViewMap}
-                className="px-2.5 py-1 text-xs font-medium gap-1 text-[#0071e3] dark:text-[#0A84FF] bg-black/[0.04] dark:bg-white/[0.06] rounded-md flex items-center"
+                className="xdr-pill px-3 py-1 text-xs font-medium gap-1 text-[#0071e3] dark:text-[#2997FF] rounded-full flex items-center active:scale-[0.96]"
                 title="Switch to Marine Map"
               >
                 <Compass className="w-3.5 h-3.5" />
@@ -290,7 +290,7 @@ export default function ChatPanel({
         <div className="grid grid-cols-3 gap-2 text-xs">
           {/* Harbour Selector */}
           <div>
-            <label className="block text-[10px] font-medium uppercase tracking-[0.02em] mb-1 text-[#858B95] truncate">
+            <label className="block text-[10px] font-semibold uppercase tracking-[0.08em] mb-1 text-[#858B95] dark:text-[#6E6E73] truncate">
               Harbour
             </label>
             <select
@@ -299,14 +299,14 @@ export default function ChatPanel({
                 const found = harbours.find((h) => h.id === e.target.value);
                 if (found) onSelectHarbour(found);
               }}
-              className={`w-full rounded-lg px-2 py-1.5 text-[16px] md:text-xs truncate focus:outline-none transition ${
+              className={`w-full rounded-xl px-2.5 py-1.5 text-[16px] md:text-xs truncate focus:outline-none transition-all ${
                 isChartTheme
                   ? 'bg-black/[0.03] border border-black/[0.08] text-[#1D1D1F] focus:border-[#0071e3]'
-                  : 'bg-white/[0.04] border border-white/[0.08] text-[#F5F5F7] focus:border-[#0A84FF]'
+                  : 'bg-white/[0.04] border border-white/[0.08] text-white focus:border-[#2997FF] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]'
               }`}
             >
               {harbours.map((h) => (
-                <option key={h.id} value={h.id} className={isChartTheme ? "bg-white text-[#1D1D1F]" : "bg-[#191C21] text-white"}>
+                <option key={h.id} value={h.id} className={isChartTheme ? "bg-white text-[#1D1D1F]" : "bg-[#101216] text-white"}>
                   {h.name}
                 </option>
               ))}
@@ -315,39 +315,39 @@ export default function ChatPanel({
 
           {/* Vessel Selector */}
           <div>
-            <label className="block text-[10px] font-medium uppercase tracking-[0.02em] mb-1 text-[#858B95] truncate">
+            <label className="block text-[10px] font-semibold uppercase tracking-[0.08em] mb-1 text-[#858B95] dark:text-[#6E6E73] truncate">
               Vessel
             </label>
             <select
               value={vesselType}
               onChange={(e) => onChangeVesselType(e.target.value)}
-              className={`w-full rounded-lg px-2 py-1.5 text-[16px] md:text-xs truncate focus:outline-none transition ${
+              className={`w-full rounded-xl px-2.5 py-1.5 text-[16px] md:text-xs truncate focus:outline-none transition-all ${
                 isChartTheme
                   ? 'bg-black/[0.03] border border-black/[0.08] text-[#1D1D1F] focus:border-[#0071e3]'
-                  : 'bg-white/[0.04] border border-white/[0.08] text-[#F5F5F7] focus:border-[#0A84FF]'
+                  : 'bg-white/[0.04] border border-white/[0.08] text-white focus:border-[#2997FF] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]'
               }`}
             >
-              <option value="country_craft" className={isChartTheme ? "bg-white text-[#1D1D1F]" : "bg-[#191C21] text-white"}>Country Craft</option>
-              <option value="mechanized_trawler" className={isChartTheme ? "bg-white text-[#1D1D1F]" : "bg-[#191C21] text-white"}>Trawler (45ft)</option>
+              <option value="country_craft" className={isChartTheme ? "bg-white text-[#1D1D1F]" : "bg-[#101216] text-white"}>Country Craft</option>
+              <option value="mechanized_trawler" className={isChartTheme ? "bg-white text-[#1D1D1F]" : "bg-[#101216] text-white"}>Trawler (45ft)</option>
             </select>
           </div>
 
           {/* Language Selector */}
           <div>
-            <label className="block text-[10px] font-medium uppercase tracking-[0.02em] mb-1 text-[#858B95] truncate">
+            <label className="block text-[10px] font-semibold uppercase tracking-[0.08em] mb-1 text-[#858B95] dark:text-[#6E6E73] truncate">
               Language
             </label>
             <select
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
-              className={`w-full rounded-lg px-2 py-1.5 text-[16px] md:text-xs truncate focus:outline-none transition ${
+              className={`w-full rounded-xl px-2.5 py-1.5 text-[16px] md:text-xs truncate focus:outline-none transition-all ${
                 isChartTheme
                   ? 'bg-black/[0.03] border border-black/[0.08] text-[#1D1D1F] focus:border-[#0071e3]'
-                  : 'bg-white/[0.04] border border-white/[0.08] text-[#F5F5F7] focus:border-[#0A84FF]'
+                  : 'bg-white/[0.04] border border-white/[0.08] text-white focus:border-[#2997FF] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]'
               }`}
             >
               {LANGUAGES.map((lang) => (
-                <option key={lang.code} value={lang.code} className={isChartTheme ? "bg-white text-[#1D1D1F]" : "bg-[#191C21] text-white"}>
+                <option key={lang.code} value={lang.code} className={isChartTheme ? "bg-white text-[#1D1D1F]" : "bg-[#101216] text-white"}>
                   {lang.label.split(' ')[0]}
                 </option>
               ))}
@@ -355,61 +355,57 @@ export default function ChatPanel({
           </div>
         </div>
 
-        {/* Stage 2: Risk Assessment & Operational Schedule Card */}
-        <div className={`p-3 rounded-xl border flex items-center justify-between gap-3 transition-colors ${
-          isChartTheme
-            ? 'bg-black/[0.02] border-black/[0.08]'
-            : 'bg-white/[0.03] border-white/[0.08]'
-        }`}>
-          <div className="flex items-center gap-3">
-            {/* Risk Score Anchor */}
-            <div className={`w-13 h-13 rounded-xl flex flex-col items-center justify-center text-center p-2 border ${
+        {/* Stage 2: Risk Assessment & Operational Schedule Bento Card (Liquid Retina XDR Gauge) */}
+        <div className="xdr-surface rounded-2xl p-3.5 flex items-center justify-between gap-3.5 transition-all">
+          <div className="flex items-center gap-3.5">
+            {/* Luminous Risk Score Anchor */}
+            <div className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center text-center p-2 transition-all ${
               currentScore >= 76
-                ? 'bg-red-500/10 border-red-500/25 text-red-700 dark:text-red-400'
+                ? 'xdr-jewel-red'
                 : currentScore >= 51
-                ? 'bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-400'
+                ? 'xdr-jewel-amber'
                 : currentScore >= 26
-                ? 'bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-400'
-                : 'bg-emerald-500/10 border-emerald-500/25 text-emerald-700 dark:text-emerald-400'
+                ? 'xdr-jewel-amber'
+                : 'xdr-jewel-emerald'
             }`}>
               <span className="font-mono font-bold text-2xl leading-none tabular-nums tracking-tight">
                 {currentScore}
               </span>
-              <span className="text-[9px] uppercase tracking-[0.02em] font-mono opacity-70 mt-0.5">/100</span>
+              <span className="text-[9px] uppercase tracking-[0.06em] font-mono opacity-80 mt-0.5">/100</span>
             </div>
 
             <div>
               <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-semibold uppercase tracking-[0.02em] px-2 py-0.5 rounded border ${
+                <span className={`text-[10px] font-semibold uppercase tracking-[0.06em] px-2.5 py-0.5 rounded-full ${
                   currentVerdict === 'EXTREME'
-                    ? 'bg-red-500/15 border-red-500/30 text-red-700 dark:text-red-400'
+                    ? 'xdr-jewel-red'
                     : currentVerdict === 'HIGH' || currentVerdict === 'MODERATE'
-                    ? 'bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-400'
-                    : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+                    ? 'xdr-jewel-amber'
+                    : 'xdr-jewel-emerald'
                 }`}>
                   {currentVerdict} RISK
                 </span>
-                <span className="text-[11px] font-normal tracking-[-0.01em] text-[#858B95]">
+                <span className="text-[11px] font-normal tracking-[-0.01em] text-[#858B95] dark:text-[#A1A1A6]">
                   {vesselType === 'country_craft' ? 'Country Boat' : 'Trawler (45ft)'}
                 </span>
               </div>
-              <p className={`text-[11px] mt-1 font-normal tracking-[-0.01em] ${isChartTheme ? 'text-[#1D1D1F]' : 'text-[#D1D5DB]'}`}>
+              <p className={`text-[11px] mt-1 font-normal tracking-[-0.01em] ${isChartTheme ? 'text-[#1D1D1F]' : 'text-[#E1E1E6]'}`}>
                 Departure: <strong>04:30 - 11:30 IST</strong> • Return-by: <strong>13:00 IST</strong>
               </p>
             </div>
           </div>
 
-          {/* Listen Action Button */}
+          {/* Listen Action Button (Apple Pill) */}
           <button
             onClick={() => {
               const latestMsg = messages.filter((m) => m.role === 'assistant').slice(-1)[0];
               const textToRead = latestMsg?.recommendation || latestMsg?.content || `${selectedHarbour?.name || 'Harbour'}: Sea-Venture Safety Index is ${currentScore} out of 100, verdict is ${currentVerdict} risk.`;
               handleSpeak(textToRead, 9999);
             }}
-            className={`p-2 rounded-lg text-xs font-medium gap-1.5 shrink-0 flex items-center transition border ${
+            className={`xdr-pill px-3 py-2 rounded-full text-xs font-medium gap-1.5 shrink-0 flex items-center transition active:scale-[0.96] ${
               speakingMessageIndex === 9999
-                ? 'bg-[#0071e3]/15 border-[#0071e3]/30 text-[#0071e3] dark:text-[#0A84FF] animate-pulse'
-                : 'text-[#0071e3] dark:text-[#0A84FF] hover:bg-[#0071e3]/10 border-transparent hover:border-[#0071e3]/20'
+                ? 'bg-[#0071e3]/15 text-[#0071e3] dark:text-[#2997FF] animate-pulse border-[#0071e3]/30'
+                : 'text-[#0071e3] dark:text-[#2997FF]'
             }`}
             title="Read live sea-venture advisory aloud (TTS)"
           >
@@ -419,12 +415,12 @@ export default function ChatPanel({
         </div>
       </div>
 
-      {/* Stage 3: Quick Destination Shortcuts */}
+      {/* Stage 3: Quick Destination Shortcuts (Pill Strip) */}
       <div className={`px-3.5 py-2 border-b flex items-center gap-1.5 overflow-x-auto no-scrollbar touch-momentum text-xs transition-colors ${
-        isChartTheme ? 'bg-[#FAFAFC] border-black/[0.06]' : 'bg-[#191C21]/60 border-white/[0.06]'
+        isChartTheme ? 'bg-[#FAFAFC] border-black/[0.06]' : 'bg-black/60 border-white/[0.06]'
       }`}>
-        <span className="text-[10px] font-medium uppercase tracking-[0.02em] shrink-0 text-[#858B95] mr-1 flex items-center gap-1">
-          <MapPin className="w-3 h-3 text-[#858B95]" />
+        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] shrink-0 text-[#858B95] dark:text-[#6E6E73] mr-1 flex items-center gap-1">
+          <MapPin className="w-3 h-3 text-[#2997FF]" />
           Ports:
         </span>
         {DEMO_SCENARIOS.map((dm) => {
@@ -434,12 +430,10 @@ export default function ChatPanel({
               key={dm.id}
               onClick={() => handleScenarioClick(dm)}
               disabled={isLoading}
-              className={`shrink-0 px-2.5 py-1 rounded-md text-[11px] font-medium transition active:scale-[0.97] border ${
+              className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-medium transition active:scale-[0.96] border ${
                 isSelected
-                  ? 'bg-[#0071e3]/10 dark:bg-[#0A84FF]/15 text-[#0071e3] dark:text-[#0A84FF] border-[#0071e3]/30 dark:border-[#0A84FF]/30'
-                  : isChartTheme
-                  ? 'bg-transparent hover:bg-black/[0.04] border-transparent text-[#51545A]'
-                  : 'bg-transparent hover:bg-white/[0.06] border-transparent text-[#B0B4BC]'
+                  ? 'bg-[#0071e3]/15 dark:bg-[#2997FF]/15 text-[#0071e3] dark:text-[#2997FF] border-[#0071e3]/30 dark:border-[#2997FF]/30 shadow-xs'
+                  : 'xdr-pill text-[#51545A] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white'
               } disabled:opacity-50`}
               title={dm.query}
             >
@@ -451,10 +445,10 @@ export default function ChatPanel({
 
       {/* Stage 4: Operational Scenarios Selector */}
       <div className={`px-3.5 py-2 border-b transition-colors ${
-        isChartTheme ? 'bg-white border-black/[0.06]' : 'bg-[#121418] border-white/[0.06]'
+        isChartTheme ? 'bg-white border-black/[0.06]' : 'bg-black/90 border-white/[0.06]'
       }`}>
-        <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.02em] mb-1.5 text-[#858B95]">
-          <Compass className="w-3 h-3 text-[#858B95]" />
+        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] mb-1.5 text-[#858B95] dark:text-[#6E6E73]">
+          <Compass className="w-3 h-3 text-[#2997FF]" />
           <span>Operational Scenarios</span>
         </div>
         <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar touch-momentum">
@@ -464,11 +458,7 @@ export default function ChatPanel({
               onClick={() => handleScenarioClick(sc)}
               disabled={isLoading}
               title={sc.query}
-              className={`shrink-0 px-2.5 py-1 rounded-lg text-xs font-normal transition flex items-center gap-1 disabled:opacity-50 border ${
-                isChartTheme
-                  ? 'bg-black/[0.02] hover:bg-black/[0.05] border-black/[0.08] text-[#1D1D1F]'
-                  : 'bg-white/[0.03] hover:bg-white/[0.08] border-white/[0.08] text-[#E1E1E6]'
-              }`}
+              className="xdr-pill shrink-0 px-3 py-1 rounded-full text-xs font-normal transition active:scale-[0.96] flex items-center gap-1 disabled:opacity-50 text-[#51545A] dark:text-[#D1D5DB] hover:text-[#1D1D1F] dark:hover:text-white"
             >
               <span>{sc.label}</span>
             </button>
@@ -498,32 +488,28 @@ export default function ChatPanel({
             }`}
           >
             {msg.role === 'user' ? (
-              <div className="max-w-[85%] bg-[#0071e3] text-white rounded-2xl rounded-br-sm px-4 py-2.5 text-xs shadow-sm">
+              <div className="max-w-[85%] bg-[#0071e3] dark:bg-[#2997FF] text-white rounded-2xl rounded-br-xs px-4 py-2.5 text-xs shadow-md">
                 <p className="leading-[1.65] tracking-[-0.01em] whitespace-pre-wrap">{msg.content}</p>
                 <div className="mt-1 text-[9px] text-white/70 text-right font-mono tracking-[0.02em]">
                   {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
             ) : (
-              <div className={`max-w-[95%] w-full rounded-2xl rounded-bl-sm p-4 text-xs shadow-xs space-y-3 border transition-colors ${
-                isChartTheme
-                  ? 'bg-white border-black/[0.08] text-[#1D1D1F]'
-                  : 'bg-[#121418] border-white/[0.08] text-[#F5F5F7]'
-              }`}>
+              <div className="max-w-[95%] w-full rounded-2xl rounded-bl-xs p-4 text-xs space-y-3.5 xdr-surface">
                 {/* Agent Header with Safety Badge */}
                 <div className={`flex items-center justify-between border-b pb-2.5 ${
-                  isChartTheme ? 'border-black/[0.06]' : 'border-white/[0.06]'
+                  isChartTheme ? 'border-black/[0.06]' : 'border-white/[0.08]'
                 }`}>
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-xs tracking-[-0.02em]">ORCA Synthesizer</span>
+                    <span className="font-semibold text-xs tracking-[-0.02em] xdr-gradient-text">ORCA Synthesizer</span>
                     {msg.safety_status && (
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-[0.02em] flex items-center gap-1 border ${
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.06em] flex items-center gap-1 ${
                           msg.safety_status === 'RED_ALERT'
-                            ? 'bg-red-500/15 border-red-500/30 text-red-700 dark:text-red-400'
+                            ? 'xdr-jewel-red'
                             : msg.safety_status === 'AMBER'
-                            ? 'bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-400'
-                            : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+                            ? 'xdr-jewel-amber'
+                            : 'xdr-jewel-emerald'
                         }`}
                       >
                         {msg.safety_status === 'RED_ALERT' && <ShieldAlert className="w-3 h-3 text-current" />}
@@ -538,11 +524,11 @@ export default function ChatPanel({
                     {/* TTS Button */}
                     <button
                       onClick={() => handleSpeak(msg.recommendation || msg.content, idx)}
-                      className="p-1 rounded-md hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-[#858B95] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] transition"
+                      className="p-1.5 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.08] text-[#858B95] hover:text-[#1D1D1F] dark:hover:text-white transition active:scale-[0.96]"
                       title={speakingMessageIndex === idx ? 'Stop Speaking' : 'Read Aloud (TTS)'}
                     >
                       {speakingMessageIndex === idx ? (
-                        <VolumeX className="w-3.5 h-3.5 text-[#0071e3] dark:text-[#0A84FF]" />
+                        <VolumeX className="w-3.5 h-3.5 text-[#0071e3] dark:text-[#2997FF]" />
                       ) : (
                         <Volume2 className="w-3.5 h-3.5" />
                       )}
@@ -552,7 +538,7 @@ export default function ChatPanel({
 
                 {/* Direct Recommendation */}
                 <div className={`font-normal leading-[1.65] whitespace-pre-wrap text-[13px] tracking-[-0.01em] ${
-                  isChartTheme ? 'text-[#1D1D1F]' : 'text-[#F5F5F7]'
+                  isChartTheme ? 'text-[#1D1D1F]' : 'text-[#FFFFFF]'
                 }`}>
                   {msg.recommendation || msg.content}
                 </div>
@@ -560,11 +546,11 @@ export default function ChatPanel({
                 {/* Evidence & Physical Reasoning Accordion */}
                 {msg.evidence_and_reasoning && msg.evidence_and_reasoning.length > 0 && (
                   <div className={`pt-2.5 border-t ${
-                    isChartTheme ? 'border-black/[0.06]' : 'border-white/[0.06]'
+                    isChartTheme ? 'border-black/[0.06]' : 'border-white/[0.08]'
                   }`}>
                     <button
                       onClick={() => toggleEvidence(idx)}
-                      className="flex items-center gap-1.5 text-xs font-medium text-[#858B95] hover:text-[#0071e3] dark:hover:text-[#0A84FF] transition"
+                      className="flex items-center gap-1.5 text-xs font-medium text-[#858B95] dark:text-[#A1A1A6] hover:text-[#0071e3] dark:hover:text-[#2997FF] transition active:scale-[0.97]"
                     >
                       {expandedEvidence[idx] ? (
                         <ChevronDown className="w-3.5 h-3.5" />
@@ -575,13 +561,9 @@ export default function ChatPanel({
                     </button>
 
                     {expandedEvidence[idx] && (
-                      <div className={`mt-2 space-y-1.5 p-3 rounded-lg border text-xs font-mono tracking-[0.01em] ${
-                        isChartTheme
-                          ? 'bg-black/[0.02] border-black/[0.06] text-[#1D1D1F]'
-                          : 'bg-black/30 border-white/[0.06] text-[#D1D5DB]'
-                      }`}>
+                      <div className="mt-2.5 space-y-1.5 p-3.5 rounded-xl xdr-pill text-xs font-mono tracking-[0.01em] text-[#374151] dark:text-[#D1D5DB]">
                         {msg.evidence_and_reasoning.map((ev, i) => (
-                          <div key={i} className="border-l-2 border-[#0071e3]/60 dark:border-[#0A84FF]/60 pl-2.5 py-0.5">
+                          <div key={i} className="border-l-2 border-[#0071e3]/60 dark:border-[#2997FF]/60 pl-2.5 py-0.5">
                             {ev}
                           </div>
                         ))}
@@ -595,36 +577,30 @@ export default function ChatPanel({
         ))}
 
         {isLoading && (
-          <div className={`flex items-center gap-2.5 p-3 rounded-xl border text-xs transition-colors ${
-            isChartTheme
-              ? 'bg-black/[0.02] border-black/[0.08] text-[#1D1D1F]'
-              : 'bg-white/[0.04] border-white/[0.08] text-[#F5F5F7]'
-          }`}>
-            <div className="w-3.5 h-3.5 border-2 border-[#0071e3] dark:border-[#0A84FF] border-t-transparent rounded-full animate-spin"></div>
-            <span>Evaluating sea state...</span>
+          <div className="xdr-pill flex items-center gap-2.5 p-3 rounded-2xl text-xs transition-colors">
+            <div className="w-3.5 h-3.5 border-2 border-[#0071e3] dark:border-[#2997FF] border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-[#51545A] dark:text-[#A1A1A6]">Evaluating sea state...</span>
           </div>
         )}
 
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Stage 7: Text & Voice Input Bar (Refined Apple Operational Composer) */}
-      <form onSubmit={handleSend} className={`p-2.5 sm:p-3 border-t transition-colors backdrop-blur-xl shrink-0 ${
+      {/* Stage 7: Text & Voice Input Bar (Apple Spotlight-Style Command Capsule) */}
+      <form onSubmit={handleSend} className={`p-2.5 sm:p-3 border-t transition-colors backdrop-blur-2xl shrink-0 ${
         isChartTheme
-          ? 'bg-white/95 border-black/[0.08]'
-          : 'bg-[#0B0C0F]/95 border-white/[0.08]'
+          ? 'bg-white/90 border-black/[0.08]'
+          : 'bg-black/90 border-white/[0.08] shadow-[0_-10px_30px_rgba(0,0,0,0.8)]'
       }`}>
-        <div className="relative flex items-center gap-2">
+        <div className="xdr-pill rounded-2xl p-1.5 flex items-center gap-2 focus-within:border-[#2997FF]/50 focus-within:ring-2 focus-within:ring-[#2997FF]/20 transition-all">
           {/* Speech-to-Text Toggle Button */}
           <button
             type="button"
             onClick={toggleListening}
-            className={`p-2.5 rounded-lg min-w-[42px] min-h-[42px] flex items-center justify-center transition border active:scale-[0.96] ${
+            className={`p-2 rounded-xl min-w-[38px] min-h-[38px] flex items-center justify-center transition border active:scale-[0.96] ${
               isListening
                 ? 'bg-red-500/15 border-red-500/30 text-red-500'
-                : isChartTheme
-                ? 'bg-black/[0.03] border-black/[0.08] text-[#858B95] hover:text-[#1D1D1F]'
-                : 'bg-white/[0.04] border-white/[0.08] text-[#858B95] hover:text-[#F5F5F7]'
+                : 'border-transparent text-[#858B95] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white'
             }`}
             title={isListening ? 'Listening...' : 'Voice Input'}
             aria-label="Voice Input"
@@ -647,18 +623,14 @@ export default function ChatPanel({
             autoCorrect="off"
             autoCapitalize="sentences"
             enterKeyHint="send"
-            className={`flex-1 rounded-lg px-3.5 py-2.5 text-[16px] md:text-xs leading-[1.65] tracking-[-0.01em] transition focus:outline-none focus:ring-1 ${
-              isChartTheme
-                ? 'bg-black/[0.02] border border-black/[0.1] focus:border-[#0071e3] text-[#1D1D1F] placeholder-[#858B95] focus:ring-[#0071e3]/20'
-                : 'bg-white/[0.03] border border-white/[0.1] focus:border-[#0A84FF] text-[#F5F5F7] placeholder-[#858B95] focus:ring-[#0A84FF]/20'
-            }`}
+            className="flex-1 bg-transparent px-2.5 py-1.5 text-[16px] md:text-xs leading-[1.65] tracking-[-0.01em] transition focus:outline-none text-[#1D1D1F] dark:text-white placeholder-[#858B95] dark:placeholder-[#6E6E73]"
           />
 
           {/* Send Button */}
           <button
             type="submit"
             disabled={!inputText.trim() || isLoading}
-            className="p-2.5 rounded-lg min-w-[42px] min-h-[42px] flex items-center justify-center font-medium transition shadow-xs bg-[#0071e3] dark:bg-[#0A84FF] text-white hover:opacity-95 disabled:opacity-30 active:scale-[0.96]"
+            className="p-2 rounded-xl min-w-[38px] min-h-[38px] flex items-center justify-center font-medium transition shadow-xs bg-[#0071e3] dark:bg-[#2997FF] text-white hover:opacity-95 disabled:opacity-30 active:scale-[0.96]"
             title="Send Query"
             aria-label="Send Query"
           >
