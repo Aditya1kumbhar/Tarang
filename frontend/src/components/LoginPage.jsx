@@ -166,12 +166,9 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
             <Compass className="w-4 h-4 sm:w-5 sm:h-5 text-[#2997FF]" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-base sm:text-lg tracking-[-0.03em] xdr-gradient-text">ORCA</span>
-              <span className="text-[9px] sm:text-[10px] uppercase font-semibold tracking-[0.06em] px-2 py-0.5 rounded-full border border-black/10 dark:border-white/10 text-[#86868b] dark:text-[#A1A1A6]">
-                Gov of India
-              </span>
-            </div>
+            <h1 className="font-semibold text-base sm:text-lg tracking-[-0.03em] leading-tight xdr-gradient-text">
+              ORCA
+            </h1>
             <p className="text-[10px] sm:text-xs text-[#86868b] dark:text-[#A1A1A6] tracking-[-0.01em]">
               Oceanographic Reasoning & Collaborative Agents
             </p>

@@ -302,14 +302,9 @@ export default function App() {
               <Compass className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#0071e3] dark:text-[#2997FF]" />
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <h1 className="font-semibold text-base sm:text-lg tracking-[-0.03em] leading-tight xdr-gradient-text">
-                  ORCA
-                </h1>
-                <span className="hidden sm:inline-block text-[9px] uppercase font-semibold tracking-[0.06em] px-1.5 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.08] text-[#86868b] dark:text-[#A1A1A6] border border-black/[0.04] dark:border-white/[0.06]">
-                  Gov of India
-                </span>
-              </div>
+              <h1 className="font-semibold text-base sm:text-lg tracking-[-0.03em] leading-tight xdr-gradient-text">
+                ORCA
+              </h1>
               <p className="text-[10px] sm:text-xs text-[#86868b] dark:text-[#A1A1A6] block font-normal leading-tight tracking-[-0.01em]">
                 Marine Intelligence
               </p>
