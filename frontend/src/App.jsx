@@ -214,25 +214,14 @@ export default function App() {
       >
         {/* Brand & Identity */}
         <div className="flex items-center gap-3">
-          <div className="glass-icon w-8 h-8">
-            <Compass className="w-4 h-4 text-[#2997ff]" />
+          <div className="glass-icon w-9 h-9">
+            <Compass className="w-5 h-5 text-[#2997ff]" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-semibold text-sm tracking-tight">
-                ORCA
-              </h1>
-              <span
-                className={`text-[10px] font-medium tracking-wide px-1.5 py-0.5 rounded border ${
-                  themeMode === 'chart'
-                    ? 'bg-black/[0.04] border-black/[0.08] text-[#86868b]'
-                    : 'bg-white/[0.06] border-white/[0.1] text-[#86868b]'
-                }`}
-              >
-                SIH 2026 PS #20
-              </span>
-            </div>
-            <p className="text-[11px] text-[#86868b] hidden sm:block font-normal">
+            <h1 className="font-bold text-base sm:text-lg tracking-tight leading-tight">
+              ORCA
+            </h1>
+            <p className="text-xs text-[#86868b] hidden sm:block font-normal leading-tight">
               Marine Intelligence
             </p>
           </div>
