@@ -4,11 +4,16 @@ Calculates SST optimality, thermal front gradients, and Chlorophyll-a composite 
 Integrates with geospatial geofencing to strictly quarantine any PFZ candidate within 1.5 NM of IMBL/MPAs.
 """
 
+import asyncio
 from datetime import datetime, timezone
 import functools
 import json
 import logging
+import math
 from typing import Any, Dict, List, Optional, Tuple
+
+import httpx
+import numpy as np
 
 from backend.config import (
     FALLBACK_GRID_FILE,
@@ -31,6 +36,10 @@ from backend.schemas.models import (
 from backend.tools.geospatial_tool import (
     calculate_distance_and_bearing,
     check_geofence,
+)
+from backend.tools.satellite_erddap import (
+    fetch_chl_grid,
+    fetch_sst_grid,
 )
 
 logger = logging.getLogger(__name__)
@@ -103,27 +112,186 @@ def calculate_composite_pfz_score(
     return bounded_score, s_sst, s_front, s_chl
 
 
-def compute_pfz_zones(
+def compute_finite_difference_gradients(
+    sst_points: List[Dict[str, Any]]
+) -> Dict[Tuple[float, float], float]:
+    """
+    Computes spatial SST thermal gradient magnitude (°C/km) across the SST grid
+    using finite differences between neighbouring points (dT/dx in E-W and dT/dy in N-S).
+    """
+    if not sst_points:
+        return {}
+
+    grid_map = {(round(p["lat"], 4), round(p["lon"], 4)): float(p["sst_c"]) for p in sst_points}
+    lats = sorted(list(set(round(p["lat"], 4) for p in sst_points)))
+    lons = sorted(list(set(round(p["lon"], 4) for p in sst_points)))
+    lat_idx_map = {lat: i for i, lat in enumerate(lats)}
+    lon_idx_map = {lon: i for i, lon in enumerate(lons)}
+
+    gradients: Dict[Tuple[float, float], float] = {}
+
+    for p in sst_points:
+        lat = round(p["lat"], 4)
+        lon = round(p["lon"], 4)
+        sst = float(p["sst_c"])
+
+        # 1. Longitudinal (East-West) difference: dx in km
+        j = lon_idx_map[lon]
+        has_east = (j + 1 < len(lons)) and (lat, lons[j + 1]) in grid_map
+        has_west = (j - 1 >= 0) and (lat, lons[j - 1]) in grid_map
+
+        dT_dx = 0.0
+        cos_lat = math.cos(math.radians(lat))
+        if has_east and has_west:
+            east_lon = lons[j + 1]
+            west_lon = lons[j - 1]
+            dx_km = (east_lon - west_lon) * 111.32 * cos_lat
+            if dx_km > 0:
+                dT_dx = (grid_map[(lat, east_lon)] - grid_map[(lat, west_lon)]) / dx_km
+        elif has_east:
+            east_lon = lons[j + 1]
+            dx_km = (east_lon - lon) * 111.32 * cos_lat
+            if dx_km > 0:
+                dT_dx = (grid_map[(lat, east_lon)] - sst) / dx_km
+        elif has_west:
+            west_lon = lons[j - 1]
+            dx_km = (lon - west_lon) * 111.32 * cos_lat
+            if dx_km > 0:
+                dT_dx = (sst - grid_map[(lat, west_lon)]) / dx_km
+
+        # 2. Latitudinal (North-South) difference: dy in km
+        i = lat_idx_map[lat]
+        has_north = (i + 1 < len(lats)) and (lats[i + 1], lon) in grid_map
+        has_south = (i - 1 >= 0) and (lats[i - 1], lon) in grid_map
+
+        dT_dy = 0.0
+        if has_north and has_south:
+            north_lat = lats[i + 1]
+            south_lat = lats[i - 1]
+            dy_km = (north_lat - south_lat) * 110.57
+            if dy_km > 0:
+                dT_dy = (grid_map[(north_lat, lon)] - grid_map[(south_lat, lon)]) / dy_km
+        elif has_north:
+            north_lat = lats[i + 1]
+            dy_km = (north_lat - lat) * 110.57
+            if dy_km > 0:
+                dT_dy = (grid_map[(north_lat, lon)] - sst) / dy_km
+        elif has_south:
+            south_lat = lats[i - 1]
+            dy_km = (lat - south_lat) * 110.57
+            if dy_km > 0:
+                dT_dy = (sst - grid_map[(south_lat, lon)]) / dy_km
+
+        grad = math.sqrt(dT_dx**2 + dT_dy**2)
+        gradients[(lat, lon)] = round(grad, 4)
+
+    return gradients
+
+
+def merge_sst_and_chl(
+    sst_points: List[Dict[str, Any]],
+    chl_points: List[Dict[str, Any]],
+    max_dist_deg: float = 0.15,
+) -> List[Dict[str, Any]]:
+    """
+    Attaches chlorophyll by nearest neighbour from chl_points to sst_points.
+    If nearest distance > max_dist_deg (0.15 deg), drops the point.
+    Computes sst_gradient_c_per_km via finite differences on the SST grid.
+    """
+    if not sst_points or not chl_points:
+        return []
+
+    gradients = compute_finite_difference_gradients(sst_points)
+
+    chl_coords = np.array([[c["lat"], c["lon"]] for c in chl_points])
+    chl_vals = np.array([c["chla_mg_m3"] for c in chl_points])
+
+    merged: List[Dict[str, Any]] = []
+
+    for idx, sst_pt in enumerate(sst_points):
+        p_lat = sst_pt["lat"]
+        p_lon = sst_pt["lon"]
+        sst = float(sst_pt["sst_c"])
+
+        # Nearest neighbour search in degrees
+        diff = chl_coords - np.array([p_lat, p_lon])
+        dists_sq = np.sum(diff**2, axis=1)
+        min_idx = int(np.argmin(dists_sq))
+        min_dist = math.sqrt(float(dists_sq[min_idx]))
+
+        if min_dist > max_dist_deg:
+            # Distance exceeds 0.15 deg: drop the point
+            continue
+
+        chla = float(chl_vals[min_idx])
+        grad = gradients.get((round(p_lat, 4), round(p_lon, 4)), 0.15)
+
+        merged.append({
+            "sector": f"pfz_sat_{idx + 1}",
+            "lat": p_lat,
+            "lon": p_lon,
+            "sst_c": sst,
+            "chla_mg_m3": chla,
+            "sst_gradient_c_per_km": grad,
+            "depth_m": 25.0,
+            "timestamp": sst_pt.get("timestamp"),
+        })
+
+    return merged
+
+
+async def compute_pfz_zones(
     harbour_id: str = "rameswaram",
     max_candidates: int = 3,
     custom_points: Optional[List[Dict[str, Any]]] = None,
+    client: Optional[httpx.AsyncClient] = None,
 ) -> PFZReport:
     """
     Identifies and ranks Potential Fishing Zones relative to a harbour.
-    Evaluates thermal front gradient, Chl-a, SST, and quarantines candidates violating IMBL/MPA geofences.
+    Builds PFZ candidate grid from live NOAA CoastWatch satellite data (CRW SST + VIIRS Chl-a) via ERDDAP.
+    On ANY fetch or parse failure, gracefully falls back to the bundled offline snapshot.
     """
     harbours = load_harbours_dict()
     harbour = harbours.get(harbour_id)
     if not harbour:
         harbour = harbours["rameswaram"]
 
+    is_satellite = False
+    satellite_timestamp: Optional[str] = None
+    data_mode = "LIVE_SATELLITE"
+
     if custom_points is not None:
         grid_points = custom_points
         dataset_name = "Custom Injected Oceanic Grid Test Fixture"
+        data_mode = "LIVE"
     else:
-        grid_data = load_ocean_grid()
-        grid_points = grid_data.get("points", [])
-        dataset_name = grid_data.get("dataset_provenance", "INCOIS-NOAA Satellite Climatology")
+        try:
+            sst_grid = await fetch_sst_grid(harbour.lat, harbour.lon, box_deg=1.5, client=client)
+            chl_grid = await fetch_chl_grid(harbour.lat, harbour.lon, box_deg=1.5, client=client)
+
+            if not sst_grid or not chl_grid:
+                raise ValueError("Received empty satellite grid from ERDDAP")
+
+            grid_points = merge_sst_and_chl(sst_grid, chl_grid, max_dist_deg=0.15)
+            if not grid_points:
+                raise ValueError("No viable PFZ points after merging SST and Chlorophyll within 0.15 deg")
+
+            is_satellite = True
+            dataset_name = "NOAA CoastWatch ERDDAP (CRW SST + VIIRS Chl-a)"
+            data_mode = "LIVE_SATELLITE"
+            satellite_timestamp = getattr(sst_grid, "timestamp", None) or getattr(chl_grid, "timestamp", None)
+        except Exception as e:
+            logger.warning(
+                "Satellite ERDDAP PFZ calculation failed (%s); falling back to bundled static snapshot for %s",
+                e,
+                harbour_id,
+            )
+            grid_data = load_ocean_grid()
+            grid_points = grid_data.get("points", [])
+            # Always override any legacy static label with the exact required string
+            dataset_name = "Bundled offline snapshot (static)"
+            data_mode = "FALLBACK_SNAPSHOT"
+            satellite_timestamp = None
 
     candidates: List[PFZCandidate] = []
 
@@ -139,13 +307,13 @@ def compute_pfz_zones(
             harbour.lon, harbour.lat, p_lon, p_lat
         )
 
-        # Focus on viable offshore operational range (10 km to 120 km)
+        # Strict offshore operational range (8 km to 125 km)
         if dist_km < 8.0 or dist_km > 125.0:
             continue
 
         score, s_sst, s_front, s_chl = calculate_composite_pfz_score(sst, grad, chla)
 
-        # Geofence safety check
+        # Geofence safety check (IMBL and MPA polygons)
         geofence_res = check_geofence(p_lon, p_lat)
         is_safe = not geofence_res.is_violation and geofence_res.alert_level != "CRITICAL"
 
@@ -177,21 +345,32 @@ def compute_pfz_zones(
             else ("Medium Possibility" if score >= 50.0 else "Lower Possibility")
         )
 
-        evidence_entry = EvidenceLedgerEntry(
-            parameter_name="Biophysical PFZ & Thermal Front",
-            source_sensor="EOS-06 OCM-3 (366m) + INSAT-3DS Imager / MODIS-Aqua",
-            platform_mission="ISRO Oceansat-3 (EOS-06) & INSAT-3DS Rapid-Scan Fusion",
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
-            spatial_resolution="366 m (OCM-3 LAC) / 2.0 km (INSAT-3DS)",
-            confidence_tier=conf_tier,
-            data_mode="FALLBACK_SNAPSHOT" if custom_points is None else "LIVE",
-            freshness_age_minutes=15.0,
-            station_id=f"PFZ-{zone_id.upper()}",
-            anomaly_note=(
-                "EOS-06 SSTM scan mechanism inactive; SST fused from INSAT-3DS Imager & MODIS-Aqua; "
-                "thermal fronts tracked across cloud gaps via 7-day buffer persistence & SCAT-3 winds"
-            ),
-        )
+        if data_mode == "LIVE_SATELLITE":
+            evidence_entry = EvidenceLedgerEntry(
+                parameter_name="Biophysical PFZ & Thermal Front",
+                source_sensor="NOAA Coral Reef Watch (CRW) SST + VIIRS Chl-a",
+                platform_mission="NOAA CoastWatch ERDDAP (NESDIS VIIRS & CRW)",
+                timestamp_utc=satellite_timestamp or datetime.now(timezone.utc).isoformat(),
+                spatial_resolution="5.0 km (CRW SST) / 9.0 km (VIIRS Chl-a)",
+                confidence_tier=conf_tier,
+                data_mode="LIVE_SATELLITE",
+                freshness_age_minutes=0.0,
+                station_id=f"PFZ-{zone_id.upper()}",
+                anomaly_note="Live NOAA CoastWatch ERDDAP daily satellite feed. SST thermal gradient computed via finite differences.",
+            )
+        else:
+            evidence_entry = EvidenceLedgerEntry(
+                parameter_name="Biophysical PFZ & Thermal Front",
+                source_sensor="Bundled offline snapshot (static)" if custom_points is None else "Custom Test Fixture",
+                platform_mission="Bundled Indian Ocean Baseline Grid" if custom_points is None else "Test Platform",
+                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                spatial_resolution="Climatological baseline grid",
+                confidence_tier=conf_tier,
+                data_mode="FALLBACK_SNAPSHOT" if custom_points is None else "LIVE",
+                freshness_age_minutes=120.0,
+                station_id=f"PFZ-{zone_id.upper()}",
+                anomaly_note="NOAA ERDDAP live satellite unreachable; fell back to bundled offline static snapshot.",
+            )
 
         candidate = PFZCandidate(
             zone_id=zone_id,
@@ -231,7 +410,11 @@ def compute_pfz_zones(
 
     provenance = ProvenanceMetadata(
         source_dataset=dataset_name,
-        timestamp_utc=datetime.now(timezone.utc).isoformat(),
+        timestamp_utc=(
+            satellite_timestamp
+            if (data_mode == "LIVE_SATELLITE" and satellite_timestamp)
+            else datetime.now(timezone.utc).isoformat()
+        ),
         coordinates=[harbour.lat, harbour.lon],
         metrics={
             "harbour_id": harbour_id,
@@ -239,13 +422,14 @@ def compute_pfz_zones(
             "top_score": top_rec.pfz_score if top_rec else 0.0,
             "top_zone_id": top_rec.zone_id if top_rec else None,
             "top_zone_safe": top_rec.is_geofence_safe if top_rec else False,
+            "data_mode": data_mode,
         },
         reasoning_trace=(
             f"Calculated PFZ composite index for {len(candidates)} offshore grid points. "
             f"Applied weights: Front Gradient (40%), Chlorophyll-a (35%), SST (25%). "
             f"Cross-referenced each point with IMBL and MPA geofence polygons."
         ),
-        confidence_score=0.96,
+        confidence_score=0.96 if data_mode == "LIVE_SATELLITE" else 0.82,
     )
 
     return PFZReport(
@@ -253,4 +437,25 @@ def compute_pfz_zones(
         candidates=candidates[:max_candidates],
         top_recommendation=top_rec,
         provenance=provenance,
+        data_mode=data_mode,
+        satellite_timestamp=satellite_timestamp,
     )
+
+
+def compute_pfz_zones_sync(
+    harbour_id: str = "rameswaram",
+    max_candidates: int = 3,
+    custom_points: Optional[List[Dict[str, Any]]] = None,
+) -> PFZReport:
+    """Synchronous runner for compute_pfz_zones."""
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                return executor.submit(
+                    asyncio.run, compute_pfz_zones(harbour_id, max_candidates, custom_points)
+                ).result()
+    except RuntimeError:
+        pass
+    return asyncio.run(compute_pfz_zones(harbour_id, max_candidates, custom_points))

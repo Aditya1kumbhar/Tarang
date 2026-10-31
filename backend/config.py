@@ -106,6 +106,12 @@ AUTHORIZED_EMAILS = os.getenv("AUTHORIZED_EMAILS", "").strip()
 ENVIRONMENT = os.getenv("ENVIRONMENT", os.getenv("ENV", "production")).strip().lower()
 IS_PRODUCTION = ENVIRONMENT == "production"
 
+# Dev Login Policy:
+# Dev-login may exist ONLY in local development, and ONLY when BOTH conditions hold:
+# ENVIRONMENT is not production AND DEV_LOGIN_ENABLED=true is set explicitly.
+DEV_LOGIN_ENABLED = os.getenv("DEV_LOGIN_ENABLED", "false").strip().lower() in ("true", "1", "yes")
+ALLOW_DEV_LOGIN = (not IS_PRODUCTION) and DEV_LOGIN_ENABLED
+
 # Strict CORS Allowlist (CORS Requirement)
 # Never reflect arbitrary Origin; load from ALLOWED_ORIGINS env var
 _raw_origins = os.getenv("ALLOWED_ORIGINS", "").strip()

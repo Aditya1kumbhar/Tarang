@@ -4,6 +4,7 @@ Provides typed asynchronous state passing across the multi-agent pipeline:
 Planner -> Parallel Specialist Agents -> Deterministic Safety Circuit Breaker -> Multilingual Synthesizer.
 """
 
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 from pydantic import BaseModel, Field
 
@@ -38,6 +39,7 @@ class OrchestratorState(BaseModel):
     intent: str = "general_maritime"
     required_agents: List[str] = Field(default_factory=list)
     custom_weather_params: Optional[Dict[str, Any]] = None
+    target_dt: Optional[datetime] = None
     target_coordinates: Optional[Tuple[float, float]] = None  # (lat, lon)
     target_name: Optional[str] = None
     target_bearing_deg: Optional[float] = None

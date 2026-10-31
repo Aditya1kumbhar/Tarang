@@ -11,10 +11,10 @@
 
 ---
 
-# GEMINI.md — ORCA: Marine Ecosystem Reasoning with Collaborative Agents (SIH 2026 PS #20 / ID 26176)
+# GEMINI.md — ORCA: Marine EcOsystem Reasoning with Collaborative Agents (SIH 2026 Problem Statement ID 26176 / SIH26176)
 
 ## 1. SYSTEM IDENTITY & CORE OBJECTIVE
-You are building **ORCA (Oceanographic Reasoning & Collaborative Agents)**, an enterprise-grade, real-world Agentic AI Marine Intelligence Platform for Indian fishermen, coastal authorities, researchers, and disaster managers.
+You are building **ORCA (Marine EcOsystem Reasoning with Collaborative Agents)**, an enterprise-grade, real-world Agentic AI Marine Intelligence Platform for Indian fishermen, coastal authorities, researchers, and disaster managers.
 
 ### Non-Negotiable Engineering Rules (Strict Enforcement)
 1. **ZERO HALLUCINATION IN SAFETY & GEOMETRY:** Never let an LLM calculate distances, bearings, wave thresholds, or polygon intersections. All spatial math, geofencing, A* routing, and weather hazard scoring MUST be executed by deterministic Python tools (`pyproj`, `shapely`, `numpy`, `networkx`).

@@ -1,5 +1,5 @@
 """
-ORCA FastAPI Backend Server (SIH 2026 PS #20 / ID 26176).
+ORCA FastAPI Backend Server (SIH 2026 Problem Statement ID 26176 / SIH26176).
 Provides production-grade REST APIs for multi-agent reasoning, live harbour status,
 dashboard summaries, and maritime safety overrides with strict security guardrails.
 """
@@ -33,6 +33,10 @@ from backend.auth import (
     verify_google_id_token,
 )
 from backend.rate_limiter import get_real_client_ip, limiter
+
+# Prevent duplicate route limit accumulation across module reloads or worker init
+if hasattr(limiter, "_route_limits"):
+    limiter._route_limits.clear()
 from backend.agents.orchestrator import run_orchestrator
 from backend.agents.prompts import get_safety_override_banner
 from backend.config import (
@@ -40,6 +44,7 @@ from backend.config import (
     AI_DAILY_BUDGET,
     AI_TIMEOUT_SECONDS,
     ALLOWED_ORIGINS,
+    ALLOW_DEV_LOGIN,
     AUTH_SECRET,
     AUTHORIZED_EMAILS,
     ENVIRONMENT,
@@ -97,7 +102,7 @@ redoc_url = None if IS_PRODUCTION else "/redoc"
 openapi_url = None if IS_PRODUCTION else "/openapi.json"
 
 app = FastAPI(
-    title="ORCA: Oceanographic Reasoning & Collaborative Agents API",
+    title="ORCA: Marine EcOsystem Reasoning with Collaborative Agents API",
     description="Enterprise-grade Agentic AI Marine Intelligence Platform for Indian Fisheries & Coastal Safety",
     version="1.0.0",
     lifespan=lifespan,
@@ -322,6 +327,11 @@ async def health_check(request: Request) -> Dict[str, Any]:
 @limiter.limit("60/minute")
 async def get_auth_config(request: Request):
     """Returns Google Client ID and whether Google authentication is active."""
+    if IS_PRODUCTION and not GOOGLE_CLIENT_ID:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Authentication service unavailable: Google OAuth is not configured in production.",
+        )
     return {
         "google_client_id": GOOGLE_CLIENT_ID,
         "is_configured": bool(GOOGLE_CLIENT_ID),
@@ -337,6 +347,11 @@ async def google_auth_login(request: Request, body: GoogleAuthRequest, response:
     against Google's tokeninfo API, establishes an HMAC-signed session,
     and sets an HttpOnly session cookie.
     """
+    if IS_PRODUCTION and not GOOGLE_CLIENT_ID:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Authentication service unavailable: Google OAuth is not configured in production.",
+        )
     user = await verify_google_id_token(body.credential, client_id=GOOGLE_CLIENT_ID)
     if not user:
         raise HTTPException(
@@ -363,37 +378,33 @@ async def google_auth_login(request: Request, body: GoogleAuthRequest, response:
     }
 
 
-@app.post("/api/v1/auth/dev-login", summary="Authorized Developer / Evaluation Login", tags=["Authentication"])
-@limiter.limit("20/minute")
-async def dev_auth_login(request: Request, body: DevLoginRequest, response: Response):
-    """
-    Authorized login for local evaluation and testing environments when GOOGLE_CLIENT_ID
-    has not yet been provisioned in Google Cloud Console.
-    Disabled in production if GOOGLE_CLIENT_ID is active.
-    """
-    if IS_PRODUCTION and GOOGLE_CLIENT_ID:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Developer login is disabled in production when Google Client ID is configured.",
+if ALLOW_DEV_LOGIN:
+    @app.post("/api/v1/auth/dev-login", summary="Authorized Developer / Evaluation Login", tags=["Authentication"])
+    @limiter.limit("20/minute")
+    async def dev_auth_login(request: Request, body: DevLoginRequest, response: Response):
+        """
+        Authorized login for local evaluation and testing environments when GOOGLE_CLIENT_ID
+        has not yet been provisioned in Google Cloud Console.
+        Only registered in non-production when DEV_LOGIN_ENABLED=true.
+        """
+        now = int(time.time())
+        email = body.email or "maritime.officer@nic.in"
+        name = body.name or "Authorized Maritime Officer"
+        user = UserSession(
+            email=email,
+            name=name,
+            picture=None,
+            sub=f"dev_user_{hashlib.md5(email.encode()).hexdigest()[:8]}",
+            issued_at=now,
+            expires_at=now + 7 * 86400,
         )
-    now = int(time.time())
-    email = body.email or "maritime.officer@nic.in"
-    name = body.name or "Authorized Maritime Officer"
-    user = UserSession(
-        email=email,
-        name=name,
-        picture=None,
-        sub=f"dev_user_{hashlib.md5(email.encode()).hexdigest()[:8]}",
-        issued_at=now,
-        expires_at=now + 7 * 86400,
-    )
-    token = create_session_token(user.model_dump())
-    set_session_cookie(response, token)
-    return {
-        "status": "success",
-        "user": user.model_dump(),
-        "token": token,
-    }
+        token = create_session_token(user.model_dump())
+        set_session_cookie(response, token)
+        return {
+            "status": "success",
+            "user": user.model_dump(),
+            "token": token,
+        }
 
 
 @app.get("/api/v1/auth/me", summary="Get Current Authenticated User Session", tags=["Authentication"])
@@ -458,7 +469,7 @@ async def get_dashboard_summary(
     )
 
     # 2. Compute Top PFZ Zone
-    pfz_report = compute_pfz_zones(harbour_id=harbour.id, max_candidates=1)
+    pfz_report = await compute_pfz_zones(harbour_id=harbour.id, max_candidates=1)
     top_pfz = pfz_report.top_recommendation
 
     # 3. Geofence Check
@@ -512,6 +523,14 @@ async def get_dashboard_summary(
     if top_pfz and top_pfz.evidence_ledger_entry:
         evidence_entries.append(top_pfz.evidence_ledger_entry)
 
+    weather_data_mode = weather.evidence_ledger_entry.data_mode if weather.evidence_ledger_entry else "LIVE"
+    weather_timestamp = weather.evidence_ledger_entry.timestamp_utc if weather.evidence_ledger_entry else None
+
+    pfz_data_mode = getattr(pfz_report, "data_mode", "LIVE_SATELLITE")
+    satellite_timestamp = getattr(pfz_report, "satellite_timestamp", None)
+    if not satellite_timestamp and top_pfz and top_pfz.evidence_ledger_entry:
+        satellite_timestamp = top_pfz.evidence_ledger_entry.timestamp_utc
+
     return DashboardSummaryResponse(
         harbour=harbour,
         weather=weather,
@@ -520,6 +539,10 @@ async def get_dashboard_summary(
         safety_override_banner=safety_override,
         map_payload={"type": "FeatureCollection", "features": map_features},
         evidence_ledger=evidence_entries,
+        weather_data_mode=weather_data_mode,
+        pfz_data_mode=pfz_data_mode,
+        satellite_timestamp=satellite_timestamp,
+        weather_timestamp=weather_timestamp,
     )
 
 
@@ -592,16 +615,19 @@ def list_harbours_sync() -> List[HarbourInfo]:
 )
 async def get_demo_scenario(
     request: Request,
-    scenario: ScenarioType = Query(ScenarioType.SAFE, description="Scenario key: safe | danger | cyclone | pfz | route"),
+    scenario: ScenarioType = Query(ScenarioType.SAFE, description="Scenario key: safe | danger | cyclone | pfz | route | conditions | alerts | chlorophyll_sst"),
     current_user: UserSession = Depends(get_current_user),
 ) -> ChatResponse:
     """
-    Serves the 5 canonical SIH26176 evaluation scenarios with strict enum validation (INPUT_VALIDATION):
+    Serves the canonical SIH26176 evaluation scenarios with strict enum validation (INPUT_VALIDATION):
     - safe: Goa / Malvan calm departure (LOW risk)
     - danger: Mumbai 06:00 IST morning wind-wave shear (HIGH risk)
     - cyclone: Paradip cyclonic swell surge (EXTREME risk)
     - pfz: Rameswaram high-confidence biophysical PFZ discovery
     - route: Chennai wave-aware A* safe routing
+    - conditions: Veraval tide, weather, and sea conditions
+    - alerts: Paradip convective lightning and cyclone alerts
+    - chlorophyll_sst: Visakhapatnam chlorophyll-a & SST region ranking
     """
     scenarios = {
         ScenarioType.SAFE: ChatRequest(
@@ -627,6 +653,21 @@ async def get_demo_scenario(
         ScenarioType.ROUTE: ChatRequest(
             message="Calculate a safe navigation route from Chennai harbour to the PFZ cluster avoiding rough seas.",
             harbour_id=HarbourID.CHENNAI,
+            vessel_type=VesselType.COUNTRY_CRAFT,
+        ),
+        ScenarioType.CONDITIONS: ChatRequest(
+            message="What are the tide, weather, and sea conditions near my fishing location?",
+            harbour_id=HarbourID.VERAVAL,
+            vessel_type=VesselType.COUNTRY_CRAFT,
+        ),
+        ScenarioType.ALERTS: ChatRequest(
+            message="Are there any lightning or cyclone alerts in my area?",
+            harbour_id=HarbourID.PARADIP,
+            vessel_type=VesselType.COUNTRY_CRAFT,
+        ),
+        ScenarioType.CHLOROPHYLL_SST: ChatRequest(
+            message="Which regions show high chlorophyll concentration and favourable sea surface temperature?",
+            harbour_id=HarbourID.VISAKHAPATNAM,
             vessel_type=VesselType.COUNTRY_CRAFT,
         ),
     }
@@ -666,7 +707,7 @@ async def chat_endpoint(
     current_user: UserSession = Depends(get_current_user),
 ) -> ChatResponse:
     """
-    Main conversational agent endpoint for SIH 2026 Problem Statement #20.
+    Main conversational agent endpoint for SIH 2026 Problem Statement ID 26176 (SIH26176).
     - Content-Type validation: requires application/json (HTTP 415 on mismatch).
     - Rate limited to 10 requests/minute per IP across all uvicorn workers.
     - Rejects empty/whitespace or oversized message (>2000 chars) with HTTP 413.
@@ -744,7 +785,7 @@ async def chat_endpoint(
 # SPA FALLBACK HANDLER (Serves index.html for frontend client-side routes)
 # Enforces strict API 404 hygiene (API_404_HYGIENE Requirement)
 # ==============================================================================
-@app.api_route("/{full_path:path}", methods=["GET", "HEAD"], include_in_schema=False)
+@app.api_route("/{full_path:path}", methods=["GET", "HEAD", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], include_in_schema=False)
 @limiter.exempt
 async def serve_spa_fallback(full_path: str, request: Request):
     """
@@ -773,7 +814,15 @@ async def serve_spa_fallback(full_path: str, request: Request):
             headers={"Cache-Control": "no-store"},
         )
 
-    # 3. Static Files & SPA index.html
+    # 3. Non-API routes only permit GET and HEAD
+    if request.method not in ["GET", "HEAD"]:
+        return JSONResponse(
+            status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+            content={"detail": "Method not allowed", "error": "method_not_allowed"},
+            headers={"Cache-Control": "no-store"},
+        )
+
+    # 4. Static Files & SPA index.html
     if _DIST_DIR.exists():
         target_file = _DIST_DIR / full_path
         if full_path and target_file.exists() and target_file.is_file():

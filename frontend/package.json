@@ -1,5 +1,6 @@
 {
   "name": "orca-marine-frontend",
+  "description": "ORCA Marine EcOsystem Reasoning with Collaborative Agents",
   "private": true,
   "version": "1.0.0",
   "type": "module",

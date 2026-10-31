@@ -31,6 +31,9 @@ class ScenarioType(str, Enum):
     CYCLONE = "cyclone"
     PFZ = "pfz"
     ROUTE = "route"
+    CONDITIONS = "conditions"
+    ALERTS = "alerts"
+    CHLOROPHYLL_SST = "chlorophyll_sst"
 
 class BoundaryType(str, Enum):
     IMBL = "IMBL"
@@ -120,6 +123,8 @@ class PFZReport(BaseModel):
     candidates: List[PFZCandidate]
     top_recommendation: Optional[PFZCandidate] = None
     provenance: ProvenanceMetadata
+    data_mode: str = Field("LIVE_SATELLITE", description="LIVE_SATELLITE or FALLBACK_SNAPSHOT")
+    satellite_timestamp: Optional[str] = Field(None, description="NOAA ERDDAP satellite pass timestamp")
 
 class GeofenceAssessment(BaseModel):
     is_violation: bool
@@ -197,6 +202,10 @@ class ChatResponse(BaseModel):
     agent_traces: List[AgentTrace] = Field(default_factory=list)
     provenance_list: List[ProvenanceMetadata] = Field(default_factory=list)
     evidence_ledger: List[EvidenceLedgerEntry] = Field(default_factory=list)
+    weather_data_mode: Optional[str] = Field("LIVE", description="Weather data mode: LIVE or FALLBACK_SNAPSHOT")
+    pfz_data_mode: Optional[str] = Field("LIVE_SATELLITE", description="PFZ data mode: LIVE_SATELLITE or FALLBACK_SNAPSHOT")
+    satellite_timestamp: Optional[str] = Field(None, description="NOAA satellite pass timestamp if live")
+    weather_timestamp: Optional[str] = Field(None, description="Open-Meteo observation timestamp")
 
 class DashboardSummaryResponse(BaseModel):
     harbour: HarbourInfo
@@ -206,6 +215,10 @@ class DashboardSummaryResponse(BaseModel):
     safety_override_banner: Optional[str] = None
     map_payload: Dict[str, Any]
     evidence_ledger: List[EvidenceLedgerEntry] = Field(default_factory=list)
+    weather_data_mode: Optional[str] = Field("LIVE", description="Weather data mode")
+    pfz_data_mode: Optional[str] = Field("LIVE_SATELLITE", description="PFZ data mode")
+    satellite_timestamp: Optional[str] = Field(None, description="NOAA satellite pass timestamp")
+    weather_timestamp: Optional[str] = Field(None, description="Open-Meteo timestamp")
 
 class DistrictHarbourSummary(BaseModel):
     harbour_id: str

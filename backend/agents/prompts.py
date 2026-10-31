@@ -1,7 +1,7 @@
 """
 Multilingual System Prompts, Script Detectors and Deterministic Synthesis Templates for ORCA.
 Supports Indian coastal languages: Tamil (ta), Malayalam (ml), Telugu (te), Kannada (kn),
-Marathi (mr), Gujarati (gu), Odia (or), Hindi (hi), and English (en).
+Marathi (mr), Gujarati (gu), Odia (or), Bengali (bn), Hindi (hi), and English (en).
 Strictly enforces evidence citations and deterministic safety overrides without emojis.
 """
 
@@ -76,6 +76,7 @@ SAFETY_OVERRIDE_BANNERS = {
         "gu": "કટોકટી સમુદ્રી સુરક્ષા ચેતવણી: દરિયામાં જશો નહીં / તાત્કાલિક પાછા ફરો",
         "hi": "आपातकालीन समुद्री सुरक्षा चेतावनी: समुद्र में न जाएं / तत्काल मार्ग सुधार आवश्यक",
         "or": "ଜରୁରୀ ସାମୁଦ୍ରିକ ସୁରକ୍ଷା ଚେତାବନୀ: ସମୁଦ୍ରକୁ ଯାଆନ୍ତୁ ନାହିଁ / ତୁରନ୍ତ ଫେରିଆସନ୍ତୁ",
+        "bn": "জরুরি সামুদ্রিক সুরক্ষা সতর্কতা: সমুদ্রে যাবেন না / অবিলম্বে কোর্স পরিবর্তন প্রয়োজন",
     },
     "AMBER": {
         "en": "MARITIME CAUTION ADVISORY: Heightened sea conditions or approaching maritime border buffer.",
@@ -87,6 +88,7 @@ SAFETY_OVERRIDE_BANNERS = {
         "gu": "સમુદ્રી સાવચેતી સલાહ: દરિયાઈ સ્થિતિ જોખમી અથવા સરહદ બફર વિસ્તાર નજીક.",
         "hi": "समुद्री सावधानी सलाह: समुद्र की तेज लहरें या सीमा बफर क्षेत्र के निकट.",
         "or": "ସାମୁଦ୍ରିକ ସତର୍କତା ପରାମର୍ଶ: ଅଶାନ୍ତ ସମୁଦ୍ର କିମ୍ବା ସୀମା ବଫର ଅଞ୍ଚଳ ନିକଟବର୍ତ୍ତୀ.",
+        "bn": "সামুদ্রিক সতর্কতা পরামর্শ: প্রতিকূল সমুদ্রাবস্থা বা সামুদ্রিক সীমান্ত বাফারের নিকটবর্তী।",
     },
 }
 

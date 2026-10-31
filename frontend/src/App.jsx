@@ -40,6 +40,12 @@ export default function App() {
   // Chat State
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [provenanceInfo, setProvenanceInfo] = useState({
+    weather_data_mode: 'LIVE',
+    pfz_data_mode: 'LIVE_SATELLITE',
+    satellite_timestamp: null,
+    weather_timestamp: null,
+  });
 
   // Sync Tailwind dark mode class on root document
   useEffect(() => {
@@ -162,6 +168,12 @@ export default function App() {
         });
         setSafetyStatus(data.weather?.safety_status || 'GREEN');
         setSafetyOverrideBanner(data.safety_override_banner);
+        setProvenanceInfo({
+          weather_data_mode: data.weather_data_mode || 'LIVE',
+          pfz_data_mode: data.pfz_data_mode || 'LIVE_SATELLITE',
+          satellite_timestamp: data.satellite_timestamp || null,
+          weather_timestamp: data.weather_timestamp || null,
+        });
         if (data.map_payload && data.map_payload.features) {
           setMapPayload(data.map_payload);
         }
@@ -209,6 +221,13 @@ export default function App() {
 
       const data = await res.json();
 
+      setProvenanceInfo({
+        weather_data_mode: data.weather_data_mode || 'LIVE',
+        pfz_data_mode: data.pfz_data_mode || 'LIVE_SATELLITE',
+        satellite_timestamp: data.satellite_timestamp || null,
+        weather_timestamp: data.weather_timestamp || null,
+      });
+
       const agentMsg = {
         role: 'assistant',
         content: data.recommendation,
@@ -217,6 +236,10 @@ export default function App() {
         evidence_and_reasoning: data.evidence_and_reasoning,
         detected_language: data.detected_language,
         timestamp: new Date().toISOString(),
+        weather_data_mode: data.weather_data_mode,
+        pfz_data_mode: data.pfz_data_mode,
+        satellite_timestamp: data.satellite_timestamp,
+        evidence_ledger: data.evidence_ledger,
       };
       setMessages((prev) => [...prev, agentMsg]);
 
@@ -515,6 +538,7 @@ export default function App() {
               liveWeather={liveWeather}
               safetyStatus={safetyStatus}
               theme={themeMode}
+              provenanceInfo={provenanceInfo}
               onViewMap={() => setMobileTab('map')}
             />
           </div>

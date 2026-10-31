@@ -19,6 +19,11 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
           if (isMounted) {
             setAuthConfig(data);
           }
+        } else if (res.status === 503) {
+          const errData = await res.json().catch(() => ({}));
+          if (isMounted) {
+            setErrorMessage(errData.detail || 'Authentication service unavailable: Google OAuth is not configured on this server.');
+          }
         }
       } catch (err) {
         console.error('Failed to load auth configuration:', err);
@@ -112,37 +117,39 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
     }
   };
 
-  // 5. Authorized Development / Evaluation Login (when Google Cloud Console ID is pending)
-  const handleDevLogin = async () => {
-    setIsLoading(true);
-    setErrorMessage(null);
+  // 5. Authorized Development / Evaluation Login (Stripped from production bundle)
+  const handleDevLogin = __DEV_LOGIN_ENABLED__
+    ? async () => {
+        setIsLoading(true);
+        setErrorMessage(null);
 
-    try {
-      const res = await fetch('/api/v1/auth/dev-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: 'maritime.officer@nic.in',
-          name: 'Authorized Maritime Officer',
-        }),
-        credentials: 'include',
-      });
+        try {
+          const res = await fetch('/api/v1/auth/dev-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: 'maritime.officer@nic.in',
+              name: 'Authorized Maritime Officer',
+            }),
+            credentials: 'include',
+          });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.detail || 'Developer login failed.');
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || 'Developer login failed.');
+          }
+
+          const data = await res.json();
+          if (data.status === 'success' && data.user) {
+            onLoginSuccess(data.user);
+          }
+        } catch (err) {
+          setErrorMessage(err.message || 'Developer login failed.');
+        } finally {
+          setIsLoading(false);
+        }
       }
-
-      const data = await res.json();
-      if (data.status === 'success' && data.user) {
-        onLoginSuccess(data.user);
-      }
-    } catch (err) {
-      setErrorMessage(err.message || 'Developer login failed.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    : null;
 
   const isLight = themeMode === 'chart';
   const hasGoogleClientId = Boolean(authConfig.google_client_id || import.meta.env.VITE_GOOGLE_CLIENT_ID);
@@ -170,7 +177,7 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
               ORCA
             </h1>
             <p className="text-[10px] sm:text-xs text-[#86868b] dark:text-[#A1A1A6] tracking-[-0.01em]">
-              Oceanographic Reasoning & Collaborative Agents
+              ORCA Marine EcOsystem Reasoning with Collaborative Agents
             </p>
           </div>
         </div>
@@ -233,30 +240,32 @@ export default function LoginPage({ onLoginSuccess, themeMode = 'ocean' }) {
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleDevLogin}
-                  disabled={isLoading}
-                  className={`w-full py-3 px-4 rounded-xl font-medium text-xs sm:text-[13px] tracking-[-0.01em] transition-all flex items-center justify-center gap-2 active:scale-[0.96] shadow-md ${
-                    isLight
-                      ? 'bg-[#1D1D1F] hover:bg-[#2D2D2F] text-white'
-                      : 'bg-white hover:bg-neutral-100 text-[#1D1D1F]'
-                  }`}
-                >
-                  {isLoading ? (
-                    <span>Verifying session...</span>
-                  ) : (
-                    <>
-                      <span>Continue as Authorized Maritime Officer</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </>
-                  )}
-                </button>
+                {Boolean(handleDevLogin) && (
+                  <button
+                    type="button"
+                    onClick={handleDevLogin}
+                    disabled={isLoading}
+                    className={`w-full py-3 px-4 rounded-xl font-medium text-xs sm:text-[13px] tracking-[-0.01em] transition-all flex items-center justify-center gap-2 active:scale-[0.96] shadow-md ${
+                      isLight
+                        ? 'bg-[#1D1D1F] hover:bg-[#2D2D2F] text-white'
+                        : 'bg-white hover:bg-neutral-100 text-[#1D1D1F]'
+                    }`}
+                  >
+                    {isLoading ? (
+                      <span>Verifying session...</span>
+                    ) : (
+                      <>
+                        <span>Continue as Authorized Maritime Officer</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             )}
 
-            {/* If Google Client ID is configured, also provide fallback button in dev */}
-            {hasGoogleClientId && !authConfig.is_configured && (
+            {/* If Google Client ID is configured, also provide fallback button only in dev if enabled */}
+            {Boolean(handleDevLogin) && hasGoogleClientId && !authConfig.is_configured && (
               <button
                 type="button"
                 onClick={handleDevLogin}

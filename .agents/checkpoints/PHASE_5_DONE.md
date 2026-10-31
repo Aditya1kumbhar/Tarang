@@ -8,7 +8,7 @@
 
 ## 1. System Overview & Final Architecture
 
-**ORCA (Oceanographic Reasoning & Collaborative Agents)** has been fully implemented, tested, and validated in an end-to-end production environment for **SIH 2026 Problem Statement #20 (ID 26176)**.
+**ORCA (Marine EcOsystem Reasoning with Collaborative Agents)** has been fully implemented, tested, and validated in an end-to-end production environment for **SIH 2026 Problem Statement ID 26176 (SIH26176)**.
 
 The system features:
 1. **Deterministic Domain Engines:**

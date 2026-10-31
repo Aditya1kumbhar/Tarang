@@ -7,6 +7,7 @@ Tests:
 - productivity_tool: Marine heatwave, HAB hypoxia, cyclone turbidity diagnostics.
 """
 
+from datetime import datetime, timedelta, timezone
 import pytest
 from shapely.geometry import Point, shape
 
@@ -24,11 +25,14 @@ from backend.tools.geospatial_tool import (
 from backend.tools.ocean_pfz_tool import (
     calculate_composite_pfz_score,
     compute_chla_score,
+    compute_finite_difference_gradients,
     compute_front_gradient_score,
     compute_pfz_zones,
     compute_sst_optimality_score,
+    merge_sst_and_chl,
 )
 from backend.tools.productivity_tool import diagnose_productivity_decline
+from backend.agents.prompts import detect_language
 from backend.tools.weather_marine_tool import (
     assess_vessel_safety,
     calculate_sea_venture_safety_index,
@@ -262,9 +266,10 @@ def test_pfz_scoring_components():
     assert s_chl == 1.0
 
 
-def test_pfz_ranking_and_geofence_quarantine():
+@pytest.mark.asyncio
+async def test_pfz_ranking_and_geofence_quarantine():
     """Verifies candidate ranking and that candidates violating IMBL/MPA are flagged and not top-recommended."""
-    report = compute_pfz_zones("rameswaram", max_candidates=3)
+    report = await compute_pfz_zones("rameswaram", max_candidates=3)
     assert report.harbour_id == "rameswaram"
     assert len(report.candidates) > 0
     assert report.top_recommendation is not None
@@ -274,7 +279,7 @@ def test_pfz_ranking_and_geofence_quarantine():
     # Test candidate near IMBL: should be flagged unsafe
     imbl_cand = None
     for c in report.candidates:
-        if c.zone_id == "rameswaram_near_imbl":
+        if c.zone_id == "rameswaram_near_imbl" or not c.is_geofence_safe:
             imbl_cand = c
             break
 
@@ -462,19 +467,300 @@ def test_sea_venture_safety_index_tiers():
     assert verdict_extreme == "EXTREME"
 
 
-def test_pfz_evidence_ledger_entry():
+@pytest.mark.asyncio
+async def test_pfz_evidence_ledger_entry():
     """Verifies that PFZ candidate generation populates EvidenceLedgerEntry and front categorization."""
-    report = compute_pfz_zones(harbour_id="rameswaram", max_candidates=2)
+    report = await compute_pfz_zones(harbour_id="rameswaram", max_candidates=2)
     assert len(report.candidates) >= 1
     top = report.top_recommendation
     assert top is not None
     assert top.evidence_ledger_entry is not None
-    assert "EOS-06" in top.evidence_ledger_entry.platform_mission
-    assert "INSAT-3DS" in top.evidence_ledger_entry.source_sensor
-    assert "SSTM" in top.evidence_ledger_entry.anomaly_note
+    if report.data_mode == "LIVE_SATELLITE":
+        assert "NOAA" in top.evidence_ledger_entry.platform_mission
+        assert "CRW" in top.evidence_ledger_entry.source_sensor or "VIIRS" in top.evidence_ledger_entry.source_sensor
+    else:
+        assert "Bundled" in top.evidence_ledger_entry.platform_mission
     assert top.front_category in [
         "Cayula-Cornillon Bimodal Water Mass Front",
         "Moderate Thermal Gradient Front",
     ]
     assert top.persistence_days == 7
+
+
+# ==============================================================================
+# 5. MULTILINGUAL SCRIPT DETECTION TESTS (LANGUAGES 1 & 2 REQUIREMENT)
+# ==============================================================================
+
+
+def test_detect_language_tamil():
+    assert detect_language("மீன்பிடி மண்டலம் எங்கே உள்ளது?") == "ta"
+
+
+def test_detect_language_malayalam():
+    assert detect_language("ഇന്ന് കടലിൽ പോകുന്നത് സുരക്ഷിതമാണോ?") == "ml"
+
+
+def test_detect_language_telugu():
+    assert detect_language("చేపల వేట ప్రాంతం ఎక్కడ ఉంది?") == "te"
+
+
+def test_detect_language_kannada():
+    assert detect_language("ಇಂದು ಸಮುದ್ರಕ್ಕೆ ಇಳಿಯುವುದು ಸುರಕ್ಷಿತವೇ?") == "kn"
+
+
+def test_detect_language_gujarati():
+    assert detect_language("શું કાલે સવારે દરિયામાં જવું સલામત છે?") == "gu"
+
+
+def test_detect_language_odia():
+    assert detect_language("ଆଜି ସମୁଦ୍ର ଯାତ୍ରା ସୁରକ୍ଷିତ କି?") == "or"
+
+
+def test_detect_language_bengali():
+    assert detect_language("নিকটতম সম্ভাব্য মাছ ধরার অঞ্চল কোথায়?") == "bn"
+
+
+def test_detect_language_hindi():
+    assert detect_language("क्या कल सुबह समुद्र में जाना सुरक्षित है?") == "hi"
+
+
+def test_detect_language_marathi():
+    assert detect_language("मालवण बंदरात आज मासे पकडण्यासाठी हवामान कसे आहे?") == "mr"
+
+
+def test_detect_language_english():
+    assert detect_language("Where is the nearest Potential Fishing Zone (PFZ) today?") == "en"
+
+
+# ==============================================================================
+# 6. PART A2: OPEN-METEO HOURLY SELECTION & TIME HORIZON TESTS
+# ==============================================================================
+
+
+@pytest.mark.asyncio
+async def test_weather_hour_selector_current_and_tomorrow_morning(monkeypatch):
+    """
+    PART A2: Verifies with a mocked 48-hour Open-Meteo series of distinct values that
+    fetch_live_marine_and_weather selects the current-hour value and tomorrow-morning value,
+    and never blindly returns index [0]. Marine and forecast arrays must use the SAME index.
+    """
+    from backend.tools import weather_marine_tool
+    from backend.tools.weather_marine_tool import fetch_live_marine_and_weather
+
+    base_dt = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    times = [(base_dt + timedelta(hours=i)).strftime("%Y-%m-%dT%H:00") for i in range(48)]
+
+    # 48 distinct values for each hourly step
+    mock_wave_height = [round(1.0 + i * 0.1, 2) for i in range(48)]  # idx 0: 1.0, idx 14: 2.4, idx 25: 3.5
+    mock_wind_speed = [round(10.0 + i * 0.5, 1) for i in range(48)]  # idx 0: 10.0, idx 14: 17.0, idx 25: 22.5
+    mock_temp = [round(25.0 + i * 0.2, 1) for i in range(48)]
+
+    marine_payload = {
+        "hourly": {
+            "time": times,
+            "wave_height": mock_wave_height,
+            "wave_direction": [180.0 + i for i in range(48)],
+            "wave_period": [6.0 + i * 0.1 for i in range(48)],
+            "swell_wave_height": [0.5 + i * 0.05 for i in range(48)],
+            "swell_wave_period": [7.0 + i * 0.1 for i in range(48)],
+            "ocean_current_velocity": [0.2 + i * 0.01 for i in range(48)],
+        }
+    }
+    forecast_payload = {
+        "hourly": {
+            "time": times,
+            "temperature_2m": mock_temp,
+            "wind_speed_10m": mock_wind_speed,
+            "wind_gusts_10m": [15.0 + i * 0.5 for i in range(48)],
+            "cape": [200.0 + i * 10 for i in range(48)],
+            "weather_code": [1] * 48,
+        }
+    }
+
+    class MockResponse:
+        def __init__(self, data):
+            self._data = data
+            self.status_code = 200
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return self._data
+
+    class MockAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def get(self, url, params=None):
+            if "marine" in str(url):
+                return MockResponse(marine_payload)
+            return MockResponse(forecast_payload)
+
+        async def aclose(self):
+            pass
+
+    monkeypatch.setattr(weather_marine_tool.httpx, "AsyncClient", MockAsyncClient)
+
+    # Clear cache to guarantee mock invocation
+    weather_marine_tool._WEATHER_CACHE.clear()
+
+    # 1. Query for target datetime at hour 14 (Current Day)
+    current_hour_target = base_dt + timedelta(hours=14)
+    res_current = await fetch_live_marine_and_weather(lat=9.28, lon=79.31, target_dt=current_hour_target)
+
+    assert res_current["selected_hour_index"] == 14
+    assert res_current["wave_height_m"] == mock_wave_height[14]  # 2.40
+    assert res_current["wind_speed_kmh"] == mock_wind_speed[14]  # 17.0
+    assert res_current["wave_height_m"] != mock_wave_height[0], "Must not return index [0]"
+    assert res_current["wind_speed_kmh"] != mock_wind_speed[0], "Must not return index [0]"
+
+    # 2. Query for target datetime: Tomorrow 06:00 IST converted to UTC
+    # IST is UTC+05:30. Tomorrow 06:00 IST = Tomorrow 00:30 UTC = base_dt + 24.5 hours
+    tomorrow_morning_utc = base_dt + timedelta(hours=24, minutes=30)
+    res_tomorrow = await fetch_live_marine_and_weather(lat=9.28, lon=79.31, target_dt=tomorrow_morning_utc)
+
+    # In a 48-hour hourly sequence, 24.5 hours is equidistant to 24 and 25
+    selected_idx = res_tomorrow["selected_hour_index"]
+    assert selected_idx in (24, 25)
+    assert res_tomorrow["wave_height_m"] == mock_wave_height[selected_idx]
+    assert res_tomorrow["wind_speed_kmh"] == mock_wind_speed[selected_idx]
+    assert res_tomorrow["wave_height_m"] != mock_wave_height[0], "Must not return index [0]"
+    assert res_tomorrow["wind_speed_kmh"] != mock_wind_speed[0], "Must not return index [0]"
+
+
+# ==============================================================================
+# 7. PART B4: NOAA SATELLITE ERDDAP, GRID MERGE & FALLBACK SNAPSHOT TESTS
+# ==============================================================================
+
+
+def test_erddap_grid_merge_and_gradient_computation():
+    """
+    PART B4: Unit test asserting grid merge, 0.15 deg distance filter, and
+    thermal front gradient computation on a known 2D geometric fixture.
+    """
+    # Known 2x2 regular SST fixture around Rameswaram
+    # Points at 9.0 and 9.1 lat, 79.0 and 79.1 lon
+    sst_points = [
+        {"lat": 9.0, "lon": 79.0, "sst_c": 28.0, "timestamp": "2026-10-29T12:00:00Z"},
+        {"lat": 9.0, "lon": 79.1, "sst_c": 29.0, "timestamp": "2026-10-29T12:00:00Z"},  # East diff: +1.0 C
+        {"lat": 9.1, "lon": 79.0, "sst_c": 28.5, "timestamp": "2026-10-29T12:00:00Z"},  # North diff: +0.5 C
+        {"lat": 9.1, "lon": 79.1, "sst_c": 29.5, "timestamp": "2026-10-29T12:00:00Z"},
+        # Outlier point far away from any chlorophyll observation (> 0.15 deg)
+        {"lat": 12.0, "lon": 82.0, "sst_c": 28.8, "timestamp": "2026-10-29T12:00:00Z"},
+    ]
+
+    # Chlorophyll points: close to the 2x2 grid, but far from (12.0, 82.0)
+    chl_points = [
+        {"lat": 9.02, "lon": 79.02, "chla_mg_m3": 1.75, "timestamp": "2026-10-29T12:00:00Z"},
+        {"lat": 9.02, "lon": 79.09, "chla_mg_m3": 2.10, "timestamp": "2026-10-29T12:00:00Z"},
+        {"lat": 9.09, "lon": 79.02, "chla_mg_m3": 1.95, "timestamp": "2026-10-29T12:00:00Z"},
+        {"lat": 9.09, "lon": 79.09, "chla_mg_m3": 2.45, "timestamp": "2026-10-29T12:00:00Z"},
+    ]
+
+    # 1. Verify finite difference gradient computation
+    gradients = compute_finite_difference_gradients(sst_points)
+    # Check point (9.0, 79.0):
+    # dx_km = 0.1 * 111.32 * cos(9.0 deg) ~ 10.995 km; dT/dx = 1.0 / 10.995 ~ 0.0909 C/km
+    # dy_km = 0.1 * 110.57 = 11.057 km; dT/dy = 0.5 / 11.057 ~ 0.0452 C/km
+    # grad = sqrt(0.0909^2 + 0.0452^2) ~ 0.1015 C/km
+    grad_at_origin = gradients.get((9.0, 79.0))
+    assert grad_at_origin is not None
+    assert 0.095 <= grad_at_origin <= 0.110
+
+    # 2. Verify merge drops distant outlier point (> 0.15 deg)
+    merged = merge_sst_and_chl(sst_points, chl_points, max_dist_deg=0.15)
+    # 4 points near Rameswaram should be retained; (12.0, 82.0) must be dropped
+    assert len(merged) == 4
+    for pt in merged:
+        assert pt["lat"] < 10.0
+        assert pt["chla_mg_m3"] > 0.0
+        assert pt["sst_gradient_c_per_km"] > 0.0
+
+
+@pytest.mark.asyncio
+async def test_compute_pfz_zones_satellite_mock_success(monkeypatch):
+    """
+    PART B4: Tests successful satellite grid ingestion via mocked ERDDAP responses.
+    Verifies data_mode='LIVE_SATELLITE' and provenance contains NOAA ERDDAP dataset.
+    """
+    from backend.tools import ocean_pfz_tool
+    from backend.tools.satellite_erddap import SatelliteGridResult
+
+    mock_sst_pts = [
+        {"lat": 9.25, "lon": 79.40, "sst_c": 28.6, "timestamp": "2026-10-29T12:00:00Z"},
+        {"lat": 9.30, "lon": 79.40, "sst_c": 28.9, "timestamp": "2026-10-29T12:00:00Z"},
+        {"lat": 9.25, "lon": 79.45, "sst_c": 28.8, "timestamp": "2026-10-29T12:00:00Z"},
+        {"lat": 9.30, "lon": 79.45, "sst_c": 29.1, "timestamp": "2026-10-29T12:00:00Z"},
+    ]
+    mock_chl_pts = [
+        {"lat": 9.26, "lon": 79.41, "chla_mg_m3": 1.85, "timestamp": "2026-10-29T12:00:00Z"},
+        {"lat": 9.29, "lon": 79.41, "chla_mg_m3": 2.05, "timestamp": "2026-10-29T12:00:00Z"},
+        {"lat": 9.26, "lon": 79.44, "chla_mg_m3": 1.95, "timestamp": "2026-10-29T12:00:00Z"},
+        {"lat": 9.29, "lon": 79.44, "chla_mg_m3": 2.20, "timestamp": "2026-10-29T12:00:00Z"},
+    ]
+
+    async def _mock_sst(*args, **kwargs):
+        return SatelliteGridResult(mock_sst_pts, "2026-10-29T12:00:00Z")
+
+    async def _mock_chl(*args, **kwargs):
+        return SatelliteGridResult(mock_chl_pts, "2026-10-29T12:00:00Z")
+
+    monkeypatch.setattr(ocean_pfz_tool, "fetch_sst_grid", _mock_sst)
+    monkeypatch.setattr(ocean_pfz_tool, "fetch_chl_grid", _mock_chl)
+
+    report = await ocean_pfz_tool.compute_pfz_zones("rameswaram", max_candidates=3)
+    assert report.data_mode == "LIVE_SATELLITE"
+    assert report.provenance.source_dataset == "NOAA CoastWatch ERDDAP (CRW SST + VIIRS Chl-a)"
+    assert report.satellite_timestamp == "2026-10-29T12:00:00Z"
+    assert len(report.candidates) > 0
+    assert report.top_recommendation is not None
+    assert report.top_recommendation.evidence_ledger_entry.data_mode == "LIVE_SATELLITE"
+    assert "NOAA" in report.top_recommendation.evidence_ledger_entry.platform_mission
+
+
+@pytest.mark.asyncio
+async def test_compute_pfz_zones_satellite_empty_table_fallback(monkeypatch):
+    """
+    PART B4: Tests empty satellite response handling.
+    Must gracefully fall back to bundled snapshot with data_mode='FALLBACK_SNAPSHOT'
+    and dataset='Bundled offline snapshot (static)'. Never returns 'INCOIS-NOAA Satellite Climatology'.
+    """
+    from backend.tools import ocean_pfz_tool
+    from backend.tools.satellite_erddap import SatelliteGridResult
+
+    async def _mock_empty(*args, **kwargs):
+        return SatelliteGridResult([], None)
+
+    monkeypatch.setattr(ocean_pfz_tool, "fetch_sst_grid", _mock_empty)
+    monkeypatch.setattr(ocean_pfz_tool, "fetch_chl_grid", _mock_empty)
+
+    report = await ocean_pfz_tool.compute_pfz_zones("rameswaram", max_candidates=3)
+    assert report.data_mode == "FALLBACK_SNAPSHOT"
+    assert report.provenance.source_dataset == "Bundled offline snapshot (static)"
+    assert "INCOIS-NOAA Satellite Climatology" not in report.provenance.source_dataset
+    assert len(report.candidates) > 0
+
+
+@pytest.mark.asyncio
+async def test_compute_pfz_zones_satellite_http_error_fallback(monkeypatch):
+    """
+    PART B4: Tests ERDDAP HTTP error / network timeout handling.
+    Must gracefully fall back to bundled snapshot with data_mode='FALLBACK_SNAPSHOT'
+    and dataset='Bundled offline snapshot (static)'.
+    """
+    from backend.tools import ocean_pfz_tool
+
+    async def _mock_error(*args, **kwargs):
+        raise TimeoutError("Simulated ERDDAP gateway timeout")
+
+    monkeypatch.setattr(ocean_pfz_tool, "fetch_sst_grid", _mock_error)
+    monkeypatch.setattr(ocean_pfz_tool, "fetch_chl_grid", _mock_error)
+
+    report = await ocean_pfz_tool.compute_pfz_zones("rameswaram", max_candidates=3)
+    assert report.data_mode == "FALLBACK_SNAPSHOT"
+    assert report.provenance.source_dataset == "Bundled offline snapshot (static)"
+    assert "INCOIS-NOAA Satellite Climatology" not in report.provenance.source_dataset
+    assert len(report.candidates) > 0
+
 

@@ -40,7 +40,7 @@
 
 ## 2. Test Execution & Verification Results
 
-### A. End-to-End API Integration Suite (All 8 SIH PS #20 Benchmark Scenarios)
+### A. End-to-End API Integration Suite (All 8 Official SIH Problem Statement ID 26176 / SIH26176 Benchmark Scenarios)
 **Command:** `.venv\Scripts\pytest.exe tests/test_api.py -v`
 
 ```text

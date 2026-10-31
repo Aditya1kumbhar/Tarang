@@ -25,7 +25,7 @@
    - Layer switcher and center-on-harbour control.
 
 2. **Multilingual Conversational Console (`ChatPanel.jsx`):**
-   - 8 pre-loaded 1-click scenario chips representing the complete SIH Problem Statement #20 benchmark suite.
+   - 8 pre-loaded 1-click scenario chips representing the complete SIH Problem Statement ID 26176 (SIH26176) benchmark suite.
    - Landing harbour selector (12 Indian ports with vernacular names).
    - Vessel profile toggle (`Country Craft / Vallam` vs `Mechanized Trawler`).
    - Language selector (`English`, `தமிழ்`, `മലയാളം`, `తెలుగు`, `मराठी`, `हिन्दी`).

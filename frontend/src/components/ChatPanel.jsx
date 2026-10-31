@@ -14,70 +14,106 @@ import {
   MapPin,
 } from 'lucide-react';
 
-const SIH_SCENARIOS = [
+const SIH_OFFICIAL_QUERIES = [
   {
     id: 'sih-1',
-    label: 'PFZ Discovery',
+    label: '1. Nearest PFZ',
     harbourId: 'rameswaram',
     vessel: 'country_craft',
-    query: 'Find the highest confidence Potential Fishing Zones (PFZ) offshore from Rameswaram harbour.',
-    tag: 'SIH PS #20 Q1',
+    query: 'Where is the nearest Potential Fishing Zone (PFZ) today?',
+    tag: 'SIH26176 Q1',
   },
   {
     id: 'sih-2',
-    label: 'Country Boat Safety',
+    label: '2. Venture Safety',
     harbourId: 'kochi',
     vessel: 'country_craft',
-    query: 'Is it safe for a small motorized country craft (Vallam) to venture into the sea off Kochi tomorrow morning?',
-    tag: 'SIH PS #20 Q2',
+    query: 'Is it safe to venture into the sea tomorrow morning?',
+    tag: 'SIH26176 Q2',
   },
   {
     id: 'sih-3',
-    label: 'Mechanized Trawler',
+    label: '3. Tide, Weather & Sea',
     harbourId: 'veraval',
-    vessel: 'mechanized_trawler',
-    query: 'Can a 45ft mechanized trawler venture out from Veraval harbour in Gujarat with 32 km/h winds and 2.1m wave height?',
-    tag: 'SIH PS #20 Q3',
+    vessel: 'country_craft',
+    query: 'What are the tide, weather, and sea conditions near my fishing location?',
+    tag: 'SIH26176 Q3',
   },
   {
     id: 'sih-4',
-    label: 'IMBL Border Alert',
-    harbourId: 'rameswaram',
+    label: '4. Lightning & Cyclone',
+    harbourId: 'paradip',
     vessel: 'country_craft',
-    query: 'Find fishing coordinates 12 nautical miles East-Southeast of Rameswaram towards Talaimannar.',
-    tag: 'SIH PS #20 Q4',
+    query: 'Are there any lightning or cyclone alerts in my area?',
+    tag: 'SIH26176 Q4',
   },
   {
     id: 'sih-5',
-    label: 'MPA Exclusion',
-    harbourId: 'rameswaram',
+    label: '5. Chlorophyll & SST',
+    harbourId: 'visakhapatnam',
     vessel: 'country_craft',
-    query: 'Can we set our nets inside the Gulf of Mannar Marine National Park?',
-    tag: 'SIH PS #20 Q5',
+    query: 'Which regions show high chlorophyll concentration and favourable sea surface temperature?',
+    tag: 'SIH26176 Q5',
   },
   {
     id: 'sih-6',
-    label: 'Safe A* Route',
+    label: '6. Safest Vessel Route',
     harbourId: 'chennai',
     vessel: 'country_craft',
-    query: 'Calculate a safe navigation route from Chennai harbour to the PFZ cluster avoiding rough seas.',
-    tag: 'SIH PS #20 Q6',
+    query: 'What is the safest route for a fishing vessel considering weather and sea-state conditions?',
+    tag: 'SIH26176 Q6',
   },
   {
     id: 'sih-7',
-    label: 'Catch Drop Diagnosis',
+    label: '7. Catch Drop Cause',
     harbourId: 'mangaluru',
     vessel: 'country_craft',
-    query: 'Why has pelagic fish catch dropped significantly off the Mangaluru coast over the past two weeks?',
-    tag: 'SIH PS #20 Q7',
+    query: 'Why has fish productivity declined in a particular coastal region?',
+    tag: 'SIH26176 Q7',
   },
   {
     id: 'sih-8',
-    label: 'Tamil (தமிழ்) Query',
+    label: '8. Hazard / Geofence Zones',
+    harbourId: 'rameswaram',
+    vessel: 'country_craft',
+    query: 'Which fishing zones should be avoided due to hazardous marine conditions or geofencing restrictions?',
+    tag: 'SIH26176 Q8',
+  },
+];
+
+const EXTENDED_SCENARIOS = [
+  {
+    id: 'ext-1',
+    label: '45ft Trawler Limits',
+    harbourId: 'veraval',
+    vessel: 'mechanized_trawler',
+    query: 'Can a 45ft mechanized trawler venture out from Veraval harbour in Gujarat with 32 km/h winds and 2.1m wave height?',
+    tag: 'Extended Scenario 1',
+  },
+  {
+    id: 'ext-2',
+    label: '12 NM ESE IMBL Border',
+    harbourId: 'rameswaram',
+    vessel: 'country_craft',
+    query: 'Find fishing coordinates 12 nautical miles East-Southeast of Rameswaram towards Talaimannar.',
+    tag: 'Extended Scenario 2',
+  },
+  {
+    id: 'ext-3',
+    label: 'Gulf of Mannar MPA Nets',
+    harbourId: 'rameswaram',
+    vessel: 'country_craft',
+    query: 'Can we set our nets inside the Gulf of Mannar Marine National Park?',
+    tag: 'Extended Scenario 3',
+  },
+  {
+    id: 'ext-4',
+    label: 'Tamil Native Query',
     harbourId: 'rameswaram',
     vessel: 'country_craft',
     query: 'இன்று ராமேஸ்வரத்திலிருந்து சிறிய படகில் கடலுக்கு செல்லலாமா? காற்று மற்றும் அலை எப்படி உள்ளது?',
-    tag: 'SIH PS #20 Q8',
+    lang: 'ta',
+    tag: 'Extended Scenario 4',
   },
 ];
 
@@ -87,6 +123,9 @@ const DEMO_SCENARIOS = [
   { id: 'demo-cyclone', key: 'cyclone', label: 'Paradip (Cyclone: 92)', query: 'Severe weather alert off Paradip coast: wave height 3.8m, wind gusts 65 km/h, swell period 15s. Should vessels venture?', harbourId: 'paradip', vessel: 'country_craft' },
   { id: 'demo-pfz', key: 'pfz', label: 'Rameswaram (PFZ)', query: 'Find the highest confidence Potential Fishing Zones (PFZ) offshore from Rameswaram harbour.', harbourId: 'rameswaram', vessel: 'country_craft' },
   { id: 'demo-route', key: 'route', label: 'Chennai (Safe Route)', query: 'Calculate a safe navigation route from Chennai harbour to the PFZ cluster avoiding rough seas.', harbourId: 'chennai', vessel: 'country_craft' },
+  { id: 'demo-conditions', key: 'conditions', label: 'Veraval (Tide/Sea)', query: 'What are the tide, weather, and sea conditions near my fishing location?', harbourId: 'veraval', vessel: 'country_craft' },
+  { id: 'demo-alerts', key: 'alerts', label: 'Paradip (Alerts)', query: 'Are there any lightning or cyclone alerts in my area?', harbourId: 'paradip', vessel: 'country_craft' },
+  { id: 'demo-chlorophyll-sst', key: 'chlorophyll_sst', label: 'Vizag (Chl & SST)', query: 'Which regions show high chlorophyll concentration and favourable sea surface temperature?', harbourId: 'visakhapatnam', vessel: 'country_craft' },
 ];
 
 const LANGUAGES = [
@@ -94,9 +133,26 @@ const LANGUAGES = [
   { code: 'ta', label: 'தமிழ் (Tamil)' },
   { code: 'ml', label: 'മലയാളം (Malayalam)' },
   { code: 'te', label: 'తెలుగు (Telugu)' },
+  { code: 'kn', label: 'ಕನ್ನಡ (Kannada)' },
   { code: 'mr', label: 'मराठी (Marathi)' },
+  { code: 'gu', label: 'ગુજરાતી (Gujarati)' },
+  { code: 'or', label: 'ଓଡ଼ିଆ (Odia)' },
+  { code: 'bn', label: 'বাংলা (Bengali)' },
   { code: 'hi', label: 'हिन्दी (Hindi)' },
 ];
+
+const BCP47_LANG_MAP = {
+  en: 'en-IN',
+  ta: 'ta-IN',
+  ml: 'ml-IN',
+  te: 'te-IN',
+  kn: 'kn-IN',
+  mr: 'mr-IN',
+  gu: 'gu-IN',
+  or: 'or-IN',
+  bn: 'bn-IN',
+  hi: 'hi-IN',
+};
 
 export default function ChatPanel({
   harbours = [],
@@ -110,13 +166,23 @@ export default function ChatPanel({
   liveWeather = null,
   safetyStatus = 'GREEN',
   theme = 'chart',
+  provenanceInfo = null,
   onViewMap = null,
 }) {
   const [inputText, setInputText] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [scenarioTab, setScenarioTab] = useState('official');
   const [isListening, setIsListening] = useState(false);
   const [speakingMessageIndex, setSpeakingMessageIndex] = useState(null);
   const [expandedEvidence, setExpandedEvidence] = useState({});
+
+  const weatherMode = provenanceInfo?.weather_data_mode || (liveWeather?.is_fallback ? 'FALLBACK_SNAPSHOT' : 'LIVE');
+  const pfzMode = provenanceInfo?.pfz_data_mode || 'LIVE_SATELLITE';
+  const satTimestamp = provenanceInfo?.satellite_timestamp;
+  const isBothLive = weatherMode === 'LIVE' && pfzMode === 'LIVE_SATELLITE';
+  const satDate = satTimestamp
+    ? (satTimestamp.includes('T') ? satTimestamp.split('T')[0] : satTimestamp.slice(0, 10))
+    : null;
 
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -142,7 +208,7 @@ export default function ChatPanel({
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
-        recognition.lang = selectedLanguage === 'ta' ? 'ta-IN' : selectedLanguage === 'hi' ? 'hi-IN' : 'en-IN';
+        recognition.lang = BCP47_LANG_MAP[selectedLanguage] || 'en-IN';
 
         recognition.onresult = (event) => {
           const transcript = event.results[0][0].transcript;
@@ -200,6 +266,7 @@ export default function ChatPanel({
     window.speechSynthesis.cancel();
     const cleanText = text.replace(/[*#_]|\p{Extended_Pictographic}/gu, '');
     const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = BCP47_LANG_MAP[selectedLanguage] || 'en-IN';
     utterance.rate = 0.95;
     utterance.pitch = 1.0;
 
@@ -236,7 +303,7 @@ export default function ChatPanel({
       message: scenario.query,
       harbour_id: scenario.harbourId,
       vessel_type: scenario.vessel,
-      language: scenario.id === 'sih-8' ? 'ta' : selectedLanguage,
+      language: scenario.lang || selectedLanguage,
     });
   };
 
@@ -264,26 +331,40 @@ export default function ChatPanel({
           ? 'bg-white border-black/[0.08]'
           : 'bg-black/90 backdrop-blur-2xl border-white/[0.08]'
       }`}>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <div className={`w-1.5 h-1.5 rounded-full ${isChartTheme ? 'bg-[#0071e3]' : 'bg-[#2997FF]'}`}></div>
             <h2 className={`font-semibold text-xs tracking-[-0.02em] ${isChartTheme ? 'text-[#1D1D1F]' : 'xdr-gradient-text'}`}>
               ORCA Operational Console
             </h2>
           </div>
-          {onViewMap && (
-            <div className="flex items-center gap-1.5 md:hidden">
-              <button
-                type="button"
-                onClick={onViewMap}
-                className="xdr-pill px-3 py-1 text-xs font-medium gap-1 text-[#0071e3] dark:text-[#2997FF] rounded-full flex items-center active:scale-[0.96]"
-                title="Switch to Marine Map"
-              >
-                <Compass className="w-3.5 h-3.5" />
-                <span>Map</span>
-              </button>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            {/* Provenance Badge */}
+            {isBothLive ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-[#30D158]/10 text-[#30D158] border border-[#30D158]/25 shadow-xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#30D158] animate-pulse" />
+                <span>LIVE: Open-Meteo + NOAA satellite{satDate ? ` (${satDate})` : ''}</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-[#FF9F0A]/10 text-[#FF9F0A] border border-[#FF9F0A]/25 shadow-xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FF9F0A]" />
+                <span>FALLBACK DATA IN USE</span>
+              </span>
+            )}
+            {onViewMap && (
+              <div className="flex items-center gap-1.5 md:hidden">
+                <button
+                  type="button"
+                  onClick={onViewMap}
+                  className="xdr-pill px-3 py-1 text-xs font-medium gap-1 text-[#0071e3] dark:text-[#2997FF] rounded-full flex items-center active:scale-[0.96]"
+                  title="Switch to Marine Map"
+                >
+                  <Compass className="w-3.5 h-3.5" />
+                  <span>Map</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Context Selectors Grid */}
@@ -451,12 +532,42 @@ export default function ChatPanel({
       <div className={`px-3.5 py-2 border-b transition-colors ${
         isChartTheme ? 'bg-white border-black/[0.06]' : 'bg-black/90 border-white/[0.06]'
       }`}>
-        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] mb-1.5 text-[#858B95] dark:text-[#6E6E73]">
-          <Compass className="w-3 h-3 text-[#2997FF]" />
-          <span>Operational Scenarios</span>
+        <div className="flex items-center justify-between mb-1.5 gap-2">
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#858B95] dark:text-[#6E6E73] shrink-0">
+            <Compass className="w-3 h-3 text-[#2997FF]" />
+            <span>Scenarios</span>
+          </div>
+          <div className="flex items-center gap-1 p-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08]">
+            <button
+              type="button"
+              onClick={() => setScenarioTab('official')}
+              className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium transition active:scale-[0.96] ${
+                scenarioTab === 'official'
+                  ? isChartTheme
+                    ? 'bg-white text-[#1D1D1F] shadow-xs'
+                    : 'bg-white/20 text-white shadow-xs border border-white/20'
+                  : 'text-[#858B95] dark:text-[#A1A1A6]'
+              }`}
+            >
+              SIH26176 Official (8)
+            </button>
+            <button
+              type="button"
+              onClick={() => setScenarioTab('extended')}
+              className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium transition active:scale-[0.96] ${
+                scenarioTab === 'extended'
+                  ? isChartTheme
+                    ? 'bg-white text-[#1D1D1F] shadow-xs'
+                    : 'bg-white/20 text-white shadow-xs border border-white/20'
+                  : 'text-[#858B95] dark:text-[#A1A1A6]'
+              }`}
+            >
+              Extended (4)
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar touch-momentum">
-          {SIH_SCENARIOS.map((sc) => (
+          {(scenarioTab === 'official' ? SIH_OFFICIAL_QUERIES : EXTENDED_SCENARIOS).map((sc) => (
             <button
               key={sc.id}
               onClick={() => handleScenarioClick(sc)}
@@ -551,8 +662,9 @@ export default function ChatPanel({
                   {msg.recommendation || msg.content}
                 </div>
 
-                {/* Evidence & Physical Reasoning Accordion */}
-                {msg.evidence_and_reasoning && msg.evidence_and_reasoning.length > 0 && (
+                {/* Evidence & Physical Reasoning Accordion (with Structured Evidence Ledger) */}
+                {((msg.evidence_and_reasoning && msg.evidence_and_reasoning.length > 0) ||
+                  (msg.evidence_ledger && msg.evidence_ledger.length > 0)) && (
                   <div className={`pt-2.5 border-t ${
                     isChartTheme ? 'border-black/[0.06]' : 'border-white/[0.08]'
                   }`}>
@@ -565,16 +677,85 @@ export default function ChatPanel({
                       ) : (
                         <ChevronRight className="w-3.5 h-3.5" />
                       )}
-                      <span>Evidence ({msg.evidence_and_reasoning.length})</span>
+                      <span>
+                        Evidence ({msg.evidence_ledger?.length || msg.evidence_and_reasoning?.length || 0})
+                      </span>
                     </button>
 
                     {expandedEvidence[idx] && (
-                      <div className="mt-2.5 space-y-1.5 p-3.5 rounded-xl xdr-pill text-xs font-mono tracking-[0.01em] text-[#374151] dark:text-[#D1D5DB]">
-                        {msg.evidence_and_reasoning.map((ev, i) => (
-                          <div key={i} className="border-l-2 border-[#0071e3]/60 dark:border-[#2997FF]/60 pl-2.5 py-0.5">
-                            {ev}
+                      <div className="mt-2.5 space-y-2 p-3 rounded-xl xdr-pill text-xs">
+                        {/* Evidence Ledger Entries (Source & Timestamp per entry) */}
+                        {msg.evidence_ledger && msg.evidence_ledger.length > 0 && (
+                          <div className="space-y-2">
+                            <span className="block text-[10px] font-semibold uppercase tracking-[0.08em] text-[#858B95] dark:text-[#6E6E73]">
+                              Evidence Ledger (Source & Observation Timestamps)
+                            </span>
+                            {msg.evidence_ledger.map((entry, eIdx) => (
+                              <div
+                                key={eIdx}
+                                className={`p-2.5 rounded-lg border text-[11px] space-y-1 ${
+                                  isChartTheme
+                                    ? 'bg-black/[0.02] border-black/[0.06] text-[#1D1D1F]'
+                                    : 'bg-white/[0.02] border-white/[0.06] text-[#E1E1E6]'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                  <strong className="font-semibold text-xs text-[#1D1D1F] dark:text-white">
+                                    {entry.parameter_name}
+                                  </strong>
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-[9px] font-mono uppercase ${
+                                      entry.data_mode === 'LIVE' || entry.data_mode === 'LIVE_SATELLITE'
+                                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                        : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                                    }`}
+                                  >
+                                    {entry.data_mode}
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] text-[#51545A] dark:text-[#A1A1A6]">
+                                  <div>
+                                    Sensor: <strong className="text-[#1D1D1F] dark:text-white">{entry.source_sensor}</strong>
+                                  </div>
+                                  <div>
+                                    Mission: <strong className="text-[#1D1D1F] dark:text-white">{entry.platform_mission}</strong>
+                                  </div>
+                                  <div className="col-span-full">
+                                    Timestamp: <strong className="font-mono text-[#0071e3] dark:text-[#2997FF]">{entry.timestamp_utc}</strong>
+                                  </div>
+                                  {entry.spatial_resolution && (
+                                    <div>Res: <span>{entry.spatial_resolution}</span></div>
+                                  )}
+                                  {entry.confidence_tier && (
+                                    <div>Confidence: <span>{entry.confidence_tier}</span></div>
+                                  )}
+                                </div>
+                                {entry.anomaly_note && (
+                                  <p className="text-[10px] text-[#858B95] dark:text-[#8E8E93] italic pt-0.5">
+                                    {entry.anomaly_note}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        )}
+
+                        {/* Physical Reasoning Bullets */}
+                        {msg.evidence_and_reasoning && msg.evidence_and_reasoning.length > 0 && (
+                          <div className="space-y-1.5 pt-1.5">
+                            <span className="block text-[10px] font-semibold uppercase tracking-[0.08em] text-[#858B95] dark:text-[#6E6E73]">
+                              Physical & Oceanographic Reasoning
+                            </span>
+                            {msg.evidence_and_reasoning.map((ev, i) => (
+                              <div
+                                key={i}
+                                className="border-l-2 border-[#0071e3]/60 dark:border-[#2997FF]/60 pl-2.5 py-0.5 font-mono text-[11px] text-[#374151] dark:text-[#D1D5DB]"
+                              >
+                                {ev}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

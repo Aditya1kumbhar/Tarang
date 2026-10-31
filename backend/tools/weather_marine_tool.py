@@ -56,21 +56,30 @@ def get_fallback_marine_and_weather(lat: float, lon: float) -> Dict[str, Any]:
 
 
 # Fast In-Memory Marine & Weather Cache (90s TTL to eliminate redundant external roundtrips)
-_WEATHER_CACHE: Dict[Tuple[float, float], Tuple[float, Dict[str, Any]]] = {}
+_WEATHER_CACHE: Dict[Tuple[float, float, str], Tuple[float, Dict[str, Any]]] = {}
 _WEATHER_CACHE_TTL = 90.0
 
 
 async def fetch_live_marine_and_weather(
     lat: float,
     lon: float,
+    target_dt: Optional[datetime] = None,
     client: Optional[httpx.AsyncClient] = None,
     timeout: float = API_TIMEOUT_SECONDS,
 ) -> Dict[str, Any]:
     """
     Queries Open-Meteo Marine and Weather APIs concurrently with strict async timeout.
-    Extracts current hour physical measurements.
+    Selects, for every variable, the hourly entry whose timestamp in the API time array
+    is closest to a target datetime passed into the function (default: current UTC hour).
+    Marine and forecast arrays use the SAME selected index.
     """
-    cache_key = (round(lat, 3), round(lon, 3))
+    if target_dt is None:
+        target_dt = datetime.now(timezone.utc)
+    elif target_dt.tzinfo is None:
+        target_dt = target_dt.replace(tzinfo=timezone.utc)
+
+    target_hour_str = target_dt.strftime("%Y-%m-%d-%H")
+    cache_key = (round(lat, 3), round(lon, 3), target_hour_str)
     now = time.time()
     if cache_key in _WEATHER_CACHE:
         cached_time, cached_val = _WEATHER_CACHE[cache_key]
@@ -110,22 +119,54 @@ async def fetch_live_marine_and_weather(
 
     marine_data, forecast_data = await _fetch()
 
-    # Extract first available hourly record (nearest to observation time)
     m_hourly = marine_data.get("hourly", {})
     f_hourly = forecast_data.get("hourly", {})
 
-    wave_height = m_hourly.get("wave_height", [1.1])[0] or 1.1
-    wave_dir = m_hourly.get("wave_direction", [190.0])[0] or 190.0
-    wave_period = m_hourly.get("wave_period", [6.5])[0] or 6.5
-    swell_height = m_hourly.get("swell_wave_height", [0.8])[0] or 0.8
-    swell_period = m_hourly.get("swell_wave_period", [7.5])[0] or 7.5
-    current_vel = m_hourly.get("ocean_current_velocity", [0.3])[0] or 0.3
+    # Time series alignment: locate index closest to target_dt
+    times = m_hourly.get("time") or f_hourly.get("time") or []
+    selected_idx = 0
+    if times:
+        best_diff = float("inf")
+        for idx, t_str in enumerate(times):
+            try:
+                t_dt = datetime.fromisoformat(t_str)
+                if t_dt.tzinfo is None:
+                    t_dt = t_dt.replace(tzinfo=timezone.utc)
+                diff = abs((t_dt - target_dt).total_seconds())
+                if diff < best_diff:
+                    best_diff = diff
+                    selected_idx = idx
+            except Exception:
+                continue
 
-    temp_2m = f_hourly.get("temperature_2m", [28.5])[0] or 28.5
-    wind_speed = f_hourly.get("wind_speed_10m", [18.0])[0] or 18.0
-    wind_gusts = f_hourly.get("wind_gusts_10m", [24.0])[0] or 24.0
-    cape = f_hourly.get("cape", [300.0])[0] or 300.0
-    weather_code = f_hourly.get("weather_code", [1])[0] or 1
+    def _extract(arr: Optional[list], default_val: Any) -> Any:
+        if not arr:
+            return default_val
+        if selected_idx < len(arr) and arr[selected_idx] is not None:
+            return arr[selected_idx]
+        if len(arr) > 0 and arr[0] is not None:
+            return arr[0]
+        return default_val
+
+    # Both marine and forecast use the SAME selected_idx
+    wave_height = _extract(m_hourly.get("wave_height"), 1.1)
+    wave_dir = _extract(m_hourly.get("wave_direction"), 190.0)
+    wave_period = _extract(m_hourly.get("wave_period"), 6.5)
+    swell_height = _extract(m_hourly.get("swell_wave_height"), 0.8)
+    swell_period = _extract(m_hourly.get("swell_wave_period"), 7.5)
+    current_vel = _extract(m_hourly.get("ocean_current_velocity"), 0.3)
+
+    temp_2m = _extract(f_hourly.get("temperature_2m"), 28.5)
+    wind_speed = _extract(f_hourly.get("wind_speed_10m"), 18.0)
+    wind_gusts = _extract(f_hourly.get("wind_gusts_10m"), 24.0)
+    cape = _extract(f_hourly.get("cape"), 300.0)
+    weather_code = _extract(f_hourly.get("weather_code"), 1)
+
+    selected_time_str = (
+        times[selected_idx]
+        if times and selected_idx < len(times)
+        else target_dt.isoformat()
+    )
 
     res_dict = {
         "wave_height_m": float(wave_height),
@@ -139,6 +180,8 @@ async def fetch_live_marine_and_weather(
         "cape_j_kg": float(cape),
         "temperature_2m_c": float(temp_2m),
         "weather_code": int(weather_code),
+        "timestamp_utc": selected_time_str,
+        "selected_hour_index": selected_idx,
         "source": "Live Open-Meteo Marine & Forecast API",
         "is_fallback": False,
     }
@@ -280,6 +323,7 @@ async def get_weather_marine_report(
     harbour_name: str = "Rameswaram Fishing Jetty",
     vessel_type: VesselType = VesselType.COUNTRY_CRAFT,
     mock_metrics: Optional[Dict[str, Any]] = None,
+    target_dt: Optional[datetime] = None,
     client: Optional[httpx.AsyncClient] = None,
 ) -> WeatherHazardReport:
     """
@@ -293,7 +337,7 @@ async def get_weather_marine_report(
         confidence = 1.0
     else:
         try:
-            metrics = await fetch_live_marine_and_weather(lat, lon, client=client)
+            metrics = await fetch_live_marine_and_weather(lat, lon, target_dt=target_dt, client=client)
             source = metrics["source"]
             is_fallback = False
             confidence = 0.95
@@ -312,8 +356,8 @@ async def get_weather_marine_report(
     evidence_entry = EvidenceLedgerEntry(
         parameter_name="Significant Wave Height & Coastal Surface Wind",
         source_sensor="Live Open-Meteo GFS/ECMWF" if not is_fallback else "Climatological Regional Baseline",
-        platform_mission="Open-Meteo Marine & Forecast APIs / INCOIS OSF Grounding",
-        timestamp_utc=datetime.now(timezone.utc).isoformat(),
+        platform_mission="Open-Meteo Marine & Forecast APIs",
+        timestamp_utc=metrics.get("timestamp_utc", datetime.now(timezone.utc).isoformat()),
         spatial_resolution="5.0 km coastal grid",
         confidence_tier="Higher" if not is_fallback else "Medium",
         data_mode="FALLBACK_SNAPSHOT" if is_fallback else "LIVE",

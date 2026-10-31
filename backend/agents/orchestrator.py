@@ -8,7 +8,7 @@ Coordinates:
 """
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, time as dt_time, timedelta, timezone
 import logging
 import re
 import time
@@ -215,12 +215,12 @@ def plan_execution(request: ChatRequest, state: OrchestratorState) -> None:
         agents.extend(["GeospatialNavigationAgent", "WeatherHazardAgent", "OceanAnalyticsAgent"])
 
     # Detect IMBL or MPA Geofence
-    elif any(kw in lower_query for kw in ["imbl", "border", "boundary", "talaimannar", "sanctuary", "national park", "mpa", "எல்லை"]):
+    elif any(kw in lower_query for kw in ["imbl", "border", "boundary", "talaimannar", "sanctuary", "national park", "mpa", "geofenc", "avoid", "restriction", "எல்லை"]):
         state.intent = "geofence_check"
-        agents.extend(["GeospatialNavigationAgent", "WeatherHazardAgent"])
+        agents.extend(["GeospatialNavigationAgent", "WeatherHazardAgent", "OceanAnalyticsAgent"])
 
     # Detect Sea-Venture Weather Safety
-    elif any(kw in lower_query for kw in ["safe", "venture", "weather", "wave", "wind", "cyclone", "storm", "செல்லலாமா", "பாதுகாப்பானதா", "സുരക്ഷിതമാണോ", "सुरक्षित"]):
+    elif any(kw in lower_query for kw in ["safe", "venture", "weather", "wave", "wind", "cyclone", "storm", "lightning", "tide", "sea condition", "alert", "செல்லலாமா", "பாதுகாப்பானதா", "സുരക്ഷിതമാണോ", "सुरक्षित"]):
         state.intent = "weather_safety"
         agents.extend(["WeatherHazardAgent", "GeospatialNavigationAgent"])
 
@@ -228,6 +228,16 @@ def plan_execution(request: ChatRequest, state: OrchestratorState) -> None:
     else:
         state.intent = "pfz_discovery"
         agents.extend(["OceanAnalyticsAgent", "WeatherHazardAgent", "GeospatialNavigationAgent"])
+
+    # Tomorrow-morning intent detection -> Target: tomorrow 06:00 IST converted to UTC
+    tomorrow_base_keywords = ["tomorrow", "நாளை", "कल", "നാളെ", "రేపు", "કાલે", "ಬೆಳಿಗ್ಗೆ", "उद्या", "কাল", "ଆସନ୍ତାକାଲି"]
+    if any(k in lower_query for k in tomorrow_base_keywords):
+        now_utc = datetime.now(timezone.utc)
+        ist_tz = timezone(timedelta(hours=5, minutes=30))
+        now_ist = now_utc.astimezone(ist_tz)
+        tomorrow_ist_date = (now_ist + timedelta(days=1)).date()
+        tomorrow_0600_ist = datetime.combine(tomorrow_ist_date, dt_time(6, 0), tzinfo=ist_tz)
+        state.target_dt = tomorrow_0600_ist.astimezone(timezone.utc)
 
     state.required_agents = list(dict.fromkeys(agents))
 
@@ -264,6 +274,7 @@ async def run_weather_hazard_agent(state: OrchestratorState) -> None:
         harbour_name=state.harbour.name,
         vessel_type=state.vessel_type,
         mock_metrics=state.custom_weather_params,
+        target_dt=state.target_dt,
     )
     state.weather_report = report
     state.provenance_list.append(report.provenance)
@@ -294,11 +305,7 @@ async def run_weather_hazard_agent(state: OrchestratorState) -> None:
 async def run_ocean_analytics_agent(state: OrchestratorState) -> None:
     """Executes SST optimality, thermal gradient, and Chlorophyll-a PFZ composite engine."""
     t_start = time.perf_counter()
-    # Synchronous deterministic call wrapped in asyncio executor
-    loop = asyncio.get_running_loop()
-    report = await loop.run_in_executor(
-        None, compute_pfz_zones, state.harbour.id, 3, None
-    )
+    report = await compute_pfz_zones(state.harbour.id, 3, None)
     state.pfz_report = report
     state.provenance_list.append(report.provenance)
 
@@ -621,7 +628,7 @@ async def _call_gemini_synthesis(state: OrchestratorState, evidence: List[str]) 
     lang_name = lang_names.get(state.detected_language, "English")
 
     system_instruction = (
-        "You are ORCA (Oceanographic Reasoning & Collaborative Agent), an advanced, highly knowledgeable AI Marine Intelligence Copilot for Indian fishermen, vessel masters, and coastal communities.\n"
+        "You are ORCA (Marine EcOsystem Reasoning with Collaborative Agents), an advanced, highly knowledgeable AI Marine Intelligence Copilot for Indian fishermen, vessel masters, and coastal communities.\n"
         "Your mission: Provide an intelligent, articulate, deeply reasoned, and practically useful response that answers the user's specific query using the full power of your maritime intelligence.\n\n"
         "OPERATIONAL GUIDELINES:\n"
         "1. DIRECT & INTELLIGENT: Directly answer whatever customized, random, or technical question the user asks (e.g., fishing techniques, species behavior, gear precautions, navigation, weather phenomena, engine care, or sea lore) with authentic nautical wisdom and conversational intelligence.\n"
@@ -1055,6 +1062,20 @@ async def run_orchestrator(request: ChatRequest) -> ChatResponse:
     # 4. Multilingual Synthesis & Map Generation
     await synthesize_response(state)
 
+    weather_data_mode = "LIVE"
+    weather_timestamp = None
+    if state.weather_report and state.weather_report.evidence_ledger_entry:
+        weather_data_mode = state.weather_report.evidence_ledger_entry.data_mode
+        weather_timestamp = state.weather_report.evidence_ledger_entry.timestamp_utc
+
+    pfz_data_mode = "LIVE_SATELLITE"
+    satellite_timestamp = None
+    if state.pfz_report:
+        pfz_data_mode = getattr(state.pfz_report, "data_mode", "LIVE_SATELLITE")
+        satellite_timestamp = getattr(state.pfz_report, "satellite_timestamp", None)
+        if not satellite_timestamp and state.pfz_report.top_recommendation and state.pfz_report.top_recommendation.evidence_ledger_entry:
+            satellite_timestamp = state.pfz_report.top_recommendation.evidence_ledger_entry.timestamp_utc
+
     return ChatResponse(
         recommendation=state.recommendation,
         safety_status=state.safety_status,
@@ -1069,4 +1090,8 @@ async def run_orchestrator(request: ChatRequest) -> ChatResponse:
         agent_traces=state.agent_traces,
         provenance_list=state.provenance_list,
         evidence_ledger=state.evidence_ledger,
+        weather_data_mode=weather_data_mode,
+        pfz_data_mode=pfz_data_mode,
+        satellite_timestamp=satellite_timestamp,
+        weather_timestamp=weather_timestamp,
     )
