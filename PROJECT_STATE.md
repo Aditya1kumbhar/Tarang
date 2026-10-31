@@ -33,8 +33,9 @@
 - `components/SafetyAlertBanner.jsx`: Non-overridable Red/Amber maritime safety advisory banner.
 
 ### Verification (`tests/`)
+- `conftest.py`: Syntactically valid dummy auth credentials and test environment initialization (`GOOGLE_CLIENT_ID`, `VITE_GOOGLE_CLIENT_ID`, `AUTH_SECRET`, `ENVIRONMENT=development`, `AI_TIMEOUT_SECONDS=35.0`) with `os.environ.setdefault` guarding CI and isolated runners.
 - `test_tools.py`: 33 unit tests covering deterministic marine tools, safety index tiers, 10 language script detectors, Part A2 48-hr Open-Meteo hourly selector series, Part B4 ERDDAP finite differences and 0.15° merge, and satellite mock success/fallback tests.
-- `test_api.py`: 47 integration tests covering all 8 official SIH queries, 4 extended scenarios, security hardening, rate limiting, and dedicated Google authentication barrier tests.
+- `test_api.py`: 48 integration tests covering all 8 official SIH queries, 4 extended scenarios, security hardening, rate limiting, dedicated Google authentication barrier tests, and clean subprocess fail-closed 503 regression probes.
 
 ### Production Deployment Assets
 - `Dockerfile`: Multi-stage build (Node 22 builder -> Python 3.11-slim non-root runtime) serving both SPA and REST API.
@@ -54,7 +55,7 @@
 
 ## 3. Active Status & Operational Invariants
 - **Phase Completion:** Phases 1 through 6 fully implemented and verified.
-- **Automated Tests:** 80/80 tests passing (33 unit in `test_tools.py` + 47 integration in `test_api.py` covering all 8 official SIH queries, 4 extended scenarios, full master security hardening, rate limiting, and production auth fail-closed guarantees).
+- **Automated Tests:** 81/81 tests passing (33 unit in `test_tools.py` + 48 integration in `test_api.py` covering all 8 official SIH queries, 4 extended scenarios, full master security hardening, rate limiting, and production auth fail-closed guarantees).
 - **Verified Live Data Pipeline & True Provenance:**
   - Weather & Marine: Open-Meteo live API with closest-hour selection for current UTC hour or tomorrow morning (06:00 IST -> 00:30 UTC), eliminating the legacy index [0] bug.
   - Potential Fishing Zones: NOAA CoastWatch ERDDAP live daily satellite Sea Surface Temperature (Coral Reef Watch 5km) and Chlorophyll-a (VIIRS 9km NRT gap-filled 4-axis grid) with finite-difference thermal gradient calculation.

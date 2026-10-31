@@ -645,7 +645,7 @@ def test_docs_disabled_in_production(monkeypatch):
     assert prod_client.get("/openapi.json").status_code == 404
 
     # Reset back to development state for subsequent tests
-    monkeypatch.delenv("ENVIRONMENT", raising=False)
+    monkeypatch.setenv("ENVIRONMENT", "development")
     importlib.reload(config)
     importlib.reload(main)
 
@@ -845,7 +845,7 @@ def test_dev_login_returns_404_in_production_with_and_without_client_id(monkeypa
     assert resp_prod_flag.json()["error"] == "not_found"
 
     # Reset back to development state
-    monkeypatch.delenv("ENVIRONMENT", raising=False)
+    monkeypatch.setenv("ENVIRONMENT", "development")
     monkeypatch.delenv("DEV_LOGIN_ENABLED", raising=False)
     importlib.reload(config)
     importlib.reload(main)
@@ -887,7 +887,8 @@ def test_auth_endpoints_fail_closed_503_in_production_without_google_client_id(m
     assert resp_dev.json()["error"] == "not_found"
 
     # Reset back to development state
-    monkeypatch.delenv("ENVIRONMENT", raising=False)
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.undo()
     importlib.reload(config)
     importlib.reload(main)
 
@@ -1011,6 +1012,73 @@ def test_authorized_emails_allowlist_enforcement(monkeypatch):
             assert resp_allowed.status_code == 200
             assert resp_allowed.json()["status"] == "success"
             assert resp_allowed.json()["user"]["email"] == "captain@nic.in"
+
+
+def test_production_fail_closed_503_subprocess_probe():
+    """
+    Regression test: Launches python in a clean subprocess with GOOGLE_CLIENT_ID genuinely absent,
+    VITE_GOOGLE_CLIENT_ID absent, and ENVIRONMENT=production, proving that /api/v1/auth/config
+    and /api/v1/auth/google strictly fail closed with HTTP 503 Service Unavailable.
+    """
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    env = os.environ.copy()
+    env["ENVIRONMENT"] = "production"
+    env.pop("GOOGLE_CLIENT_ID", None)
+    env.pop("VITE_GOOGLE_CLIENT_ID", None)
+    env.pop("DEV_LOGIN_ENABLED", None)
+    env["PYTHONPATH"] = "."
+
+    code = """
+import os
+import unittest.mock
+from pathlib import Path
+
+# Mask local .env file in the subprocess to simulate pure CI / container environment
+orig_exists = Path.exists
+def mocked_exists(self):
+    if self.name == ".env":
+        return False
+    return orig_exists(self)
+
+with unittest.mock.patch.object(Path, "exists", mocked_exists):
+    from backend import config, main
+
+from starlette.testclient import TestClient
+
+assert config.IS_PRODUCTION is True, f"Expected IS_PRODUCTION True, got {config.IS_PRODUCTION}"
+assert config.GOOGLE_CLIENT_ID == "", f"Expected empty GOOGLE_CLIENT_ID, got {repr(config.GOOGLE_CLIENT_ID)}"
+
+client = TestClient(main.app)
+
+# 1. Assert /api/v1/auth/config returns 503
+resp_cfg = client.get("/api/v1/auth/config")
+assert resp_cfg.status_code == 503, f"Expected 503 from config, got {resp_cfg.status_code}: {resp_cfg.text}"
+assert resp_cfg.json()["error"] == "service_unavailable"
+assert "Google OAuth is not configured in production" in resp_cfg.json()["detail"]
+
+# 2. Assert /api/v1/auth/google returns 503
+resp_auth = client.post("/api/v1/auth/google", json={"credential": "mock_jwt_token_12345"})
+assert resp_auth.status_code == 503, f"Expected 503 from auth/google, got {resp_auth.status_code}: {resp_auth.text}"
+assert resp_auth.json()["error"] == "service_unavailable"
+assert "Google OAuth is not configured in production" in resp_auth.json()["detail"]
+
+print("SUBPROCESS_FAIL_CLOSED_VERIFIED_503")
+"""
+
+    res = subprocess.run(
+        [sys.executable, "-c", code],
+        env=env,
+        capture_output=True,
+        text=True,
+        cwd=str(Path(__file__).resolve().parent.parent),
+    )
+    assert res.returncode == 0, f"Subprocess failed with code {res.returncode}:\nSTDOUT: {res.stdout}\nSTDERR: {res.stderr}"
+    assert "SUBPROCESS_FAIL_CLOSED_VERIFIED_503" in res.stdout
+
 
 
 

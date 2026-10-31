@@ -48,6 +48,8 @@ jobs:
       - name: Run Pytest Comprehensive Test Suite
         env:
           ENVIRONMENT: development
+          GOOGLE_CLIENT_ID: 000000000000-dummycitestonly00000000000000.apps.googleusercontent.com
+          AI_TIMEOUT_SECONDS: "35.0"
         run: pytest tests/test_tools.py tests/test_api.py -v
 
       - name: Run Production-Configured Rate Limiting Verification
