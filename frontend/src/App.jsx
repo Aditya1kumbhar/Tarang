@@ -216,7 +216,8 @@ export default function App() {
       }
 
       if (!res.ok) {
-        throw new Error(`API error: ${res.status}`);
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || `API error (${res.status})`);
       }
 
       const data = await res.json();
@@ -255,7 +256,9 @@ export default function App() {
         ...prev,
         {
           role: 'assistant',
-          content: 'Failed to contact ORCA multi-agent reasoning backend. Please check connection.',
+          content: err?.message && err.message.length < 200
+            ? err.message
+            : 'Unable to reach ORCA reasoning backend. Please check network connection and retry.',
           safety_status: 'AMBER',
         },
       ]);

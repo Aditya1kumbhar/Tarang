@@ -266,8 +266,10 @@ async def compute_pfz_zones(
         data_mode = "LIVE"
     else:
         try:
-            sst_grid = await fetch_sst_grid(harbour.lat, harbour.lon, box_deg=1.5, client=client)
-            chl_grid = await fetch_chl_grid(harbour.lat, harbour.lon, box_deg=1.5, client=client)
+            sst_grid, chl_grid = await asyncio.gather(
+                fetch_sst_grid(harbour.lat, harbour.lon, box_deg=1.5, client=client, timeout=12.0),
+                fetch_chl_grid(harbour.lat, harbour.lon, box_deg=1.5, client=client, timeout=12.0),
+            )
 
             if not sst_grid or not chl_grid:
                 raise ValueError("Received empty satellite grid from ERDDAP")

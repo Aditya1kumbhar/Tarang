@@ -459,17 +459,17 @@ async def get_dashboard_summary(
             detail=f"Harbour '{harbour_id.value}' not found in registry."
         )
 
-    # 1. Fetch Weather
-    weather = await get_weather_marine_report(
-        lat=harbour.lat,
-        lon=harbour.lon,
-        harbour_id=harbour.id,
-        harbour_name=harbour.name,
-        vessel_type=vessel_type,
+    # 1 & 2. Concurrently fetch Weather and Top PFZ Zone
+    weather, pfz_report = await asyncio.gather(
+        get_weather_marine_report(
+            lat=harbour.lat,
+            lon=harbour.lon,
+            harbour_id=harbour.id,
+            harbour_name=harbour.name,
+            vessel_type=vessel_type,
+        ),
+        compute_pfz_zones(harbour_id=harbour.id, max_candidates=1),
     )
-
-    # 2. Compute Top PFZ Zone
-    pfz_report = await compute_pfz_zones(harbour_id=harbour.id, max_candidates=1)
     top_pfz = pfz_report.top_recommendation
 
     # 3. Geofence Check
