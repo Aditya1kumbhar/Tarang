@@ -56,6 +56,7 @@
 ## 3. Active Status & Operational Invariants
 - **Phase Completion:** Phases 1 through 6 fully implemented and verified.
 - **Automated Tests:** 81/81 tests passing (33 unit in `test_tools.py` + 48 integration in `test_api.py` covering all 8 official SIH queries, 4 extended scenarios, full master security hardening, rate limiting, and production auth fail-closed guarantees).
+- **Concurrent Ingestion & Cloud Performance:** Satellite SST and VIIRS Chlorophyll-a queries parallelized via `asyncio.gather` with 12s circuit limit; weather and PFZ feeds parallelized for dashboard loading; `AI_TIMEOUT_SECONDS=35.0` configured across Dockerfile, config, and CI.
 - **Verified Live Data Pipeline & True Provenance:**
   - Weather & Marine: Open-Meteo live API with closest-hour selection for current UTC hour or tomorrow morning (06:00 IST -> 00:30 UTC), eliminating the legacy index [0] bug.
   - Potential Fishing Zones: NOAA CoastWatch ERDDAP live daily satellite Sea Surface Temperature (Coral Reef Watch 5km) and Chlorophyll-a (VIIRS 9km NRT gap-filled 4-axis grid) with finite-difference thermal gradient calculation.
