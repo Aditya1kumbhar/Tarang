@@ -80,7 +80,7 @@ PFZ_THERMAL_ANOMALY_HEATWAVE = 1.8  # deg C above baseline indicates marine heat
 # External Data APIs & Resilience Timeouts
 OPEN_METEO_MARINE_URL = "https://marine-api.open-meteo.com/v1/marine"
 OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
-API_TIMEOUT_SECONDS = 4.0
+API_TIMEOUT_SECONDS = 8.0
 
 # Paths
 HARBOURS_FILE = DATA_DIR / "harbours_india.json"

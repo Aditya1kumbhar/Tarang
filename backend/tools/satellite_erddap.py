@@ -16,8 +16,15 @@ import httpx
 logger = logging.getLogger(__name__)
 
 # NOAA CoastWatch ERDDAP Griddap Verified Endpoints (Keyless / Public Domain)
-NOAA_CRW_SST_BASE_URL = "https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW.json"
+# Primary: High-speed NOAA CoastWatch central cluster (<1s latency, no redirects)
+# Fallback: CoastWatch West Coast Node (pfeg.noaa.gov)
+NOAA_CRW_SST_BASE_URL = "https://coastwatch.noaa.gov/erddap/griddap/noaacrwsstDaily.json"
+NOAA_CRW_SST_FALLBACK_URL = "https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW.json"
+
 NOAA_VIIRS_CHLA_BASE_URL = (
+    "https://coastwatch.noaa.gov/erddap/griddap/noaacwNPPN20VIIRSDINEOFDaily.json"
+)
+NOAA_VIIRS_CHLA_FALLBACK_URL = (
     "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily.json"
 )
 
@@ -54,11 +61,11 @@ async def fetch_sst_grid(
     lon: float,
     box_deg: float = 1.5,
     client: Optional[httpx.AsyncClient] = None,
-    timeout: float = 20.0,
+    timeout: float = 12.0,
 ) -> SatelliteGridResult:
     """
     Fetches NOAA Coral Reef Watch 5km daily satellite Sea Surface Temperature (SST) via ERDDAP.
-    Endpoint: NOAA_DHW.json?CRW_SST[(last)][(LAT_MIN):(LAT_MAX)][(LON_MIN):(LON_MAX)]
+    Queries primary CoastWatch cluster (noaacrwsstDaily) with automatic fallback to NOAA_DHW.
     """
     lat_min, lat_max, lon_min, lon_max = _compute_bbox(lat, lon, box_deg)
     cache_key = (round(lat_min, 2), round(lat_max, 2), round(lon_min, 2), round(lon_max, 2))
@@ -69,12 +76,10 @@ async def fetch_sst_grid(
         if now - cached_time < _CACHE_TTL_SECONDS:
             return cached_val
 
-    # ERDDAP griddap query string for Coral Reef Watch SST
-    url = (
-        f"{NOAA_CRW_SST_BASE_URL}?CRW_SST[(last)]"
-        f"[({lat_min}):({lat_max})]"
-        f"[({lon_min}):({lon_max})]"
-    )
+    endpoints = [
+        (NOAA_CRW_SST_BASE_URL, "analysed_sst"),
+        (NOAA_CRW_SST_FALLBACK_URL, "CRW_SST"),
+    ]
 
     should_close = False
     active_client = client
@@ -82,13 +87,25 @@ async def fetch_sst_grid(
         active_client = httpx.AsyncClient(timeout=timeout, follow_redirects=True)
         should_close = True
 
+    payload = None
+    last_err = None
     try:
-        resp = await active_client.get(url)
-        resp.raise_for_status()
-        payload = resp.json()
+        for base_url, var_name in endpoints:
+            url = f"{base_url}?{var_name}[(last)][({lat_min}):({lat_max})][({lon_min}):({lon_max})]"
+            try:
+                resp = await active_client.get(url)
+                resp.raise_for_status()
+                payload = resp.json()
+                break
+            except Exception as e:
+                last_err = e
+                logger.debug("SST endpoint %s failed: %s; trying fallback", base_url, e)
     finally:
         if should_close:
             await active_client.aclose()
+
+    if payload is None:
+        raise last_err or RuntimeError("All NOAA SST ERDDAP endpoints failed")
 
     table = payload.get("table", {})
     col_names = table.get("columnNames", [])
@@ -97,7 +114,12 @@ async def fetch_sst_grid(
     time_idx = col_names.index("time") if "time" in col_names else 0
     lat_idx = col_names.index("latitude") if "latitude" in col_names else 1
     lon_idx = col_names.index("longitude") if "longitude" in col_names else 2
-    sst_idx = col_names.index("CRW_SST") if "CRW_SST" in col_names else 3
+    if "analysed_sst" in col_names:
+        sst_idx = col_names.index("analysed_sst")
+    elif "CRW_SST" in col_names:
+        sst_idx = col_names.index("CRW_SST")
+    else:
+        sst_idx = 3
 
     points: List[Dict[str, Any]] = []
     erddap_timestamp: Optional[str] = None
@@ -130,11 +152,11 @@ async def fetch_chl_grid(
     lon: float,
     box_deg: float = 1.5,
     client: Optional[httpx.AsyncClient] = None,
-    timeout: float = 20.0,
+    timeout: float = 12.0,
 ) -> SatelliteGridResult:
     """
     Fetches NOAA VIIRS 9km near-real-time gap-filled daily Chlorophyll-a via ERDDAP.
-    Endpoint: nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily.json?chlor_a[(last)][(0)][(LAT_MIN):(LAT_MAX)][(LON_MIN):(LON_MAX)]
+    Queries primary CoastWatch cluster (noaacwNPPN20VIIRSDINEOFDaily) with automatic fallback.
     Critical: Includes altitude constraint [(0)] as 2nd axis to satisfy 4-axis grid.
     """
     lat_min, lat_max, lon_min, lon_max = _compute_bbox(lat, lon, box_deg)
@@ -146,12 +168,10 @@ async def fetch_chl_grid(
         if now - cached_time < _CACHE_TTL_SECONDS:
             return cached_val
 
-    # ERDDAP 4-axis query (time, altitude, latitude, longitude)
-    url = (
-        f"{NOAA_VIIRS_CHLA_BASE_URL}?chlor_a[(last)][(0)]"
-        f"[({lat_min}):({lat_max})]"
-        f"[({lon_min}):({lon_max})]"
-    )
+    endpoints = [
+        NOAA_VIIRS_CHLA_BASE_URL,
+        NOAA_VIIRS_CHLA_FALLBACK_URL,
+    ]
 
     should_close = False
     active_client = client
@@ -159,13 +179,29 @@ async def fetch_chl_grid(
         active_client = httpx.AsyncClient(timeout=timeout, follow_redirects=True)
         should_close = True
 
+    payload = None
+    last_err = None
     try:
-        resp = await active_client.get(url)
-        resp.raise_for_status()
-        payload = resp.json()
+        for base_url in endpoints:
+            url = (
+                f"{base_url}?chlor_a[(last)][(0)]"
+                f"[({lat_min}):({lat_max})]"
+                f"[({lon_min}):({lon_max})]"
+            )
+            try:
+                resp = await active_client.get(url)
+                resp.raise_for_status()
+                payload = resp.json()
+                break
+            except Exception as e:
+                last_err = e
+                logger.debug("Chl endpoint %s failed: %s; trying fallback", base_url, e)
     finally:
         if should_close:
             await active_client.aclose()
+
+    if payload is None:
+        raise last_err or RuntimeError("All NOAA Chl-a ERDDAP endpoints failed")
 
     table = payload.get("table", {})
     col_names = table.get("columnNames", [])
