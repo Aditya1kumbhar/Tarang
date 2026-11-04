@@ -204,7 +204,7 @@ export default function App() {
 
     try {
       const abortController = new AbortController();
-      const timeoutId = setTimeout(() => abortController.abort(), 15000);
+      const timeoutId = setTimeout(() => abortController.abort(), 25000);
 
       let res;
       try {
@@ -266,7 +266,7 @@ export default function App() {
         {
           role: 'assistant',
           content: err.name === 'AbortError'
-            ? 'The reasoning engine took longer than 15 seconds to evaluate ocean telemetry. Please try asking again or select a scenario chip.'
+            ? 'The reasoning engine took longer than expected to evaluate ocean telemetry. Please try asking again or select a scenario chip.'
             : (err?.message && err.message.length < 200
               ? err.message
               : 'Unable to reach ORCA reasoning backend. Please check network connection and retry.'),

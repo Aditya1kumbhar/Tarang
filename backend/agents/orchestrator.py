@@ -605,12 +605,13 @@ def enforce_safety_circuit_breaker(state: OrchestratorState) -> None:
 # ==============================================================================
 
 _GEMINI_CLIENT: Optional[httpx.AsyncClient] = None
+_GEMINI_COOLDOWN_UNTIL: float = 0.0
 
 def _get_gemini_client() -> httpx.AsyncClient:
     global _GEMINI_CLIENT
     if _GEMINI_CLIENT is None or _GEMINI_CLIENT.is_closed:
         _GEMINI_CLIENT = httpx.AsyncClient(
-            timeout=httpx.Timeout(8.0, connect=3.0),
+            timeout=httpx.Timeout(4.5, connect=2.0),
             limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
         )
     return _GEMINI_CLIENT
@@ -621,6 +622,11 @@ async def _call_gemini_synthesis(state: OrchestratorState, evidence: List[str]) 
     Synthesize marine advisory using Google Gemini API with high-intelligence reasoning.
     Grounds LLM synthesis in deterministic physical observations and safety circuit breakers.
     """
+    global _GEMINI_COOLDOWN_UNTIL
+    if time.time() < _GEMINI_COOLDOWN_UNTIL:
+        logger.info("Gemini API in 429 quota cooldown period; using deterministic localized synthesis.")
+        return None
+
     if not GEMINI_API_KEY:
         return None
 
@@ -665,10 +671,7 @@ async def _call_gemini_synthesis(state: OrchestratorState, evidence: List[str]) 
 
     models_to_try = [
         "gemini-3-flash-preview",
-        GEMINI_MODEL,
-        "gemini-3.8-flash",
-        "gemini-3.6-flash",
-        "gemini-3.5-flash",
+        "gemini-flash-latest",
     ]
     # Remove duplicate model names while preserving order
     seen = set()
@@ -722,8 +725,13 @@ async def _call_gemini_synthesis(state: OrchestratorState, evidence: List[str]) 
                             # Anti-vibe hygiene: strictly strip em dashes and any unicode emojis
                             text = text.replace("—", " - ").replace("–", " - ")
                             text = re.sub(r"[\U00010000-\U0010ffff\u2600-\u27bf\u2300-\u23ff\u2b50\u2b55]", "", text)
+                            _GEMINI_COOLDOWN_UNTIL = 0.0  # Reset cooldown on verified success
                             return text.strip()
-            elif res.status_code in (404, 429, 500, 503):
+            elif res.status_code == 429:
+                logger.warning("Gemini API key daily quota exhausted (HTTP 429); engaging 120s synthesis circuit breaker.")
+                _GEMINI_COOLDOWN_UNTIL = time.time() + 120.0
+                break
+            elif res.status_code in (404, 500, 503):
                 logger.info(f"Gemini model {model} returned {res.status_code}, attempting next fallback model...")
                 continue
         except Exception as err:
