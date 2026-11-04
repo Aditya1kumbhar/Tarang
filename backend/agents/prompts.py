@@ -5,6 +5,7 @@ Marathi (mr), Gujarati (gu), Odia (or), Bengali (bn), Hindi (hi), and English (e
 Strictly enforces evidence citations and deterministic safety overrides without emojis.
 """
 
+import re
 from typing import Dict, Optional
 
 # ==============================================================================
@@ -53,9 +54,23 @@ def detect_language(text: str, default_lang: str = "en") -> str:
         return best_lang
 
     lower = text.lower()
-    if any(w in lower for w in ["vanakkam", "meen", "padagu", "kaatru", "alai"]):
+    english_syntax_markers = {
+        "what", "is", "how", "can", "why", "where", "tell", "explain", "are",
+        "the", "we", "for", "from", "today", "tomorrow", "weather", "safe",
+        "fish", "fishing", "boat", "vessel", "status", "near", "find", "show", "should", "would"
+    }
+    words = set(re.findall(r"\b[a-z]+\b", lower))
+    if len(words & english_syntax_markers) >= 2:
+        return default_lang
+
+    ta_romanized = ["vanakkam", "meen", "padagu", "kaatru", "alai"]
+    if any(re.search(rf"\b{w}\b", lower) for w in ta_romanized):
         return "ta"
-    if any(w in lower for w in ["meenpiditham", "kadal", "vallam", "thirakal"]):
+
+    ml_romanized = ["meenpiditham", "vallam", "thirakal"]
+    if any(re.search(rf"\b{w}\b", lower) for w in ml_romanized):
+        return "ml"
+    if re.search(r"\bkadal\b", lower) and "kallakkadal" not in lower:
         return "ml"
 
     return default_lang
