@@ -267,8 +267,8 @@ async def compute_pfz_zones(
     else:
         try:
             sst_grid, chl_grid = await asyncio.gather(
-                fetch_sst_grid(harbour.lat, harbour.lon, box_deg=1.5, client=client, timeout=12.0),
-                fetch_chl_grid(harbour.lat, harbour.lon, box_deg=1.5, client=client, timeout=12.0),
+                fetch_sst_grid(harbour.lat, harbour.lon, box_deg=1.5, client=client, timeout=3.5),
+                fetch_chl_grid(harbour.lat, harbour.lon, box_deg=1.5, client=client, timeout=3.5),
             )
 
             if not sst_grid or not chl_grid:

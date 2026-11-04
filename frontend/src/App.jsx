@@ -203,12 +203,21 @@ export default function App() {
     setMessages((prev) => [...prev, userMsg]);
 
     try {
-      const res = await fetch('/api/v1/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        credentials: 'include',
-      });
+      const abortController = new AbortController();
+      const timeoutId = setTimeout(() => abortController.abort(), 15000);
+
+      let res;
+      try {
+        res = await fetch('/api/v1/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          credentials: 'include',
+          signal: abortController.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (res.status === 401) {
         setCurrentUser(null);
@@ -256,9 +265,11 @@ export default function App() {
         ...prev,
         {
           role: 'assistant',
-          content: err?.message && err.message.length < 200
-            ? err.message
-            : 'Unable to reach ORCA reasoning backend. Please check network connection and retry.',
+          content: err.name === 'AbortError'
+            ? 'The reasoning engine took longer than 15 seconds to evaluate ocean telemetry. Please try asking again or select a scenario chip.'
+            : (err?.message && err.message.length < 200
+              ? err.message
+              : 'Unable to reach ORCA reasoning backend. Please check network connection and retry.'),
           safety_status: 'AMBER',
         },
       ]);

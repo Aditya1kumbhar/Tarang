@@ -61,7 +61,7 @@ async def fetch_sst_grid(
     lon: float,
     box_deg: float = 1.5,
     client: Optional[httpx.AsyncClient] = None,
-    timeout: float = 12.0,
+    timeout: float = 3.5,
 ) -> SatelliteGridResult:
     """
     Fetches NOAA Coral Reef Watch 5km daily satellite Sea Surface Temperature (SST) via ERDDAP.
@@ -152,7 +152,7 @@ async def fetch_chl_grid(
     lon: float,
     box_deg: float = 1.5,
     client: Optional[httpx.AsyncClient] = None,
-    timeout: float = 12.0,
+    timeout: float = 3.5,
 ) -> SatelliteGridResult:
     """
     Fetches NOAA VIIRS 9km near-real-time gap-filled daily Chlorophyll-a via ERDDAP.
