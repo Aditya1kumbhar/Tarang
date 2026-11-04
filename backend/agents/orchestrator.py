@@ -226,10 +226,19 @@ def plan_execution(request: ChatRequest, state: OrchestratorState) -> None:
         state.intent = "weather_safety"
         agents.extend(["WeatherHazardAgent", "GeospatialNavigationAgent"])
 
-    # Default to PFZ Discovery + Weather & Geofence
-    else:
+    # Detect Explicit Potential Fishing Zone (PFZ) / Satellite Chlorophyll-SST Discovery
+    elif any(kw in lower_query for kw in [
+        "pfz", "potential fishing", "fishing zone", "fish zone", "chlorophyll", "sst",
+        "thermal front", "hotspot", "catch", "fish", "where to", "grounds", "zones",
+        "மீன்", "மண்டலம்", "मच्छी", "मत्स्य"
+    ]):
         state.intent = "pfz_discovery"
         agents.extend(["OceanAnalyticsAgent", "WeatherHazardAgent", "GeospatialNavigationAgent"])
+
+    # Default to Conversational Maritime Advisory (Instant: Weather + Geofence, avoids heavy satellite blocking)
+    else:
+        state.intent = "conversational_advisory"
+        agents.extend(["WeatherHazardAgent", "GeospatialNavigationAgent"])
 
     # Tomorrow-morning intent detection -> Target: tomorrow 06:00 IST converted to UTC
     tomorrow_base_keywords = ["tomorrow", "நாளை", "कल", "നാളെ", "రేపు", "કાલે", "ಬೆಳಿಗ್ಗೆ", "उद्या", "কাল", "ଆସନ୍ତାକାଲି"]
