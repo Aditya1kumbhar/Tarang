@@ -80,7 +80,7 @@ PFZ_THERMAL_ANOMALY_HEATWAVE = 1.8  # deg C above baseline indicates marine heat
 # External Data APIs & Resilience Timeouts
 OPEN_METEO_MARINE_URL = "https://marine-api.open-meteo.com/v1/marine"
 OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
-API_TIMEOUT_SECONDS = 8.0
+API_TIMEOUT_SECONDS = 3.5
 
 # Paths
 HARBOURS_FILE = DATA_DIR / "harbours_india.json"
@@ -90,9 +90,9 @@ FALLBACK_GRID_FILE = DATA_DIR / "fallback" / "indian_ocean_grid.json"
 
 # API Keys & LLM settings
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3-flash-preview")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 DEFAULT_HARBOUR_ID = "rameswaram"
-AI_TIMEOUT_SECONDS = float(os.getenv("AI_TIMEOUT_SECONDS", "14.0"))
+AI_TIMEOUT_SECONDS = float(os.getenv("AI_TIMEOUT_SECONDS", "12.0"))
 AI_DAILY_BUDGET = int(os.getenv("AI_DAILY_BUDGET", "500"))
 AI_CACHE_TTL_SECONDS = int(os.getenv("AI_CACHE_TTL_SECONDS", "300"))
 

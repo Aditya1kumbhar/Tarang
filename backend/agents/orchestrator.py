@@ -32,9 +32,13 @@ from backend.schemas.models import (
     ChatRequest,
     ChatResponse,
     EvidenceLedgerEntry,
+    RiskFactor,
+    SafetyGateDecision,
     SafetyLevel,
+    TripPlan,
     VesselType,
 )
+from backend.tools.fishing_planner_tool import plan_today_trip
 from backend.tools.geospatial_tool import (
     GEOD_WGS84,
     check_geofence,
@@ -45,6 +49,8 @@ from backend.tools.ocean_pfz_tool import (
     load_harbours_dict,
 )
 from backend.tools.productivity_tool import diagnose_productivity_decline
+from backend.tools.risk_curves import evaluate_risk_factors
+from backend.tools.safety_gate_tool import check_input_health, evaluate_safety_gate, get_active_drill
 from backend.tools.weather_marine_tool import (
     get_fallback_marine_and_weather,
     get_weather_marine_report,
@@ -575,6 +581,95 @@ def enforce_safety_circuit_breaker(state: OrchestratorState) -> None:
             state.risk_verdict = "MODERATE"
         state.safety_override_banner = get_safety_override_banner("AMBER", state.detected_language)
 
+    # 5. Evaluate Piecewise-Linear Risk Attribution
+    wave_h = state.weather_report.wave_height_m if state.weather_report else 1.0
+    wind_spd = state.weather_report.wind_speed_kmh if state.weather_report else 15.0
+    cape_val = state.weather_report.cape_j_kg if state.weather_report else 200.0
+    curr_spd = state.weather_report.ocean_current_velocity_ms if state.weather_report else 0.3
+    nearest_km = (state.geofence_assessment.distance_nm * 1.852) if state.geofence_assessment else 50.0
+    inside_z = state.geofence_assessment.is_violation if state.geofence_assessment else False
+
+    rf_result = evaluate_risk_factors(
+        wave_height_m=wave_h,
+        wind_speed_kmh=wind_spd,
+        cape_j_kg=cape_val,
+        current_speed_ms=curr_spd,
+        nearest_zone_km=nearest_km,
+        inside_zone=inside_z,
+    )
+    state.risk_factors = [RiskFactor(**f) for f in rf_result["factors"]]
+
+    # 6. Evaluate Telemetry Data-Health & Safety Gate
+    weather_ts = None
+    if state.weather_report and state.weather_report.evidence_ledger_entry:
+        try:
+            weather_ts = datetime.fromisoformat(state.weather_report.evidence_ledger_entry.timestamp_utc)
+        except Exception:
+            pass
+
+    health_records = [
+        check_input_health("wave", weather_ts, source=state.weather_report.provenance.source_dataset if state.weather_report else "Open-Meteo"),
+        check_input_health("wind", weather_ts, source=state.weather_report.provenance.source_dataset if state.weather_report else "Open-Meteo"),
+        check_input_health("cyclone", weather_ts, source="IMD Cyclone Bulletins"),
+        check_input_health("gis", None, source="UNCLOS / Survey of India"),
+    ]
+    gate_res = evaluate_safety_gate(rf_result, health_records, drill_override=get_active_drill())
+    state.safety_gate = SafetyGateDecision(
+        state=gate_res["state"],
+        confidence=gate_res["confidence"],
+        headline=gate_res["headline"],
+        reasons=gate_res["reasons"],
+        blocking_inputs=gate_res["blocking_inputs"],
+        stale_inputs=gate_res["stale_inputs"],
+        risk_go=gate_res["risk_go"],
+        drill=gate_res["drill"],
+        timestamp=gate_res["timestamp"],
+    )
+
+    if gate_res["state"] == "INSUFFICIENT_DATA" and not triggered:
+        reasons.append("Safety Gate: Critical sensor telemetry missing or expired. Suppressing false GO.")
+        if state.safety_status != SafetyLevel.RED_ALERT:
+            state.safety_status = SafetyLevel.AMBER
+            if not state.safety_override_banner:
+                state.safety_override_banner = get_safety_override_banner("AMBER", state.detected_language)
+
+    # 7. Today Fisher Trip Planner
+    candidates_list = []
+    if state.pfz_report and state.pfz_report.candidates:
+        for c in state.pfz_report.candidates:
+            candidates_list.append({
+                "zone_id": c.zone_id,
+                "latitude": c.latitude,
+                "longitude": c.longitude,
+                "distance_km": c.distance_km,
+                "bearing_deg": c.bearing_deg,
+                "sst_c": c.sst_c,
+                "chlorophyll_mg_m3": c.chla_mg_m3,
+            })
+    h_lat = state.harbour.lat if state.harbour else 9.28
+    h_lon = state.harbour.lon if state.harbour else 79.31
+    trip_dict = plan_today_trip(
+        lat=h_lat,
+        lon=h_lon,
+        pfz_zones=candidates_list,
+        wave_height_m=wave_h,
+        wind_speed_kmh=wind_spd,
+    )
+    econ = trip_dict.get("economics", {})
+    state.trip_plan = TripPlan(
+        best_departure_time=trip_dict["best_departure_time"],
+        return_by_time=trip_dict["return_by_time"],
+        hours_on_ground=trip_dict["hours_on_ground"],
+        safe_window_summary=trip_dict["safe_window_summary"],
+        target_ground_name=f"Zone {trip_dict['target_ground']['zone_id']}" if trip_dict.get("target_ground") else "Optimal Ground",
+        likely_species=trip_dict.get("likely_species", []),
+        fuel_litres=econ.get("fuel_litres"),
+        fuel_cost_inr=econ.get("fuel_cost_inr"),
+        revenue_inr=econ.get("revenue_inr"),
+        profit_inr=econ.get("profit_inr"),
+        assumptions=econ.get("assumptions"),
+    )
+
     state.override_reasons = reasons
 
     t_latency = (time.perf_counter() - t_start) * 1000.0
@@ -611,7 +706,7 @@ def _get_gemini_client() -> httpx.AsyncClient:
     global _GEMINI_CLIENT
     if _GEMINI_CLIENT is None or _GEMINI_CLIENT.is_closed:
         _GEMINI_CLIENT = httpx.AsyncClient(
-            timeout=httpx.Timeout(4.5, connect=2.0),
+            timeout=httpx.Timeout(3.5, connect=1.5),
             limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
         )
     return _GEMINI_CLIENT
@@ -670,8 +765,10 @@ async def _call_gemini_synthesis(state: OrchestratorState, evidence: List[str]) 
     )
 
     models_to_try = [
+        GEMINI_MODEL,
+        "gemini-3.5-flash-lite",
+        "gemini-flash-lite-latest",
         "gemini-3-flash-preview",
-        "gemini-flash-latest",
     ]
     # Remove duplicate model names while preserving order
     seen = set()
@@ -685,9 +782,8 @@ async def _call_gemini_synthesis(state: OrchestratorState, evidence: List[str]) 
             }
         ],
         "generationConfig": {
-            "temperature": 0.5,
-            "maxOutputTokens": 2048,
-            "thinkingConfig": {"thinkingBudget": 0},
+            "temperature": 0.4,
+            "maxOutputTokens": 1536,
         }
     }
 
@@ -993,14 +1089,19 @@ async def synthesize_response(state: OrchestratorState) -> None:
     state.recommendation = rec
     state.evidence_and_reasoning = evidence
 
-    # 3. Dynamic Google Gemini Flash Synthesis (when key available)
+    # 3. Dynamic Google Gemini Flash Synthesis (when key available with 3.5s hard budget)
     gemini_used = False
     if GEMINI_API_KEY:
         try:
-            gemini_text = await _call_gemini_synthesis(state, evidence)
+            gemini_text = await asyncio.wait_for(
+                _call_gemini_synthesis(state, evidence),
+                timeout=3.5,
+            )
             if gemini_text:
                 state.recommendation = gemini_text
                 gemini_used = True
+        except asyncio.TimeoutError:
+            logger.info("Google Gemini synthesis budget exceeded (3.5s); served instant deterministic advisory.")
         except Exception as e:
             logger.warning(f"Google Gemini synthesis bypassed: {e}")
 
@@ -1111,19 +1212,25 @@ async def run_orchestrator(request: ChatRequest) -> ChatResponse:
     # 1. Planner Decomposition
     plan_execution(request, state)
 
-    # 2. Parallel Specialist Execution
-    tasks = []
+    # 2. Parallel Specialist Execution (Stage 1: Primary Sensor Feeds)
+    primary_tasks = []
     if "WeatherHazardAgent" in state.required_agents:
-        tasks.append(run_weather_hazard_agent(state))
+        primary_tasks.append(run_weather_hazard_agent(state))
     if "OceanAnalyticsAgent" in state.required_agents:
-        tasks.append(run_ocean_analytics_agent(state))
-    if "GeospatialNavigationAgent" in state.required_agents:
-        tasks.append(run_geospatial_navigation_agent(state))
-    if "ProductivityDiagnosticAgent" in state.required_agents:
-        tasks.append(run_productivity_diagnostic_agent(state))
+        primary_tasks.append(run_ocean_analytics_agent(state))
 
-    if tasks:
-        await asyncio.gather(*tasks)
+    if primary_tasks:
+        await asyncio.gather(*primary_tasks)
+
+    # Stage 2: Navigation & Diagnostics (Conditioned on real weather and PFZ coordinates)
+    secondary_tasks = []
+    if "GeospatialNavigationAgent" in state.required_agents:
+        secondary_tasks.append(run_geospatial_navigation_agent(state))
+    if "ProductivityDiagnosticAgent" in state.required_agents:
+        secondary_tasks.append(run_productivity_diagnostic_agent(state))
+
+    if secondary_tasks:
+        await asyncio.gather(*secondary_tasks)
 
     # 3. Deterministic Safety Circuit Breaker
     enforce_safety_circuit_breaker(state)
@@ -1163,4 +1270,7 @@ async def run_orchestrator(request: ChatRequest) -> ChatResponse:
         pfz_data_mode=pfz_data_mode,
         satellite_timestamp=satellite_timestamp,
         weather_timestamp=weather_timestamp,
+        risk_factors=state.risk_factors,
+        safety_gate=state.safety_gate,
+        trip_plan=state.trip_plan,
     )

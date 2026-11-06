@@ -6,13 +6,14 @@ dashboard summaries, and maritime safety overrides with strict security guardrai
 
 import asyncio
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 import logging
+import math
 from pathlib import Path
 import time
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, status
 from fastapi.exceptions import RequestValidationError
@@ -57,16 +58,25 @@ from backend.schemas.models import (
     ChatRequest,
     ChatResponse,
     DashboardSummaryResponse,
+    DataHealth,
     DistrictBoardResponse,
     DistrictHarbourSummary,
     HarbourID,
     HarbourInfo,
+    HourlyRiskPoint,
+    RiskFactor,
+    SafetyGateDecision,
     SafetyLevel,
     ScenarioType,
+    SpeciesPrediction,
+    TripPlan,
     VesselType,
 )
+from backend.tools.fishing_planner_tool import plan_today_trip
 from backend.tools.geospatial_tool import check_geofence
 from backend.tools.ocean_pfz_tool import compute_pfz_zones, load_harbours_dict
+from backend.tools.risk_curves import evaluate_risk_factors
+from backend.tools.safety_gate_tool import check_input_health, evaluate_safety_gate, get_active_drill, set_active_drill
 from backend.tools.weather_marine_tool import (
     assess_vessel_safety,
     calculate_sea_venture_safety_index,
@@ -531,6 +541,78 @@ async def get_dashboard_summary(
     if not satellite_timestamp and top_pfz and top_pfz.evidence_ledger_entry:
         satellite_timestamp = top_pfz.evidence_ledger_entry.timestamp_utc
 
+    # 6. Evaluate Piecewise-Linear Risk Factors & Safety Gate
+    rf_eval = evaluate_risk_factors(
+        wave_height_m=weather.wave_height_m,
+        wind_speed_kmh=weather.wind_speed_kmh,
+        cape_j_kg=weather.cape_j_kg,
+        current_speed_ms=weather.ocean_current_velocity_ms,
+        nearest_zone_km=geofence.distance_nm * 1.852,
+        inside_zone=geofence.is_violation,
+    )
+    risk_factors_list = [RiskFactor(**f) for f in rf_eval["factors"]]
+
+    weather_obs_dt = None
+    if weather.evidence_ledger_entry:
+        try:
+            weather_obs_dt = datetime.fromisoformat(weather.evidence_ledger_entry.timestamp_utc)
+        except Exception:
+            pass
+
+    health_records = [
+        check_input_health("wave", weather_obs_dt, source=weather.provenance.source_dataset),
+        check_input_health("wind", weather_obs_dt, source=weather.provenance.source_dataset),
+        check_input_health("cyclone", weather_obs_dt, source="IMD Cyclone Bulletins"),
+        check_input_health("gis", None, source="UNCLOS / Survey of India"),
+    ]
+    gate_eval = evaluate_safety_gate(rf_eval, health_records, drill_override=get_active_drill())
+    safety_gate_decision = SafetyGateDecision(
+        state=gate_eval["state"],
+        confidence=gate_eval["confidence"],
+        headline=gate_eval["headline"],
+        reasons=gate_eval["reasons"],
+        blocking_inputs=gate_eval["blocking_inputs"],
+        stale_inputs=gate_eval["stale_inputs"],
+        risk_go=gate_eval["risk_go"],
+        drill=gate_eval["drill"],
+        timestamp=gate_eval["timestamp"],
+    )
+
+    # 7. Today Fisher Trip Plan
+    pfz_cand_dicts = []
+    if pfz_report and pfz_report.candidates:
+        for c in pfz_report.candidates:
+            pfz_cand_dicts.append({
+                "zone_id": c.zone_id,
+                "latitude": c.latitude,
+                "longitude": c.longitude,
+                "distance_km": c.distance_km,
+                "bearing_deg": c.bearing_deg,
+                "sst_c": c.sst_c,
+                "chlorophyll_mg_m3": c.chla_mg_m3,
+            })
+    trip_dict = plan_today_trip(
+        lat=harbour.lat,
+        lon=harbour.lon,
+        pfz_zones=pfz_cand_dicts,
+        wave_height_m=weather.wave_height_m,
+        wind_speed_kmh=weather.wind_speed_kmh,
+    )
+    econ = trip_dict.get("economics", {})
+    trip_plan_res = TripPlan(
+        best_departure_time=trip_dict["best_departure_time"],
+        return_by_time=trip_dict["return_by_time"],
+        hours_on_ground=trip_dict["hours_on_ground"],
+        safe_window_summary=trip_dict["safe_window_summary"],
+        target_ground_name=f"Zone {trip_dict['target_ground']['zone_id']}" if trip_dict.get("target_ground") else "Optimal Ground",
+        likely_species=trip_dict.get("likely_species", []),
+        fuel_litres=econ.get("fuel_litres"),
+        fuel_cost_inr=econ.get("fuel_cost_inr"),
+        revenue_inr=econ.get("revenue_inr"),
+        profit_inr=econ.get("profit_inr"),
+        assumptions=econ.get("assumptions"),
+    )
+
     return DashboardSummaryResponse(
         harbour=harbour,
         weather=weather,
@@ -543,6 +625,9 @@ async def get_dashboard_summary(
         pfz_data_mode=pfz_data_mode,
         satellite_timestamp=satellite_timestamp,
         weather_timestamp=weather_timestamp,
+        risk_factors=risk_factors_list,
+        safety_gate=safety_gate_decision,
+        trip_plan=trip_plan_res,
     )
 
 
@@ -779,6 +864,226 @@ async def chat_endpoint(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to process reasoning query at this time. Please try again later.",
         )
+
+
+# ==============================================================================
+# SIH 2026 WINNER INTEGRATION EXTENSION ROUTES
+# ==============================================================================
+
+@app.get(
+    "/api/v1/fishing",
+    summary="Today Fisher Trip Planner and Ranked Grounds",
+    tags=["Fishing"],
+)
+@limiter.limit("60/minute")
+async def get_fishing_outlook(
+    request: Request,
+    harbour_id: HarbourID = Query(HarbourID.RAMESWARAM, description="Target harbour"),
+    lat: Optional[float] = Query(None, description="Optional custom latitude"),
+    lon: Optional[float] = Query(None, description="Optional custom longitude"),
+    radius_km: float = Query(100.0, ge=5.0, le=150.0),
+    drill: Optional[str] = Query(None, pattern="^(healthy|stale|unavailable|recovery)$"),
+    current_user: UserSession = Depends(get_current_user),
+):
+    harbours = load_harbours_dict()
+    harbour = harbours.get(harbour_id.value)
+    target_lat = lat if lat is not None else (harbour.lat if harbour else 9.28)
+    target_lon = lon if lon is not None else (harbour.lon if harbour else 79.31)
+
+    # Concurrently fetch weather and PFZ candidates
+    weather, pfz_report = await asyncio.gather(
+        get_weather_marine_report(
+            lat=target_lat,
+            lon=target_lon,
+            harbour_id=harbour.id if harbour else "rameswaram",
+            harbour_name=harbour.name if harbour else "Rameswaram Fishing Jetty",
+            vessel_type=VesselType.COUNTRY_CRAFT,
+        ),
+        compute_pfz_zones(harbour_id=harbour.id if harbour else "rameswaram", max_candidates=5),
+    )
+
+    geofence = check_geofence(target_lon, target_lat)
+
+    # 1. Evaluate Risk Factors
+    rf_eval = evaluate_risk_factors(
+        wave_height_m=weather.wave_height_m,
+        wind_speed_kmh=weather.wind_speed_kmh,
+        cape_j_kg=weather.cape_j_kg,
+        current_speed_ms=weather.ocean_current_velocity_ms,
+        nearest_zone_km=geofence.distance_nm * 1.852,
+        inside_zone=geofence.is_violation,
+    )
+
+    # 2. Evaluate Telemetry Data Health & Safety Gate
+    obs_dt = None
+    if weather.evidence_ledger_entry:
+        try:
+            obs_dt = datetime.fromisoformat(weather.evidence_ledger_entry.timestamp_utc)
+        except Exception:
+            pass
+
+    health_records = [
+        check_input_health("wave", obs_dt, source=weather.provenance.source_dataset),
+        check_input_health("wind", obs_dt, source=weather.provenance.source_dataset),
+        check_input_health("cyclone", obs_dt, source="IMD Cyclone Bulletins"),
+        check_input_health("gis", None, source="UNCLOS / Survey of India"),
+    ]
+    gate_eval = evaluate_safety_gate(rf_eval, health_records, drill_override=drill or get_active_drill())
+
+    # 3. Plan Today Trip
+    cand_dicts = []
+    if pfz_report and pfz_report.candidates:
+        for c in pfz_report.candidates:
+            cand_dicts.append({
+                "zone_id": c.zone_id,
+                "latitude": c.latitude,
+                "longitude": c.longitude,
+                "distance_km": c.distance_km,
+                "bearing_deg": c.bearing_deg,
+                "sst_c": c.sst_c,
+                "chlorophyll_mg_m3": c.chla_mg_m3,
+            })
+    trip_dict = plan_today_trip(
+        lat=target_lat,
+        lon=target_lon,
+        pfz_zones=cand_dicts,
+        wave_height_m=weather.wave_height_m,
+        wind_speed_kmh=weather.wind_speed_kmh,
+    )
+
+    return {
+        "harbour_id": harbour.id if harbour else harbour_id.value,
+        "latitude": target_lat,
+        "longitude": target_lon,
+        "weather": weather.model_dump(),
+        "geofence": geofence.model_dump(),
+        "risk": rf_eval,
+        "safety_gate": gate_eval,
+        "trip_plan": trip_dict,
+    }
+
+
+@app.get(
+    "/api/v1/risk/timeline",
+    summary="24-Hour Sea-State & Risk Timeline",
+    tags=["Risk"],
+)
+@limiter.limit("60/minute")
+async def get_risk_timeline(
+    request: Request,
+    harbour_id: HarbourID = Query(HarbourID.RAMESWARAM, description="Target harbour"),
+    lat: Optional[float] = Query(None, description="Optional custom latitude"),
+    lon: Optional[float] = Query(None, description="Optional custom longitude"),
+    hours: int = Query(24, ge=1, le=48),
+    current_user: UserSession = Depends(get_current_user),
+):
+    harbours = load_harbours_dict()
+    harbour = harbours.get(harbour_id.value)
+    target_lat = lat if lat is not None else (harbour.lat if harbour else 9.28)
+    target_lon = lon if lon is not None else (harbour.lon if harbour else 79.31)
+
+    now = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+    base_marine = get_fallback_marine_and_weather(target_lat, target_lon)
+    base_wave = base_marine["wave_height_m"]
+    base_wind = base_marine["wind_speed_kmh"]
+
+    points = []
+    for h in range(hours):
+        dt = now + timedelta(hours=h)
+        hour_val = dt.hour
+        # Diurnal coastal modulation: afternoon sea breeze and slight swell peak
+        diurnal_factor = 1.0 + 0.25 * math.sin((hour_val - 6) * math.pi / 12.0)
+        h_wave = round(max(0.4, base_wave * (0.85 + 0.3 * math.sin((hour_val - 4) * math.pi / 12.0))), 2)
+        h_wind = round(max(5.0, base_wind * diurnal_factor), 1)
+
+        rf = evaluate_risk_factors(
+            wave_height_m=h_wave,
+            wind_speed_kmh=h_wind,
+            cape_j_kg=base_marine.get("cape_j_kg", 200.0),
+        )
+        points.append({
+            "time": dt.isoformat(),
+            "hour": hour_val,
+            "score": rf["score"],
+            "category": rf["category"],
+            "wave_height_m": h_wave,
+            "wind_speed_kmh": h_wind,
+            "warning": rf["score"] >= 70,
+        })
+
+    return {
+        "harbour_id": harbour.id if harbour else harbour_id.value,
+        "latitude": target_lat,
+        "longitude": target_lon,
+        "points": points,
+    }
+
+
+@app.get(
+    "/api/v1/field",
+    summary="Vector grid for ocean current and wind flow animations",
+    tags=["Field"],
+)
+@limiter.limit("60/minute")
+async def get_vector_field(
+    request: Request,
+    min_lat: float = Query(7.0, ge=4.0, le=30.0),
+    max_lat: float = Query(24.0, ge=4.0, le=30.0),
+    min_lon: float = Query(67.0, ge=60.0, le=95.0),
+    max_lon: float = Query(90.0, ge=60.0, le=95.0),
+    nx: int = Query(8, ge=3, le=20),
+    ny: int = Query(8, ge=3, le=20),
+    current_user: UserSession = Depends(get_current_user),
+):
+    lats = [min_lat + (max_lat - min_lat) * j / max(1, ny - 1) for j in range(ny)]
+    lons = [min_lon + (max_lon - min_lon) * i / max(1, nx - 1) for i in range(nx)]
+
+    grid = []
+    for la in lats:
+        for lo in lons:
+            u_current = round(0.35 * math.cos(math.radians(la * 5)), 2)
+            v_current = round(0.20 * math.sin(math.radians(lo * 4)), 2)
+            u_wind = round(-12.0 + 4.0 * math.sin(math.radians(la)), 1)
+            v_wind = round(8.0 + 3.0 * math.cos(math.radians(lo)), 1)
+            sst = round(28.0 - (la - 8.0) * 0.15, 1)
+
+            grid.append({
+                "latitude": round(la, 3),
+                "longitude": round(lo, 3),
+                "u_wind_kmh": u_wind,
+                "v_wind_kmh": v_wind,
+                "u_current_ms": u_current,
+                "v_current_ms": v_current,
+                "sst_c": sst,
+            })
+
+    return {
+        "nx": nx,
+        "ny": ny,
+        "bounds": [min_lat, min_lon, max_lat, max_lon],
+        "points": grid,
+    }
+
+
+@app.get("/api/v1/config/data-health", summary="Get active data health drill mode", tags=["Data Health"])
+async def get_data_health_config(request: Request, current_user: UserSession = Depends(get_current_user)):
+    return {
+        "active_drill": get_active_drill(),
+        "available_drills": ["healthy", "stale", "unavailable", "recovery"],
+    }
+
+
+@app.post("/api/v1/config/data-health", summary="Set data health drill mode", tags=["Data Health"])
+async def set_data_health_config(
+    request: Request,
+    drill: str = Query(..., pattern="^(healthy|stale|unavailable|recovery)$"),
+    current_user: UserSession = Depends(get_current_user),
+):
+    new_drill = set_active_drill(drill)
+    return {
+        "status": "updated",
+        "active_drill": new_drill,
+    }
 
 
 # ==============================================================================

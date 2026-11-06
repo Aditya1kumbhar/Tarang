@@ -169,6 +169,68 @@ class ProductivityDiagnosis(BaseModel):
     remediation_outlook: str
     provenance: ProvenanceMetadata
 
+class RiskFactor(BaseModel):
+    key: str
+    label: str
+    factor: float
+    weight: float
+    contribution: float
+    detail: str
+
+class DataHealth(BaseModel):
+    input: str
+    label: str
+    source: str
+    feed: str
+    status: str  # FRESH, STALE, MISSING, ERROR
+    age_seconds: Optional[int] = None
+    freshness_limit_seconds: Optional[int] = None
+    max_age_seconds: Optional[int] = None
+    usable: bool = True
+    critical: bool = True
+    detail: Optional[str] = None
+    available: bool = True
+    observed_at: Optional[str] = None
+
+class SafetyGateDecision(BaseModel):
+    state: str  # GO, CAUTION, INSUFFICIENT_DATA, NO_GO
+    confidence: str  # normal, degraded, insufficient
+    headline: str
+    reasons: List[str] = Field(default_factory=list)
+    blocking_inputs: List[str] = Field(default_factory=list)
+    stale_inputs: List[str] = Field(default_factory=list)
+    risk_go: Optional[bool] = None
+    drill: str = "healthy"
+    timestamp: Optional[str] = None
+
+class SpeciesPrediction(BaseModel):
+    name: str
+    scientific_name: Optional[str] = None
+    probability_pct: int = 0
+    habitat_note: Optional[str] = None
+
+class TripPlan(BaseModel):
+    best_departure_time: str
+    return_by_time: str
+    hours_on_ground: float
+    safe_window_summary: str
+    target_ground_name: Optional[str] = None
+    likely_species: List[str] = Field(default_factory=list)
+    fuel_litres: Optional[int] = None
+    fuel_cost_inr: Optional[int] = None
+    revenue_inr: Optional[int] = None
+    profit_inr: Optional[int] = None
+    assumptions: Optional[str] = None
+
+class HourlyRiskPoint(BaseModel):
+    time: str
+    hour: int
+    score: int
+    category: str
+    wave_height_m: Optional[float] = None
+    wind_speed_kmh: Optional[float] = None
+    warning: bool = False
+
 class AgentTrace(BaseModel):
     agent_name: str
     task_description: str
@@ -206,6 +268,9 @@ class ChatResponse(BaseModel):
     pfz_data_mode: Optional[str] = Field("LIVE_SATELLITE", description="PFZ data mode: LIVE_SATELLITE or FALLBACK_SNAPSHOT")
     satellite_timestamp: Optional[str] = Field(None, description="NOAA satellite pass timestamp if live")
     weather_timestamp: Optional[str] = Field(None, description="Open-Meteo observation timestamp")
+    risk_factors: Optional[List[RiskFactor]] = Field(default=None, description="Piecewise-linear factor breakdown")
+    safety_gate: Optional[SafetyGateDecision] = Field(default=None, description="Data-sufficiency safety gate decision")
+    trip_plan: Optional[TripPlan] = Field(default=None, description="Today Fisher trip plan with departure & return window")
 
 class DashboardSummaryResponse(BaseModel):
     harbour: HarbourInfo
@@ -219,6 +284,9 @@ class DashboardSummaryResponse(BaseModel):
     pfz_data_mode: Optional[str] = Field("LIVE_SATELLITE", description="PFZ data mode")
     satellite_timestamp: Optional[str] = Field(None, description="NOAA satellite pass timestamp")
     weather_timestamp: Optional[str] = Field(None, description="Open-Meteo timestamp")
+    risk_factors: Optional[List[RiskFactor]] = Field(default=None, description="Piecewise-linear factor breakdown")
+    safety_gate: Optional[SafetyGateDecision] = Field(default=None, description="Data-sufficiency safety gate decision")
+    trip_plan: Optional[TripPlan] = Field(default=None, description="Today Fisher trip plan")
 
 class DistrictHarbourSummary(BaseModel):
     harbour_id: str

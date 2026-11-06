@@ -17,7 +17,10 @@ from backend.schemas.models import (
     PFZReport,
     ProductivityDiagnosis,
     ProvenanceMetadata,
+    RiskFactor,
+    SafetyGateDecision,
     SafetyLevel,
+    TripPlan,
     VesselType,
     WeatherHazardReport,
 )
@@ -71,3 +74,6 @@ class OrchestratorState(BaseModel):
     map_payload: Dict[str, Any] = Field(
         default_factory=lambda: {"type": "FeatureCollection", "features": []}
     )
+    risk_factors: Optional[List[RiskFactor]] = None
+    safety_gate: Optional[SafetyGateDecision] = None
+    trip_plan: Optional[TripPlan] = None

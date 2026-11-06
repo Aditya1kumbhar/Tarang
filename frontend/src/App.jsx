@@ -3,6 +3,9 @@ import MarineMap from './components/MarineMap';
 import ChatPanel from './components/ChatPanel';
 import SafetyAlertBanner from './components/SafetyAlertBanner';
 import DistrictAuthorityBoard from './components/DistrictAuthorityBoard';
+import FisherPhoneView from './components/FisherPhoneView';
+import DataDrillBar from './components/DataDrillBar';
+import HourlyTimeline from './components/HourlyTimeline';
 import LoginPage from './components/LoginPage';
 import {
   Compass,
@@ -14,6 +17,7 @@ import {
   ShieldAlert,
   Anchor,
   Building2,
+  Smartphone,
   Sun,
   Moon,
   LogOut,
@@ -27,7 +31,10 @@ export default function App() {
   const [harbours, setHarbours] = useState([]);
   const [selectedHarbour, setSelectedHarbour] = useState(null);
   const [vesselType, setVesselType] = useState('country_craft');
-  const [personaMode, setPersonaMode] = useState('fisher'); // 'fisher' | 'district'
+  
+  // URL ?m=1 detection for direct phone HUD mode
+  const isMobileParam = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('m') === '1';
+  const [personaMode, setPersonaMode] = useState(isMobileParam ? 'phone' : 'fisher'); // 'fisher' | 'phone' | 'district'
   const [mobileTab, setMobileTab] = useState('map'); // 'map' | 'chat' (phone responsive navigation)
   const [themeMode, setThemeMode] = useState('ocean'); // 'ocean' (dark) | 'chart' (light)
 
@@ -204,7 +211,7 @@ export default function App() {
 
     try {
       const abortController = new AbortController();
-      const timeoutId = setTimeout(() => abortController.abort(), 25000);
+      const timeoutId = setTimeout(() => abortController.abort(), 45000);
 
       let res;
       try {
@@ -374,6 +381,21 @@ export default function App() {
             </button>
             <button
               type="button"
+              onClick={() => setPersonaMode('phone')}
+              className={`px-3.5 py-1 rounded-full text-xs font-medium tracking-[-0.01em] transition-all flex items-center gap-1.5 active:scale-[0.96] ${
+                personaMode === 'phone'
+                  ? (themeMode === 'chart'
+                      ? 'bg-white text-[#1D1D1F] shadow-xs'
+                      : 'bg-white/15 text-white shadow-[0_2px_8px_rgba(0,0,0,0.5)] border border-white/20')
+                  : 'text-[#86868b] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white'
+              }`}
+              title="Dedicated high-contrast Fisher Phone HUD mode (?m=1)"
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>Phone HUD</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setPersonaMode('district')}
               className={`px-3.5 py-1 rounded-full text-xs font-medium tracking-[-0.01em] transition-all flex items-center gap-1.5 active:scale-[0.96] ${
                 personaMode === 'district'
@@ -418,6 +440,12 @@ export default function App() {
               </div>
             </div>
           )}
+
+          {/* Data Health Telemetry Drill Bar */}
+          <DataDrillBar
+            onDrillChange={() => fetchDashboardSummary(selectedHarbour?.id, vesselType)}
+            themeMode={themeMode}
+          />
 
           {/* Luminous High Dynamic Range Breaker Status Indicator */}
           <div
@@ -508,7 +536,19 @@ export default function App() {
       />
 
       {/* 3. Main Persona View */}
-      {personaMode === 'district' ? (
+      {personaMode === 'phone' ? (
+        <div className="flex-1 overflow-hidden relative flex flex-col">
+          <FisherPhoneView
+            selectedHarbour={selectedHarbour}
+            vesselType={vesselType}
+            harbours={harbours}
+            onSelectHarbour={(h) => setSelectedHarbour(h)}
+            onSelectVessel={(v) => setVesselType(v)}
+            onSwitchToDesktop={() => setPersonaMode('fisher')}
+            themeMode={themeMode}
+          />
+        </div>
+      ) : personaMode === 'district' ? (
         <div className="flex-1 overflow-hidden relative">
           <DistrictAuthorityBoard
             vesselType={vesselType}
@@ -567,6 +607,21 @@ export default function App() {
             : 'bg-black/85 border-white/[0.08] text-white shadow-[0_-10px_30px_rgba(0,0,0,0.8)]'
         }`}
       >
+        <button
+          type="button"
+          onClick={() => {
+            setPersonaMode('phone');
+          }}
+          className={`flex-1 py-1.5 px-2 rounded-xl min-h-[48px] flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition active:scale-[0.96] ${
+            personaMode === 'phone'
+              ? (themeMode === 'chart' ? 'text-[#0071e3] bg-black/[0.05]' : 'text-[#2997FF] bg-white/[0.1] shadow-xs border border-white/10')
+              : 'text-[#86868b] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-white'
+          }`}
+        >
+          <Smartphone className="w-4 h-4" />
+          <span>Phone HUD</span>
+        </button>
+
         <button
           type="button"
           onClick={() => {
