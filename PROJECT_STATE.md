@@ -120,3 +120,11 @@
 ## 4. Next Steps
 - Maintain continuous test verification (`pytest tests/test_tools.py tests/test_api.py -v`).
 - Keep `PROJECT_STATE.md` updated in place after every file addition or task completion.
+
+## 2026-11-07 verdict guard and live-data unstick
+- Package A unified the synthesis prompt verdict vocabulary to exclusively use the risk word and added Rule 9 to system instructions.
+- Package B introduced deterministic verdict consistency guard `_verdict_guard_ok` rejecting mismatched LLM synthesis outputs and safely falling back.
+- Package C decoupled live weather and satellite PFZ warming into independent bounded legs inside `warm_harbour`.
+- Package C also raised the periodic background cache warming budget to 20.0s and added stale-while-revalidate auto-healing on read for fallback entries.
+- Package D introduced automated test coverage across `tests/test_verdict_guard.py` and `tests/test_marine_cache_legs.py` (11 new tests, 106 total).
+
