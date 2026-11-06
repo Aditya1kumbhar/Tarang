@@ -40,6 +40,9 @@ from backend.tools.weather_marine_tool import (
 
 logger = logging.getLogger("orca_marine_cache")
 
+PFZ_WARM_BUDGET_SECONDS = 25.0
+FALLBACK_REFRESH_MIN_AGE_SECONDS = 120.0
+
 
 @dataclass
 class HarbourCacheEntry:
@@ -69,6 +72,7 @@ class MarineDataCache:
         self._lock = asyncio.Lock()
         self._bg_tasks: List[asyncio.Task] = []
         self._is_warmed: bool = False
+        self._refresh_inflight: set = set()
 
     def is_warmed(self) -> bool:
         return self._is_warmed
@@ -200,18 +204,29 @@ class MarineDataCache:
             )
             pfz_task = compute_pfz_zones(harbour_id=harbour.id, max_candidates=3)
 
-            # Parallel bounded fetch across upstreams
-            results = await asyncio.wait_for(
+            # Independent bounded legs: a slow satellite (PFZ) fetch must not
+            # discard good live weather, and a weather failure must not block PFZ.
+            async def _bounded_leg(coro, budget):
+                try:
+                    return await asyncio.wait_for(coro, timeout=budget)
+                except Exception as leg_err:
+                    return leg_err
+
+            weather_results = await _bounded_leg(
                 asyncio.gather(
                     weather_task_cc,
                     weather_task_trawler,
-                    pfz_task,
                     return_exceptions=True,
                 ),
-                timeout=timeout,
+                timeout,
             )
+            if isinstance(weather_results, (list, tuple)):
+                res_cc, res_tr = weather_results
+            else:
+                res_cc = weather_results
+                res_tr = weather_results
 
-            res_cc, res_tr, res_pfz = results
+            res_pfz = await _bounded_leg(pfz_task, PFZ_WARM_BUDGET_SECONDS)
 
             # Determine existing entry or fallback baseline
             existing = self.get_entry(harbour.id)
@@ -330,6 +345,30 @@ class MarineDataCache:
         """
         entry = self.get_entry(harbour.id)
         if entry is not None and len(entry.weather_by_vessel) > 0 and entry.pfz_report is not None:
+            # Stale-while-revalidate: a fallback entry older than the minimum
+            # age schedules ONE background refresh and is served immediately,
+            # so fallback data can heal without blocking the caller.
+            is_fallback = (
+                entry.weather_data_mode == "FALLBACK_SNAPSHOT"
+                or entry.pfz_data_mode == "FALLBACK_SNAPSHOT"
+            )
+            age_seconds = (datetime.now(timezone.utc) - entry.fetched_at).total_seconds()
+            key = harbour.id.lower()
+            if is_fallback and age_seconds > FALLBACK_REFRESH_MIN_AGE_SECONDS and key not in self._refresh_inflight:
+                self._refresh_inflight.add(key)
+
+                async def _bg_refresh(h=harbour, k=key):
+                    try:
+                        await self.warm_harbour(h, timeout=20.0)
+                    except Exception:
+                        pass
+                    finally:
+                        self._refresh_inflight.discard(k)
+
+                try:
+                    asyncio.create_task(_bg_refresh())
+                except RuntimeError:
+                    self._refresh_inflight.discard(key)
             return entry
 
         logger.info("Cache miss for harbour '%s'; triggering bounded refresh (max %.1fs)...", harbour.id, max_refresh_timeout)
@@ -360,7 +399,7 @@ class MarineDataCache:
                 try:
                     await asyncio.sleep(600)
                     logger.info("Running 10-minute periodic weather cache refresh for all harbours...")
-                    await self.warm_all_harbours(timeout_per_harbour=8.0)
+                    await self.warm_all_harbours(timeout_per_harbour=20.0)
                 except asyncio.CancelledError:
                     break
                 except Exception as e:
