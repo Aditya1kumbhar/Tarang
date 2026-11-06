@@ -8,7 +8,7 @@
 
 ## 1. System Overview & Final Architecture
 
-**ORCA (Marine EcOsystem Reasoning with Collaborative Agents)** has been fully implemented, tested, and validated in an end-to-end production environment for **SIH 2026 Problem Statement ID 26176 (SIH26176)**.
+**ORCA (Marine EcOsystem Reasoning with Collaborative Agents)** has been fully implemented, tested, and validated in an end-to-end production environment for autonomous marine intelligence and fisher decision support.
 
 The system features:
 1. **Deterministic Domain Engines:**
@@ -47,7 +47,7 @@ The system features:
     - SST / Chl-a / Sobel thermal gradient PFZ scoring formula.
     - Marine heatwave, HAB hypoxia, and cyclone turbidity diagnostics.
   - 12 FastAPI Multi-Agent Integration Tests:
-    - All 8 SIH evaluation queries verified end-to-end.
+    - All 8 core evaluation queries verified end-to-end.
 
 ### B. End-to-End Browser Subagent Verification
 - **Session Recording:** `orca_e2e_verify_1792425645861.webp`

@@ -11,7 +11,7 @@
 
 ---
 
-# GEMINI.md — ORCA: Marine EcOsystem Reasoning with Collaborative Agents (SIH 2026 Problem Statement ID 26176 / SIH26176)
+# GEMINI.md — ORCA: Marine EcOsystem Reasoning with Collaborative Agents
 
 ## 1. SYSTEM IDENTITY & CORE OBJECTIVE
 You are building **ORCA (Marine EcOsystem Reasoning with Collaborative Agents)**, an enterprise-grade, real-world Agentic AI Marine Intelligence Platform for Indian fishermen, coastal authorities, researchers, and disaster managers.
@@ -66,7 +66,7 @@ orca-agentic-marine/
 │       │   └── SafetyAlertBanner.jsx  # High-visibility Red/Amber maritime advisory & geofence alert header
 └── tests/
     ├── test_tools.py                  # Deterministic unit tests for PFZ math, geofencing, and A* routing
-    └── test_api.py                    # End-to-end FastAPI test suite covering all 8 SIH problem statement queries
+    └── test_api.py                    # End-to-end FastAPI test suite covering all 8 core operational queries
 ```
 
 ---
@@ -166,16 +166,16 @@ Implement a coordinated multi-agent workflow with full execution telemetry:
 * `POST /api/v1/chat` (Multi-turn conversational agent query)
 * `GET /api/v1/harbours` (List harbours & live status)
 * `GET /api/v1/dashboard-summary?harbour_id=...` (Immediate PFZ + Weather + Geofence snapshot)
-* Write and run `tests/test_api.py` testing all 8 SIH problem statement sample queries.
+* Write and run `tests/test_api.py` testing all 8 core operational benchmark queries.
 
 ### Phase 4: Interactive Marine GIS Frontend & Agent Reasoning Inspector
 * Build the React + TailwindCSS + Leaflet/MapLibre dashboard in `frontend/`.
 * Include:
 1. **Interactive Ocean Map:** Shows Harbour marker, top PFZ polygons (green/gold), A* safe vessel route (cyan dashed line with directional arrows), IMBL border (red solid line with 5 NM amber buffer), and MPA zones (purple shaded polygons).
-2. **Conversational Agent Panel:** Pre-loaded 1-click chips for all 8 SIH benchmark queries, language selector (English, தமிழ், മലയാളம், తెలుగు, मराठी, हिन्दी), and Voice Mic/Speaker toggle (Web Speech API).
+2. **Conversational Agent Panel:** Pre-loaded 1-click chips for all 8 core benchmark queries, language selector (English, தமிழ், മലയാളம், తెలుగు, मराठी, हिन्दी), and Voice Mic/Speaker toggle (Web Speech API).
 3. **Collaborative Agent Trace Inspector:** Visualizes the live DAG execution (`Planner -> [Ocean Agent | Weather Agent | Geospatial Agent] -> Circuit Breaker -> Synthesizer`) with timestamps, confidence scores, and raw dataset citations.
 4. **Proactive Safety & Geofence Alert Bar:** Flashes Red/Amber warnings when approaching IMBL/MPA boundaries or during high wave/lightning alerts.
 
 ### Phase 5: End-to-End Integration, Browser Verification & Walkthrough Artifact
 * Start backend (`uvicorn backend.main:app --port 8000`) and frontend (`npm run dev`).
-* Verify all 8 SIH user queries render live map layers, safety banners, and explainable reasoning traces.
+* Verify all 8 core user queries render live map layers, safety banners, and explainable reasoning traces.

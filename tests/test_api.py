@@ -1,6 +1,6 @@
 """
 End-to-End Multi-Agent Integration Test Suite for ORCA.
-Benchmarks all 8 official SIH 2026 Problem Statement ID 26176 (SIH26176) evaluation queries:
+Benchmarks all 8 core operational evaluation queries:
 1. Where is the nearest Potential Fishing Zone (PFZ) today?
 2. Is it safe to venture into the sea tomorrow morning?
 3. What are the tide, weather, and sea conditions near my fishing location?
@@ -89,12 +89,12 @@ def test_dashboard_summary_invalid_harbour():
 
 
 # ==============================================================================
-# 8 OFFICIAL SIH 2026 PROBLEM STATEMENT (ID 26176) QUERY TESTS
+# 8 CORE OPERATIONAL QUERY TESTS
 # ==============================================================================
 
-def test_sih_official_query_1_pfz_discovery():
+def test_core_query_1_pfz_discovery():
     """
-    Official Query 1: Nearest Potential Fishing Zone (PFZ) Today
+    Core Query 1: Nearest Potential Fishing Zone (PFZ) Today
     Verbatim prompt: 'Where is the nearest Potential Fishing Zone (PFZ) today?'
     """
     payload = {
@@ -123,9 +123,9 @@ def test_sih_official_query_1_pfz_discovery():
     assert "SynthesisExplainabilityAgent" in agent_names
 
 
-def test_sih_official_query_2_safety_venture_tomorrow():
+def test_core_query_2_safety_venture_tomorrow():
     """
-    Official Query 2: Sea-Venture Safety Clearance Tomorrow Morning
+    Core Query 2: Sea-Venture Safety Clearance Tomorrow Morning
     Verbatim prompt: 'Is it safe to venture into the sea tomorrow morning?'
     """
     payload = {
@@ -147,9 +147,9 @@ def test_sih_official_query_2_safety_venture_tomorrow():
     assert "SafetyCircuitBreaker" in traces
 
 
-def test_sih_official_query_3_tide_weather_sea_conditions():
+def test_core_query_3_tide_weather_sea_conditions():
     """
-    Official Query 3: Tide, Weather, and Sea State Conditions Near Fishing Location
+    Core Query 3: Tide, Weather, and Sea State Conditions Near Fishing Location
     Verbatim prompt: 'What are the tide, weather, and sea conditions near my fishing location?'
     Pipeline: PlannerAgent -> WeatherHazardAgent (wave height, wind speed, gusts, swell period/dir, currents).
     """
@@ -183,9 +183,9 @@ def test_sih_official_query_3_tide_weather_sea_conditions():
     assert "SynthesisExplainabilityAgent" in agent_names
 
 
-def test_sih_official_query_4_lightning_or_cyclone_alerts():
+def test_core_query_4_lightning_or_cyclone_alerts():
     """
-    Official Query 4: Lightning and Cyclone Alerts Assessment
+    Core Query 4: Lightning and Cyclone Alerts Assessment
     Verbatim prompt: 'Are there any lightning or cyclone alerts in my area?'
     Pipeline: PlannerAgent -> WeatherHazardAgent evaluating CAPE convective energy & cyclone triggers.
     """
@@ -209,9 +209,9 @@ def test_sih_official_query_4_lightning_or_cyclone_alerts():
     assert "SafetyCircuitBreaker" in traces
 
 
-def test_sih_official_query_5_chlorophyll_and_sst_regions():
+def test_core_query_5_chlorophyll_and_sst_regions():
     """
-    Official Query 5: High Chlorophyll Concentration & Favourable Sea Surface Temperature Regions
+    Core Query 5: High Chlorophyll Concentration & Favourable Sea Surface Temperature Regions
     Verbatim prompt: 'Which regions show high chlorophyll concentration and favourable sea surface temperature?'
     Pipeline: PlannerAgent -> OceanAnalyticsAgent evaluating thermal fronts & bio-optical chlorophyll-a.
     """
@@ -242,9 +242,9 @@ def test_sih_official_query_5_chlorophyll_and_sst_regions():
     assert "SynthesisExplainabilityAgent" in traces
 
 
-def test_sih_official_query_6_safest_vessel_route():
+def test_core_query_6_safest_vessel_route():
     """
-    Official Query 6: A* Wave-Aware Safe Maritime Pathfinding
+    Core Query 6: A* Wave-Aware Safe Maritime Pathfinding
     Verbatim prompt: 'What is the safest route for a fishing vessel considering weather and sea-state conditions?'
     """
     payload = {
@@ -271,9 +271,9 @@ def test_sih_official_query_6_safest_vessel_route():
     assert len(geom["coordinates"]) >= 2
 
 
-def test_sih_official_query_7_productivity_decline():
+def test_core_query_7_productivity_decline():
     """
-    Official Query 7: Marine Ecosystem Reasoning & Productivity Decline Diagnosis
+    Core Query 7: Marine Ecosystem Reasoning & Productivity Decline Diagnosis
     Verbatim prompt: 'Why has fish productivity declined in a particular coastal region?'
     """
     payload = {
@@ -295,9 +295,9 @@ def test_sih_official_query_7_productivity_decline():
     assert "ProductivityDiagnosticAgent" in traces
 
 
-def test_sih_official_query_8_hazardous_or_geofenced_zones():
+def test_core_query_8_hazardous_or_geofenced_zones():
     """
-    Official Query 8: Avoided Zones (Hazardous Conditions or Geofencing Restrictions)
+    Core Query 8: Avoided Zones (Hazardous Conditions or Geofencing Restrictions)
     Verbatim prompt: 'Which fishing zones should be avoided due to hazardous marine conditions or geofencing restrictions?'
     Pipeline: PlannerAgent -> GeospatialNavigationAgent + WeatherHazardAgent.
     """
@@ -440,15 +440,15 @@ def test_extended_scenario_multilingual_tamil_query():
     assert len(data["map_payload"]["features"]) >= 1
 
 
-# Backward compatibility aliases for historical test runners
-test_sih_query_1_pfz_discovery_rameswaram = test_sih_official_query_1_pfz_discovery
-test_sih_query_2_country_craft_safety_kochi = test_sih_official_query_2_safety_venture_tomorrow
-test_sih_query_3_mechanized_trawler_differential_veraval = test_extended_scenario_mechanized_trawler_differential_veraval
-test_sih_query_4_imbl_proximity_and_circuit_breaker = test_extended_scenario_imbl_proximity_and_circuit_breaker
-test_sih_query_5_mpa_exclusion = test_extended_scenario_mpa_exclusion
-test_sih_query_6_safe_routing_chennai = test_sih_official_query_6_safest_vessel_route
-test_sih_query_7_productivity_decline_mangaluru = test_sih_official_query_7_productivity_decline
-test_sih_query_8_multilingual_tamil_query = test_extended_scenario_multilingual_tamil_query
+# Aliases for canonical operational queries
+test_query_1_pfz_discovery_rameswaram = test_core_query_1_pfz_discovery
+test_query_2_country_craft_safety_kochi = test_core_query_2_safety_venture_tomorrow
+test_query_3_mechanized_trawler_differential_veraval = test_extended_scenario_mechanized_trawler_differential_veraval
+test_query_4_imbl_proximity_and_circuit_breaker = test_extended_scenario_imbl_proximity_and_circuit_breaker
+test_query_5_mpa_exclusion = test_extended_scenario_mpa_exclusion
+test_query_6_safe_routing_chennai = test_core_query_6_safest_vessel_route
+test_query_7_productivity_decline_mangaluru = test_core_query_7_productivity_decline
+test_query_8_multilingual_tamil_query = test_extended_scenario_multilingual_tamil_query
 
 
 def test_district_board_endpoint():

@@ -1,8 +1,7 @@
 # ORCA Marine EcOsystem Reasoning with Collaborative Agents
-### Smart India Hackathon (SIH 2026), Software Edition
-- **Problem Statement:** Problem Statement ID 26176 (SIH26176)
+### Autonomous Marine Intelligence & Decision-Support Platform
 - **Organization:** Indian Space Research Organisation (ISRO), Department of Space
-- **Theme:** Miscellaneous
+- **Focus:** Marine Intelligence, Fisher Decision Support & Coastal Disaster Management
 - **Product Tagline:** Autonomous Marine Intelligence & Decision-Support Platform for Indian Fisheries, Coastal Authorities, and Disaster Management
 
 ---
@@ -48,20 +47,20 @@ SynthesisExplainabilityAgent (Native Indic Synthesis + Evidence Citations + GeoJ
 
 ---
 
-## 3. SIH Problem Statement Query Coverage
+## 3. Core Marine Intelligence Operational Queries
 
-ORCA directly benchmarks and solves all 8 official queries quoted verbatim from SIH 2026 Problem Statement ID 26176 (SIH26176):
+ORCA directly benchmarks and solves all 8 canonical operational queries for coastal decision-support:
 
-| # | Official Benchmark Query | Specialist Pipeline & Action | Verification Test |
+| # | Operational Advisory Query | Specialist Pipeline & Action | Verification Test |
 |---|---|---|---|
-| **Q1** | *Where is the nearest Potential Fishing Zone (PFZ) today?* | PlannerAgent -> OceanAnalyticsAgent (`compute_pfz_zones` thermal gradient $\nabla SST \ge 0.15^\circ\text{C/km}$ + Chl-a $0.4-3.0\text{ mg/m}^3$) + GeospatialNavigationAgent geofence quarantine. | `test_sih_official_query_1_pfz_discovery` |
-| **Q2** | *Is it safe to venture into the sea tomorrow morning?* | PlannerAgent -> WeatherHazardAgent (`get_weather_marine_report` checking vessel wave, wind, swell, and CAPE thresholds) + SafetyCircuitBreaker. | `test_sih_official_query_2_safety_venture_tomorrow` |
-| **Q3** | *What are the tide, weather, and sea conditions near my fishing location?* | PlannerAgent -> WeatherHazardAgent (Open-Meteo marine and weather APIs querying wave height, swell period/dir, wind speed/gusts, tidal drift currents). | `test_sih_official_query_3_tide_weather_sea_conditions` |
-| **Q4** | *Are there any lightning or cyclone alerts in my area?* | PlannerAgent -> WeatherHazardAgent (CAPE convective potential energy lightning assessment, cyclonic swell surge detection, and safety alert state). | `test_sih_official_query_4_lightning_or_cyclone_alerts` |
-| **Q5** | *Which regions show high chlorophyll concentration and favourable sea surface temperature?* | PlannerAgent -> OceanAnalyticsAgent (Biophysical PFZ ranking evaluating optimal SST $25.5-29.2^\circ\text{C}$ and chlorophyll-a concentrations). | `test_sih_official_query_5_chlorophyll_and_sst_regions` |
-| **Q6** | *What is the safest route for a fishing vessel considering weather and sea-state conditions?* | PlannerAgent -> GeospatialNavigationAgent (`compute_astar_route` wave-weighted A* pathfinder on 0.05° grid avoiding rough waters, land, and MPAs). | `test_sih_official_query_6_safest_vessel_route` |
-| **Q7** | *Why has fish productivity declined in a particular coastal region?* | PlannerAgent -> ProductivityDiagnosticAgent (`diagnose_productivity_decline` diagnosing Marine Heatwave thermal stratification, HAB hypoxia, or turbidity). | `test_sih_official_query_7_productivity_decline` |
-| **Q8** | *Which fishing zones should be avoided due to hazardous marine conditions or geofencing restrictions?* | PlannerAgent -> GeospatialNavigationAgent (`evaluate_geofence` against IMBL boundaries and MPA polygons) + WeatherHazardAgent hazardous sea quarantine. | `test_sih_official_query_8_hazardous_or_geofenced_zones` |
+| **Q1** | *Where is the nearest Potential Fishing Zone (PFZ) today?* | PlannerAgent -> OceanAnalyticsAgent (`compute_pfz_zones` thermal gradient $\nabla SST \ge 0.15^\circ\text{C/km}$ + Chl-a $0.4-3.0\text{ mg/m}^3$) + GeospatialNavigationAgent geofence quarantine. | `test_core_query_1_pfz_discovery` |
+| **Q2** | *Is it safe to venture into the sea tomorrow morning?* | PlannerAgent -> WeatherHazardAgent (`get_weather_marine_report` checking vessel wave, wind, swell, and CAPE thresholds) + SafetyCircuitBreaker. | `test_core_query_2_safety_venture_tomorrow` |
+| **Q3** | *What are the tide, weather, and sea conditions near my fishing location?* | PlannerAgent -> WeatherHazardAgent (Open-Meteo marine and weather APIs querying wave height, swell period/dir, wind speed/gusts, tidal drift currents). | `test_core_query_3_tide_weather_sea_conditions` |
+| **Q4** | *Are there any lightning or cyclone alerts in my area?* | PlannerAgent -> WeatherHazardAgent (CAPE convective potential energy lightning assessment, cyclonic swell surge detection, and safety alert state). | `test_core_query_4_lightning_or_cyclone_alerts` |
+| **Q5** | *Which regions show high chlorophyll concentration and favourable sea surface temperature?* | PlannerAgent -> OceanAnalyticsAgent (Biophysical PFZ ranking evaluating optimal SST $25.5-29.2^\circ\text{C}$ and chlorophyll-a concentrations). | `test_core_query_5_chlorophyll_and_sst_regions` |
+| **Q6** | *What is the safest route for a fishing vessel considering weather and sea-state conditions?* | PlannerAgent -> GeospatialNavigationAgent (`compute_astar_route` wave-weighted A* pathfinder on 0.05° grid avoiding rough waters, land, and MPAs). | `test_core_query_6_safest_vessel_route` |
+| **Q7** | *Why has fish productivity declined in a particular coastal region?* | PlannerAgent -> ProductivityDiagnosticAgent (`diagnose_productivity_decline` diagnosing Marine Heatwave thermal stratification, HAB hypoxia, or turbidity). | `test_core_query_7_productivity_decline` |
+| **Q8** | *Which fishing zones should be avoided due to hazardous marine conditions or geofencing restrictions?* | PlannerAgent -> GeospatialNavigationAgent (`evaluate_geofence` against IMBL boundaries and MPA polygons) + WeatherHazardAgent hazardous sea quarantine. | `test_core_query_8_hazardous_or_geofenced_zones` |
 
 ### Extended Evaluation Scenarios
 
@@ -139,13 +138,13 @@ Tarang/
 │       ├── components/
 │       │   ├── LoginPage.jsx       # Google Identity Services portal with DPDP compliance
 │       │   ├── MarineMap.jsx       # Interactive Leaflet GIS (Harbours, PFZs, IMBL, MPAs, A* Route)
-│       │   ├── ChatPanel.jsx       # Multilingual chat, 8 official SIH queries, 4 extended scenarios, LISTEN TTS
+│       │   ├── ChatPanel.jsx       # Multilingual chat, 8 core operational queries, 4 extended scenarios, LISTEN TTS
 │       │   ├── DistrictAuthorityBoard.jsx # Fleet surveillance board across all 12 Indian landing centres
 │       │   ├── AgentTraceDrawer.jsx # Multi-agent DAG timeline, latency meters, and Evidence Ledger viewer
 │       │   └── SafetyAlertBanner.jsx # High-visibility Red/Amber circuit breaker header
 ├── tests/
 │   ├── test_tools.py               # 28 unit tests for deterministic marine math, geofences, safety index & script detection
-│   └── test_api.py                 # 47 integration tests covering all 8 SIH queries, extended scenarios, auth & rate limiting
+│   └── test_api.py                 # End-to-end integration tests covering all 8 core queries, extended scenarios, auth & rate limiting
 ├── CODEMAP.md                      # Architecture registry and living component map
 ├── GEMINI.md                       # Master system instructions & non-negotiable invariants
 └── pytest.ini                      # Test runner configuration with auto-asyncio

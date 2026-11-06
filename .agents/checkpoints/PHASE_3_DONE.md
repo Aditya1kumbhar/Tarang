@@ -40,7 +40,7 @@
 
 ## 2. Test Execution & Verification Results
 
-### A. End-to-End API Integration Suite (All 8 Official SIH Problem Statement ID 26176 / SIH26176 Benchmark Scenarios)
+### A. End-to-End API Integration Suite (All 8 Core Marine Intelligence Benchmark Scenarios)
 **Command:** `.venv\Scripts\pytest.exe tests/test_api.py -v`
 
 ```text
@@ -54,14 +54,14 @@ tests/test_api.py::test_health_check_endpoint PASSED                     [  8%]
 tests/test_api.py::test_list_harbours_endpoint PASSED                    [ 16%]
 tests/test_api.py::test_dashboard_summary_endpoint PASSED                [ 25%]
 tests/test_api.py::test_dashboard_summary_invalid_harbour PASSED         [ 33%]
-tests/test_api.py::test_sih_query_1_pfz_discovery_rameswaram PASSED      [ 41%]
-tests/test_api.py::test_sih_query_2_country_craft_safety_kochi PASSED    [ 50%]
-tests/test_api.py::test_sih_query_3_mechanized_trawler_differential_veraval PASSED [ 58%]
-tests/test_api.py::test_sih_query_4_imbl_proximity_and_circuit_breaker PASSED [ 66%]
-tests/test_api.py::test_sih_query_5_mpa_exclusion PASSED                 [ 75%]
-tests/test_api.py::test_sih_query_6_safe_routing_chennai PASSED          [ 83%]
-tests/test_api.py::test_sih_query_7_productivity_decline_mangaluru PASSED [ 91%]
-tests/test_api.py::test_sih_query_8_multilingual_tamil_query PASSED      [100%]
+tests/test_api.py::test_core_query_1_pfz_discovery_rameswaram PASSED      [ 41%]
+tests/test_api.py::test_core_query_2_country_craft_safety_kochi PASSED    [ 50%]
+tests/test_api.py::test_core_query_3_mechanized_trawler_differential_veraval PASSED [ 58%]
+tests/test_api.py::test_core_query_4_imbl_proximity_and_circuit_breaker PASSED [ 66%]
+tests/test_api.py::test_core_query_5_mpa_exclusion PASSED                 [ 75%]
+tests/test_api.py::test_core_query_6_safe_routing_chennai PASSED          [ 83%]
+tests/test_api.py::test_core_query_7_productivity_decline_mangaluru PASSED [ 91%]
+tests/test_api.py::test_core_query_8_multilingual_tamil_query PASSED      [100%]
 
 ======================= 12 passed, 1 warning in 18.40s ========================
 ```

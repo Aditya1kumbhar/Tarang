@@ -1,9 +1,9 @@
 # CODEMAP.md — ORCA Marine Ecosystem Reasoning Architecture
 
 ## System Overview
-ORCA (Marine EcOsystem Reasoning with Collaborative Agents) for SIH 2026 Problem Statement ID 26176 (SIH26176).
+ORCA (Marine EcOsystem Reasoning with Collaborative Agents) - Autonomous Marine Intelligence Platform.
 - Organization: Indian Space Research Organisation (ISRO), Department of Space
-- Theme: Miscellaneous
+- Theme: Marine Intelligence & Coastal Safety
 
 ## Phase Progress
 - [x] **Phase 1: Foundation, Schemas & Real Geospatial Seed Data** (Completed & Verified)
@@ -11,7 +11,7 @@ ORCA (Marine EcOsystem Reasoning with Collaborative Agents) for SIH 2026 Problem
 - [x] **Phase 3: Collaborative Multi-Agent Orchestrator & FastAPI Backend** (Completed & Verified)
 - [x] **Phase 4: Interactive Marine GIS Frontend & Agent Reasoning Inspector** (Completed & Verified - Vite Build Verified)
 - [x] **Phase 5: End-to-End Integration, Browser Verification & Walkthrough Artifact** (Completed & Verified)
-- [x] **Phase 6: SIH Research Alignment & Production Zero-Trust Hardening** (Completed & Verified - 75/75 Tests Passed)
+- [x] **Phase 6: Research Alignment & Production Zero-Trust Hardening** (Completed & Verified)
 
 ## Directory & File Registry
 - `GEMINI.md`: Master project architecture and rules.
@@ -21,7 +21,7 @@ ORCA (Marine EcOsystem Reasoning with Collaborative Agents) for SIH 2026 Problem
 - `.env.example`: Template for environment variables.
 - `.agents/rules/windows-quota-guard.md`: Quota guard, Windows UTF-8 file handling, single-phase bounded execution.
 - `.agents/rules/anti-vibe-design.md`: Permanent anti-vibe design invariants (no purple gradients, no pill buttons, no emojis, no em dashes, no fake metrics, legal modals, and custom domain).
-- `.agents/skills/verify-sih-queries/SKILL.md`: `/verify-sih-queries` benchmark testing skill.
+- `.agents/skills/verify-core-queries/SKILL.md`: `/verify-core-queries` benchmark testing skill.
 - `backend/`: FastAPI application, multi-agent orchestrator, tools, schemas, and seed geospatial data.
   - `requirements.txt`: Python dependencies (`fastapi`, `uvicorn`, `pydantic`, `pyproj`, `shapely`, `numpy`, `httpx`, `slowapi`, `pytest`).
   - `config.py`: Thresholds, API endpoints, vessel profiles, safety limits, risk tier calibrations.
@@ -54,10 +54,10 @@ ORCA (Marine EcOsystem Reasoning with Collaborative Agents) for SIH 2026 Problem
     - `index.css`: Tailwind layer directives, custom XDR surfaces, and Liquid Retina glass styling.
     - `App.jsx`: Main telemetry ribbon, persona switch (Fisher vs District Board), theme switcher, auth gate, circuit breaker banner.
     - `components/MarineMap.jsx`: Leaflet GIS map with 12 harbour pins, IMBL border with 5 NM buffer, MPA zones, PFZ hotspots, and A* safe route polyline.
-    - `components/ChatPanel.jsx`: Multilingual chat supporting 1-click benchmark chips for all 8 official SIH queries, 4 extended scenarios, 8 demo chips, 40px numeric safety dial, LISTEN TTS audio button, and structured evidence citations.
+    - `components/ChatPanel.jsx`: Multilingual chat supporting 1-click benchmark chips for all 8 core operational queries, 4 extended scenarios, 8 demo chips, 40px numeric safety dial, LISTEN TTS audio button, and structured evidence citations.
     - `components/DistrictAuthorityBoard.jsx`: Coast-wide 12-harbour table with live safety dials, state filtering, and instant transition to Fisher View.
     - `components/AgentTraceDrawer.jsx`: Multi-agent DAG timeline, latency meters (ms), confidence scores, Pydantic provenance inspector, and Evidence Ledger viewer.
     - `components/SafetyAlertBanner.jsx`: High-visibility Red/Amber maritime circuit breaker advisory header.
 - `tests/`:
   - `test_tools.py`: 28 unit tests covering all deterministic marine tools, 0-100 safety index tiers, evidence ledger entries, and script detection across 10 languages.
-  - `test_api.py`: 47 integration tests covering all 8 official SIH queries, 4 extended scenarios, district-board, demo-scenarios, rate limiting, and fail-closed auth.
+  - `test_api.py`: 48 integration tests covering all 8 core operational queries, 4 extended scenarios, district-board, demo-scenarios, rate limiting, and fail-closed auth.

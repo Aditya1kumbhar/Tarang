@@ -14,70 +14,70 @@ import {
   MapPin,
 } from 'lucide-react';
 
-const SIH_OFFICIAL_QUERIES = [
+const CORE_OPERATIONAL_QUERIES = [
   {
-    id: 'sih-1',
+    id: 'core-1',
     label: '1. Nearest PFZ',
     harbourId: 'rameswaram',
     vessel: 'country_craft',
     query: 'Where is the nearest Potential Fishing Zone (PFZ) today?',
-    tag: 'SIH26176 Q1',
+    tag: 'Advisory Q1',
   },
   {
-    id: 'sih-2',
+    id: 'core-2',
     label: '2. Venture Safety',
     harbourId: 'kochi',
     vessel: 'country_craft',
     query: 'Is it safe to venture into the sea tomorrow morning?',
-    tag: 'SIH26176 Q2',
+    tag: 'Advisory Q2',
   },
   {
-    id: 'sih-3',
+    id: 'core-3',
     label: '3. Tide, Weather & Sea',
     harbourId: 'veraval',
     vessel: 'country_craft',
     query: 'What are the tide, weather, and sea conditions near my fishing location?',
-    tag: 'SIH26176 Q3',
+    tag: 'Advisory Q3',
   },
   {
-    id: 'sih-4',
+    id: 'core-4',
     label: '4. Lightning & Cyclone',
     harbourId: 'paradip',
     vessel: 'country_craft',
     query: 'Are there any lightning or cyclone alerts in my area?',
-    tag: 'SIH26176 Q4',
+    tag: 'Advisory Q4',
   },
   {
-    id: 'sih-5',
+    id: 'core-5',
     label: '5. Chlorophyll & SST',
     harbourId: 'visakhapatnam',
     vessel: 'country_craft',
     query: 'Which regions show high chlorophyll concentration and favourable sea surface temperature?',
-    tag: 'SIH26176 Q5',
+    tag: 'Advisory Q5',
   },
   {
-    id: 'sih-6',
+    id: 'core-6',
     label: '6. Safest Vessel Route',
     harbourId: 'chennai',
     vessel: 'country_craft',
     query: 'What is the safest route for a fishing vessel considering weather and sea-state conditions?',
-    tag: 'SIH26176 Q6',
+    tag: 'Advisory Q6',
   },
   {
-    id: 'sih-7',
+    id: 'core-7',
     label: '7. Catch Drop Cause',
     harbourId: 'mangaluru',
     vessel: 'country_craft',
     query: 'Why has fish productivity declined in a particular coastal region?',
-    tag: 'SIH26176 Q7',
+    tag: 'Advisory Q7',
   },
   {
-    id: 'sih-8',
+    id: 'core-8',
     label: '8. Hazard / Geofence Zones',
     harbourId: 'rameswaram',
     vessel: 'country_craft',
     query: 'Which fishing zones should be avoided due to hazardous marine conditions or geofencing restrictions?',
-    tag: 'SIH26176 Q8',
+    tag: 'Advisory Q8',
   },
 ];
 
@@ -576,7 +576,7 @@ export default function ChatPanel({
                   : 'text-[#858B95] dark:text-[#A1A1A6]'
               }`}
             >
-              SIH26176 Official (8)
+              Operational (8)
             </button>
             <button
               type="button"
@@ -594,7 +594,7 @@ export default function ChatPanel({
           </div>
         </div>
         <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar touch-momentum">
-          {(scenarioTab === 'official' ? SIH_OFFICIAL_QUERIES : EXTENDED_SCENARIOS).map((sc) => (
+          {(scenarioTab === 'official' ? CORE_OPERATIONAL_QUERIES : EXTENDED_SCENARIOS).map((sc) => (
             <button
               key={sc.id}
               onClick={() => handleScenarioClick(sc)}

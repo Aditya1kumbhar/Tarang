@@ -1,9 +1,9 @@
-# PROJECT_STATE.md: ORCA Marine Ecosystem Reasoning (SIH 2026 Problem Statement ID 26176 / SIH26176)
+# PROJECT_STATE.md: ORCA Marine Ecosystem Reasoning Platform
 
 ## 1. Architectural Blueprint
-- **Platform:** ORCA (Marine EcOsystem Reasoning with Collaborative Agents) for SIH 2026 Problem Statement ID 26176 (SIH26176).
+- **Platform:** ORCA (Marine EcOsystem Reasoning with Collaborative Agents).
   - **Organization:** Indian Space Research Organisation (ISRO), Department of Space
-  - **Theme:** Miscellaneous
+  - **Focus:** Autonomous Marine Intelligence & Coastal Safety Decision-Support
   - **Product Tagline:** Autonomous Marine Intelligence & Decision-Support Platform for Indian Fisheries, Coastal Authorities, and Disaster Management
 - **Neuro-Symbolic Division:** Deterministic Python tools calculate all math, bearings, geofences, and safety indices (`pyproj`, `shapely`, `numpy`, `networkx`). LLMs (Gemini / fallback synthesizer) only orchestrate intent and multilingual explanation.
 - **Circuit Breaker:** Hard-coded fail-safe locks `RED_ALERT` banner when wave height, wind, Kallakkadal swell, CAPE lightning, or IMBL boundary (<1.5 NM) breaches thresholds.
@@ -28,7 +28,7 @@
 - `App.jsx`: Dual-persona layout (Fisher View vs District Authority Board), mandatory Google authentication gate (`!currentUser` full lockout barrier), authenticated user profile badge and sign-out in frosted header, theme toggle (Chart/Ocean), live data provenance tracking.
 - `components/LoginPage.jsx`: Apple-grade Google Identity Services authentication portal, mandatory lockout gate, DPDP Act 2023 compliance notes, session persistence, dev login fallback.
 - `components/MarineMap.jsx`: Leaflet GIS with 12 harbour pins, IMBL border + 5 NM buffer, MPAs, PFZ hotspots, A* route polyline.
-- `components/ChatPanel.jsx`: Multilingual chat, 8 official SIH queries, 4 extended scenarios, 8 demo chips, 40px numeric safety dial, Web Speech TTS (10 languages), dynamic Data Provenance Badge (`LIVE: Open-Meteo + NOAA satellite (${satDate})` vs `FALLBACK DATA IN USE`), and interactive Evidence Ledger drawer displaying source and observation timestamp per entry.
+- `components/ChatPanel.jsx`: Multilingual chat, 8 core operational queries, 4 extended scenarios, 8 demo chips, 40px numeric safety dial, Web Speech TTS (10 languages), dynamic Data Provenance Badge (`LIVE: Open-Meteo + NOAA satellite (${satDate})` vs `FALLBACK DATA IN USE`), and interactive Evidence Ledger drawer displaying source and observation timestamp per entry.
 - `components/DistrictAuthorityBoard.jsx`: Fleet surveillance table across all 12 Indian landing centres with state filtering.
 - `components/AgentTraceDrawer.jsx`: Multi-agent DAG execution timeline, sub-second latency meters, Evidence Ledger viewer.
 - `components/SafetyAlertBanner.jsx`: Non-overridable Red/Amber maritime safety advisory banner.
@@ -36,7 +36,7 @@
 ### Verification (`tests/` & `frontend/`)
 - `conftest.py`: Syntactically valid dummy auth credentials and test environment initialization (`GOOGLE_CLIENT_ID`, `VITE_GOOGLE_CLIENT_ID`, `AUTH_SECRET`, `ENVIRONMENT=development`, `AI_TIMEOUT_SECONDS=45.0`) with `os.environ.setdefault` guarding CI and isolated runners.
 - `test_tools.py`: 33 unit tests covering deterministic marine tools, safety index tiers, 10 language script detectors, Part A2 48-hr Open-Meteo hourly selector series, Part B4 ERDDAP finite differences and 0.15° merge, and satellite mock success/fallback tests.
-- `test_api.py`: 48 integration tests covering all 8 official SIH queries, 4 extended scenarios, security hardening, rate limiting, dedicated Google authentication barrier tests, and clean subprocess fail-closed 503 regression probes.
+- `test_api.py`: 48 integration tests covering all 8 core queries, 4 extended scenarios, security hardening, rate limiting, dedicated Google authentication barrier tests, and clean subprocess fail-closed 503 regression probes.
 - `test_reliability_fix.py`: 7 reliability tests covering Work Packages A, B, C, D, and E (DAG specialist sequencing, cold cache with hanging upstreams, warm cache with upstreams down, Gemini hang falling back to template, partial tool failure with named gap, weather 8s timeout + ERDDAP failure inside 60s, and District Board 12 centres with baseline data_mode).
 - `test_nugen_synthesis.py`: 7 tests covering Nugen aligned model integration (mocked success setting `synthesis_mode='nugen'`, HTTP 500 / timeout / malformed JSON falling through to template, missing env vars bypassing Nugen HTTP, RED_ALERT circuit breaker output parity, and confidence score logging without credential exposure).
 - `frontend/audit-no-undef.cjs`: AST & token static audit across all 8 frontend source files ensuring zero missing React hook imports or undefined identifier references.

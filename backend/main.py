@@ -1,5 +1,5 @@
 """
-ORCA FastAPI Backend Server (SIH 2026 Problem Statement ID 26176 / SIH26176).
+ORCA FastAPI Backend Server (Autonomous Marine Intelligence & Decision-Support Platform).
 Provides production-grade REST APIs for multi-agent reasoning, live harbour status,
 dashboard summaries, and maritime safety overrides with strict security guardrails.
 """
@@ -800,7 +800,7 @@ async def get_demo_scenario(
     current_user: UserSession = Depends(get_current_user),
 ) -> ChatResponse:
     """
-    Serves the canonical SIH26176 evaluation scenarios with strict enum validation (INPUT_VALIDATION):
+    Serves canonical operational evaluation scenarios with strict enum validation (INPUT_VALIDATION):
     - safe: Goa / Malvan calm departure (LOW risk)
     - danger: Mumbai 06:00 IST morning wind-wave shear (HIGH risk)
     - cyclone: Paradip cyclonic swell surge (EXTREME risk)
@@ -888,7 +888,7 @@ async def chat_endpoint(
     current_user: UserSession = Depends(get_current_user),
 ) -> ChatResponse:
     """
-    Main conversational agent endpoint for SIH 2026 Problem Statement ID 26176 (SIH26176).
+    Main conversational agent endpoint for ORCA Marine Intelligence Platform.
     - Content-Type validation: requires application/json (HTTP 415 on mismatch).
     - Rate limited to 10 requests/minute per IP across all uvicorn workers.
     - Rejects empty/whitespace or oversized message (>2000 chars) with HTTP 413.
