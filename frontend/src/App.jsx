@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import MarineMap from './components/MarineMap';
 import ChatPanel from './components/ChatPanel';
 import SafetyAlertBanner from './components/SafetyAlertBanner';
