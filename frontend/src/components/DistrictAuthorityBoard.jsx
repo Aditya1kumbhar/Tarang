@@ -19,6 +19,7 @@ export default function DistrictAuthorityBoard({
 }) {
   const [boardData, setBoardData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [stateFilter, setStateFilter] = useState('ALL');
   const [lastRefreshed, setLastRefreshed] = useState('');
 
@@ -29,10 +30,14 @@ export default function DistrictAuthorityBoard({
       if (res.ok) {
         const data = await res.json();
         setBoardData(data);
+        setError(null);
         setLastRefreshed(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      } else {
+        setError(`Surveillance feed returned status ${res.status}`);
       }
     } catch (err) {
       console.error('Error loading district authority board:', err);
+      setError('Unable to reach district authority surveillance feed');
     } finally {
       setIsLoading(false);
     }
@@ -53,7 +58,7 @@ export default function DistrictAuthorityBoard({
 
   const redCount = harbours.filter((h) => h.safety_status === 'RED_ALERT' || h.circuit_breaker_triggered).length;
   const amberCount = harbours.filter((h) => h.safety_status === 'AMBER' && !h.circuit_breaker_triggered).length;
-  const greenCount = harbours.filter((h) => h.safety_status === 'GREEN').length;
+  const greenCount = harbours.filter((h) => (h.safety_status === 'GREEN' || !h.safety_status) && !h.circuit_breaker_triggered).length;
 
   const isChartTheme = theme === 'chart';
 
@@ -104,11 +109,11 @@ export default function DistrictAuthorityBoard({
               District Board
             </h2>
             <span className="xdr-pill text-[10px] px-2.5 py-0.5 rounded-full font-semibold tracking-wide uppercase text-[#86868b] dark:text-[#A1A1A6]">
-              12 Centres
+              {boardData ? `${boardData.total_landing_centres || harbours.length} Centres` : 'Loading centres'}
             </span>
           </div>
           <p className="text-xs text-[#86868b] dark:text-[#A1A1A6] mt-0.5 font-normal">
-            Fleet status across 12 centres • {lastRefreshed || 'Live'}
+            Fleet status across {boardData ? (boardData.total_landing_centres || harbours.length) : '...'} centres • {boardData?.data_mode === 'BASELINE' ? 'Baseline data' : (boardData?.data_mode || 'Live')}{lastRefreshed ? ` (${lastRefreshed})` : ''}
           </p>
         </div>
 
@@ -140,7 +145,7 @@ export default function DistrictAuthorityBoard({
               <Anchor className="w-3.5 h-3.5 text-[#2997FF]" />
             </div>
           </div>
-          <span className="text-3xl font-bold tracking-tight mt-1.5 block tabular-nums text-[#1D1D1F] dark:text-white">12</span>
+          <span className="text-3xl font-bold tracking-tight mt-1.5 block tabular-nums text-[#1D1D1F] dark:text-white">{harbours.length}</span>
           <span className="text-[11px] text-[#86868b] dark:text-[#A1A1A6] mt-0.5 block">Landing centres</span>
         </div>
 
@@ -199,6 +204,41 @@ export default function DistrictAuthorityBoard({
           <span className="text-[11px] text-[#86868b] dark:text-[#A1A1A6] mt-0.5 block">Permitted</span>
         </div>
       </div>
+
+      {/* Visible Error State when feed fails */}
+      {error && harbours.length === 0 && (
+        <div className={`p-8 rounded-2xl border text-center flex flex-col items-center justify-center my-6 transition-all ${
+          isChartTheme
+            ? 'bg-white border-red-500/20 text-[#1D1D1F]'
+            : 'bg-red-950/20 border-red-500/30 text-white'
+        }`}>
+          <div className="glass-icon glass-icon-red w-12 h-12 rounded-2xl flex items-center justify-center mb-3">
+            <ShieldAlert className="w-6 h-6 text-[#FF453A]" />
+          </div>
+          <h3 className="text-base font-semibold tracking-tight mb-1">
+            Unable to Load District Surveillance Feed
+          </h3>
+          <p className="text-xs text-[#86868b] dark:text-[#A1A1A6] max-w-md mb-4 font-normal">
+            {error}. Coastal telemetry servers could not be contacted.
+          </p>
+          <button
+            type="button"
+            onClick={fetchBoardData}
+            disabled={isLoading}
+            className="xdr-pill px-4 py-2 rounded-full text-xs font-semibold text-white bg-[#0071E3] dark:bg-[#2997FF] flex items-center gap-2 active:scale-[0.96] shadow-md"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            <span>Retry Connection</span>
+          </button>
+        </div>
+      )}
+
+      {error && harbours.length > 0 && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-[#FF9F0A]/10 text-[#FF9F0A] border border-[#FF9F0A]/20 mb-4">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+          <span>Surveillance feed refresh failed ({error}). Displaying cached district status.</span>
+        </div>
+      )}
 
       {/* 3. State Filter Bar */}
       <div className="flex items-center gap-1.5 flex-wrap mb-4">

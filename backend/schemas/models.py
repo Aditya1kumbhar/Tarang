@@ -206,6 +206,7 @@ class ChatResponse(BaseModel):
     pfz_data_mode: Optional[str] = Field("LIVE_SATELLITE", description="PFZ data mode: LIVE_SATELLITE or FALLBACK_SNAPSHOT")
     satellite_timestamp: Optional[str] = Field(None, description="NOAA satellite pass timestamp if live")
     weather_timestamp: Optional[str] = Field(None, description="Open-Meteo observation timestamp")
+    synthesis_mode: Optional[str] = Field(None, description="Synthesis engine mode: 'gemini' or 'template_fallback'")
 
 class DashboardSummaryResponse(BaseModel):
     harbour: HarbourInfo
@@ -240,3 +241,4 @@ class DistrictBoardResponse(BaseModel):
     timestamp_utc: str
     total_landing_centres: int
     harbours: List[DistrictHarbourSummary]
+    data_mode: str = "BASELINE"

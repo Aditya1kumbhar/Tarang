@@ -40,6 +40,10 @@ export default function App() {
   // Chat State
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [refreshFailed, setRefreshFailed] = useState(false);
+  const [refreshDegraded, setRefreshDegraded] = useState(false);
+  const [lastUpdatedTime, setLastUpdatedTime] = useState('');
+  const lastLiveSummaryRef = useRef(null);
   const [provenanceInfo, setProvenanceInfo] = useState({
     weather_data_mode: 'LIVE',
     pfz_data_mode: 'LIVE_SATELLITE',
@@ -162,9 +166,28 @@ export default function App() {
       );
       if (res.ok) {
         const data = await res.json();
+        const incomingIsFallback = data.weather_data_mode === 'FALLBACK_SNAPSHOT';
+        const currentIsLive = lastLiveSummaryRef.current !== null && lastLiveSummaryRef.current.weather_data_mode !== 'FALLBACK_SNAPSHOT';
+
+        // When a new summary arrives whose weather_data_mode is FALLBACK_SNAPSHOT
+        // while the currently displayed data is LIVE, keep displaying the last good live payload
+        // and show note: 'Last updated <HH:MM IST>, refresh degraded, showing last live data.'
+        if (incomingIsFallback && currentIsLive) {
+          setRefreshDegraded(true);
+          setRefreshFailed(false);
+          return;
+        }
+
+        // Live payload arrived, or initial cold start:
+        if (!incomingIsFallback) {
+          lastLiveSummaryRef.current = data;
+          setRefreshDegraded(false);
+        }
+
+        const sst = data.top_pfz?.sst_c ?? data.weather?.sst_c ?? null;
         setLiveWeather({
           ...data.weather,
-          sst_c: data.top_pfz?.sst_c || data.weather?.sst_c || 28.4,
+          ...(sst !== null ? { sst_c: sst } : {}),
         });
         setSafetyStatus(data.weather?.safety_status || 'GREEN');
         setSafetyOverrideBanner(data.safety_override_banner);
@@ -177,18 +200,34 @@ export default function App() {
         if (data.map_payload && data.map_payload.features) {
           setMapPayload(data.map_payload);
         }
+        setRefreshFailed(false);
+        const nowIst = new Date().toLocaleTimeString('en-IN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'Asia/Kolkata',
+        });
+        setLastUpdatedTime(`${nowIst} IST`);
       } else if (res.status === 401) {
         setCurrentUser(null);
+      } else {
+        // Failed refresh: keep last good payload intact, mark refresh failed
+        setRefreshFailed(true);
       }
     } catch (err) {
       console.error('Error fetching dashboard summary:', err);
+      // Upstream network failure: keep last good payload intact, mark refresh failed
+      setRefreshFailed(true);
     }
   }, [currentUser]);
 
+  // Periodic 30s background refresh loop for the active harbour
   useEffect(() => {
-    if (selectedHarbour && currentUser) {
+    if (!selectedHarbour || !currentUser) return;
+    fetchDashboardSummary(selectedHarbour.id, vesselType);
+    const interval = setInterval(() => {
       fetchDashboardSummary(selectedHarbour.id, vesselType);
-    }
+    }, 30000);
+    return () => clearInterval(interval);
   }, [selectedHarbour, vesselType, fetchDashboardSummary, currentUser]);
 
   // 4. Handle User Chat Query
@@ -203,8 +242,9 @@ export default function App() {
     setMessages((prev) => [...prev, userMsg]);
 
     try {
+      // 75-second client timeout ensures server 45s guarantee always lands first
       const abortController = new AbortController();
-      const timeoutId = setTimeout(() => abortController.abort(), 25000);
+      const timeoutId = setTimeout(() => abortController.abort(), 75000);
 
       let res;
       try {
@@ -553,6 +593,9 @@ export default function App() {
               safetyStatus={safetyStatus}
               theme={themeMode}
               provenanceInfo={provenanceInfo}
+              refreshFailed={refreshFailed}
+              refreshDegraded={refreshDegraded}
+              lastUpdatedTime={lastUpdatedTime}
               onViewMap={() => setMobileTab('map')}
             />
           </div>

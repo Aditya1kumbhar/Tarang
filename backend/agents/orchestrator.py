@@ -25,6 +25,7 @@ from backend.config import (
     DEFAULT_HARBOUR_ID,
     GEMINI_API_KEY,
     GEMINI_MODEL,
+    GEMINI_SYNTHESIS_BUDGET_SECONDS,
     NM_TO_M,
 )
 from backend.schemas.models import (
@@ -39,6 +40,10 @@ from backend.tools.geospatial_tool import (
     GEOD_WGS84,
     check_geofence,
     compute_safe_route,
+)
+from backend.tools.marine_cache import (
+    compute_pfz_zones_sync_fallback,
+    marine_cache,
 )
 from backend.tools.ocean_pfz_tool import (
     compute_pfz_zones,
@@ -122,9 +127,10 @@ def plan_execution(request: ChatRequest, state: OrchestratorState) -> None:
             break
 
     if not matched_harbour_id:
-        matched_harbour_id = request.harbour_id or DEFAULT_HARBOUR_ID
+        raw_hid = request.harbour_id
+        matched_harbour_id = raw_hid.value if hasattr(raw_hid, "value") else str(raw_hid or DEFAULT_HARBOUR_ID)
 
-    harbour = harbours.get(matched_harbour_id, harbours[DEFAULT_HARBOUR_ID])
+    harbour = harbours.get(str(matched_harbour_id).lower(), harbours[DEFAULT_HARBOUR_ID])
     state.harbour_id = harbour.id
     state.harbour = harbour
 
@@ -276,17 +282,48 @@ def plan_execution(request: ChatRequest, state: OrchestratorState) -> None:
 # ==============================================================================
 
 async def run_weather_hazard_agent(state: OrchestratorState) -> None:
-    """Executes live Open-Meteo or simulation-backed marine weather hazard engine."""
+    """Executes live Open-Meteo or simulation-backed marine weather hazard engine (cache-first)."""
     t_start = time.perf_counter()
-    report = await get_weather_marine_report(
-        lat=state.harbour.lat,
-        lon=state.harbour.lon,
-        harbour_id=state.harbour.id,
-        harbour_name=state.harbour.name,
-        vessel_type=state.vessel_type,
-        mock_metrics=state.custom_weather_params,
-        target_dt=state.target_dt,
-    )
+    report = None
+    try:
+        if state.custom_weather_params is not None:
+            # Hypothetical / custom simulation
+            report = await get_weather_marine_report(
+                lat=state.harbour.lat,
+                lon=state.harbour.lon,
+                harbour_id=state.harbour.id,
+                harbour_name=state.harbour.name,
+                vessel_type=state.vessel_type,
+                mock_metrics=state.custom_weather_params,
+                target_dt=state.target_dt,
+            )
+        elif state.target_dt is not None:
+            # Future target hour (e.g. tomorrow morning)
+            report = await get_weather_marine_report(
+                lat=state.harbour.lat,
+                lon=state.harbour.lon,
+                harbour_id=state.harbour.id,
+                harbour_name=state.harbour.name,
+                vessel_type=state.vessel_type,
+                target_dt=state.target_dt,
+            )
+        else:
+            # Cache-first lookup for current harbour weather
+            cached_weather = marine_cache.get_weather(state.harbour.id, state.vessel_type)
+            if cached_weather:
+                report = cached_weather
+            else:
+                entry = await marine_cache.get_or_refresh_harbour(state.harbour, max_refresh_timeout=12.0)
+                report = (
+                    entry.weather_by_vessel.get(state.vessel_type.value)
+                    or entry.create_fallback_entry(state.harbour).weather_by_vessel[state.vessel_type.value]
+                )
+    except Exception as e:
+        logger.warning("WeatherHazardAgent execution error: %s; falling back to regional baseline.", e)
+        state.evidence_gaps.append("Live marine weather telemetry temporarily unreachable; evaluated from regional safety baseline.")
+        fallback_entry = marine_cache.create_fallback_entry(state.harbour)
+        report = fallback_entry.weather_by_vessel[state.vessel_type.value]
+
     state.weather_report = report
     state.provenance_list.append(report.provenance)
 
@@ -314,9 +351,22 @@ async def run_weather_hazard_agent(state: OrchestratorState) -> None:
 
 
 async def run_ocean_analytics_agent(state: OrchestratorState) -> None:
-    """Executes SST optimality, thermal gradient, and Chlorophyll-a PFZ composite engine."""
+    """Executes SST optimality, thermal gradient, and Chlorophyll-a PFZ composite engine (cache-first)."""
     t_start = time.perf_counter()
-    report = await compute_pfz_zones(state.harbour.id, 3, None)
+    report = None
+    try:
+        # Cache-first lookup for PFZ report
+        cached_pfz = marine_cache.get_pfz(state.harbour.id)
+        if cached_pfz:
+            report = cached_pfz
+        else:
+            entry = await marine_cache.get_or_refresh_harbour(state.harbour, max_refresh_timeout=12.0)
+            report = entry.pfz_report or compute_pfz_zones_sync_fallback(state.harbour)
+    except Exception as e:
+        logger.warning("OceanAnalyticsAgent execution error: %s; falling back to static snapshot.", e)
+        state.evidence_gaps.append("Live PFZ satellite telemetry unavailable; showing maritime safety and navigation status only.")
+        report = compute_pfz_zones_sync_fallback(state.harbour)
+
     state.pfz_report = report
     state.provenance_list.append(report.provenance)
 
@@ -348,63 +398,69 @@ async def run_geospatial_navigation_agent(state: OrchestratorState) -> None:
     t_start = time.perf_counter()
     loop = asyncio.get_running_loop()
 
-    # Determine evaluation coordinates: priority to explicit target, then top PFZ candidate
-    eval_lat: float
-    eval_lon: float
-    dest_name: str
+    eval_lat: float = state.harbour.lat
+    eval_lon: float = state.harbour.lon
+    dest_name: str = state.harbour.name
+    summary = "Geospatial assessment completed"
+    conf = 1.0
 
-    if state.target_coordinates:
-        eval_lat, eval_lon = state.target_coordinates
-        dest_name = state.target_name or "Specified Target Coordinates"
-    elif state.pfz_report and state.pfz_report.top_recommendation:
-        eval_lat = state.pfz_report.top_recommendation.latitude
-        eval_lon = state.pfz_report.top_recommendation.longitude
-        dest_name = f"PFZ {state.pfz_report.top_recommendation.zone_id}"
-    else:
-        # Evaluate harbour perimeter
-        eval_lat = state.harbour.lat
-        eval_lon = state.harbour.lon
-        dest_name = state.harbour.name
+    try:
+        # Determine evaluation coordinates: priority to explicit target, then top PFZ candidate
+        if state.target_coordinates:
+            eval_lat, eval_lon = state.target_coordinates
+            dest_name = state.target_name or "Specified Target Coordinates"
+        elif state.pfz_report and state.pfz_report.top_recommendation:
+            eval_lat = state.pfz_report.top_recommendation.latitude
+            eval_lon = state.pfz_report.top_recommendation.longitude
+            dest_name = f"PFZ {state.pfz_report.top_recommendation.zone_id}"
+        else:
+            eval_lat = state.harbour.lat
+            eval_lon = state.harbour.lon
+            dest_name = state.harbour.name
 
-    # 1. Check Geofence
-    geofence_res = await loop.run_in_executor(
-        None, check_geofence, eval_lon, eval_lat, state.harbour.lon, state.harbour.lat
-    )
-    state.geofence_assessment = geofence_res
-    state.provenance_list.append(geofence_res.provenance)
-
-    # 2. Check Navigation Routing if requested or in routing/pfz intent
-    if state.intent in ["safe_routing", "pfz_discovery"]:
-        wave_h = state.weather_report.wave_height_m if state.weather_report else 1.0
-        wind_spd = state.weather_report.wind_speed_kmh if state.weather_report else 15.0
-
-        route = await loop.run_in_executor(
-            None,
-            compute_safe_route,
-            state.harbour.lat,
-            state.harbour.lon,
-            eval_lat,
-            eval_lon,
-            state.harbour.id,
-            dest_name,
-            wave_h,
-            wind_spd,
+        # 1. Check Geofence
+        geofence_res = await loop.run_in_executor(
+            None, check_geofence, eval_lon, eval_lat, state.harbour.lon, state.harbour.lat
         )
-        state.navigation_route = route
-        state.provenance_list.append(route.provenance)
+        state.geofence_assessment = geofence_res
+        state.provenance_list.append(geofence_res.provenance)
+
+        # 2. Check Navigation Routing if requested or in routing/pfz intent
+        if state.intent in ["safe_routing", "pfz_discovery"]:
+            wave_h = state.weather_report.wave_height_m if state.weather_report else 1.0
+            wind_spd = state.weather_report.wind_speed_kmh if state.weather_report else 15.0
+
+            route = await loop.run_in_executor(
+                None,
+                compute_safe_route,
+                state.harbour.lat,
+                state.harbour.lon,
+                eval_lat,
+                eval_lon,
+                state.harbour.id,
+                dest_name,
+                wave_h,
+                wind_spd,
+            )
+            state.navigation_route = route
+            state.provenance_list.append(route.provenance)
+
+        summary = (
+            f"Geofence: {geofence_res.alert_level} (Dist: {geofence_res.distance_nm} NM from "
+            f"{geofence_res.boundary_name or 'Border'}). "
+        )
+        if state.navigation_route:
+            summary += (
+                f"A* Route: {state.navigation_route.total_distance_nm} NM, "
+                f"ETA: {state.navigation_route.estimated_hours}h, "
+                f"Fuel Savings: {state.navigation_route.fuel_savings_percent}%"
+            )
+        conf = geofence_res.provenance.confidence_score
+    except Exception as e:
+        logger.warning("GeospatialNavigationAgent execution error: %s", e)
+        state.evidence_gaps.append("Navigation routing calculation unavailable.")
 
     t_latency = (time.perf_counter() - t_start) * 1000.0
-    summary = (
-        f"Geofence: {geofence_res.alert_level} (Dist: {geofence_res.distance_nm} NM from "
-        f"{geofence_res.boundary_name or 'Border'}). "
-    )
-    if state.navigation_route:
-        summary += (
-            f"A* Route: {state.navigation_route.total_distance_nm} NM, "
-            f"ETA: {state.navigation_route.estimated_hours}h, "
-            f"Fuel Savings: {state.navigation_route.fuel_savings_percent}%"
-        )
-
     state.agent_traces.append(
         AgentTrace(
             agent_name="GeospatialNavigationAgent",
@@ -413,7 +469,7 @@ async def run_geospatial_navigation_agent(state: OrchestratorState) -> None:
             status="COMPLETED",
             input_payload={"dest_coords": [eval_lat, eval_lon], "dest_name": dest_name},
             output_summary=summary,
-            confidence_score=geofence_res.provenance.confidence_score,
+            confidence_score=conf,
             citations=["Maritime Boundary Dataset (IMBL)", "MoEFCC MPA Shapefiles"],
         )
     )
@@ -617,17 +673,24 @@ def _get_gemini_client() -> httpx.AsyncClient:
     return _GEMINI_CLIENT
 
 
-async def _call_gemini_synthesis(state: OrchestratorState, evidence: List[str]) -> Optional[str]:
+async def _call_gemini_synthesis(
+    state: OrchestratorState,
+    evidence: List[str],
+    max_synthesis_budget: float = GEMINI_SYNTHESIS_BUDGET_SECONDS,
+) -> Optional[str]:
     """
     Synthesize marine advisory using Google Gemini API with high-intelligence reasoning.
     Grounds LLM synthesis in deterministic physical observations and safety circuit breakers.
+    Enforces a strict synthesis budget (GEMINI_SYNTHESIS_BUDGET_SECONDS) and at most 2 models attempted.
     """
     global _GEMINI_COOLDOWN_UNTIL
     if time.time() < _GEMINI_COOLDOWN_UNTIL:
         logger.info("Gemini API in 429 quota cooldown period; using deterministic localized synthesis.")
+        state.synthesis_mode = "template_fallback"
         return None
 
     if not GEMINI_API_KEY:
+        state.synthesis_mode = "template_fallback"
         return None
 
     lang_names = {
@@ -669,13 +732,11 @@ async def _call_gemini_synthesis(state: OrchestratorState, evidence: List[str]) 
         "Provide your authoritative, insightful, and practical maritime response to the fisher:"
     )
 
+    # Cascade restricted to at most 2 models
     models_to_try = [
         "gemini-3-flash-preview",
         "gemini-flash-latest",
-    ]
-    # Remove duplicate model names while preserving order
-    seen = set()
-    models_to_try = [m for m in models_to_try if not (m in seen or seen.add(m))]
+    ][:2]
 
     payload = {
         "contents": [
@@ -692,12 +753,27 @@ async def _call_gemini_synthesis(state: OrchestratorState, evidence: List[str]) 
     }
 
     client = _get_gemini_client()
+    synthesis_start = time.perf_counter()
+
     for model in models_to_try:
+        time_elapsed = time.perf_counter() - synthesis_start
+        time_remaining = max_synthesis_budget - time_elapsed
+        if time_remaining <= 1.0:
+            logger.warning("Synthesis budget (%.1fs) spent; stopping model cascade.", max_synthesis_budget)
+            break
+
+        per_model_timeout = min(14.0, time_remaining)
+        state.models_attempted.append(model)
+
         try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
-            res = await client.post(url, json=payload)
+            res = await asyncio.wait_for(
+                client.post(url, json=payload),
+                timeout=per_model_timeout,
+            )
             # If 400 and thinkingConfig was passed, retry once without thinkingConfig for older models
             if res.status_code == 400 and "thinkingConfig" in payload.get("generationConfig", {}):
+                rem_timeout = min(per_model_timeout, max(1.0, max_synthesis_budget - (time.perf_counter() - synthesis_start)))
                 fallback_payload = {
                     "contents": payload["contents"],
                     "generationConfig": {
@@ -705,7 +781,10 @@ async def _call_gemini_synthesis(state: OrchestratorState, evidence: List[str]) 
                         "maxOutputTokens": 2048,
                     }
                 }
-                res = await client.post(url, json=fallback_payload)
+                res = await asyncio.wait_for(
+                    client.post(url, json=fallback_payload),
+                    timeout=rem_timeout,
+                )
 
             if res.status_code == 200:
                 data = res.json()
@@ -718,26 +797,31 @@ async def _call_gemini_synthesis(state: OrchestratorState, evidence: List[str]) 
                             # Server-side output check for data/prompt leakage (LLM_HARDENING Requirement)
                             if re.search(r"AIza[0-9A-Za-z-_]{35}|sk-[a-zA-Z0-9]{20,}|Bearer\s+", text):
                                 logger.warning("SECURITY ALERT: Detected potential credential pattern in LLM output; redacting.")
-                                return None
+                                continue
                             if any(p in text for p in ["OPERATIONAL GUIDELINES", "ZERO HALLUCINATION", "INSTRUCTION DEFENSE"]):
                                 logger.warning("SECURITY ALERT: Detected potential system prompt leakage in LLM output; redacting.")
-                                return None
+                                continue
                             # Anti-vibe hygiene: strictly strip em dashes and any unicode emojis
                             text = text.replace("—", " - ").replace("–", " - ")
                             text = re.sub(r"[\U00010000-\U0010ffff\u2600-\u27bf\u2300-\u23ff\u2b50\u2b55]", "", text)
                             _GEMINI_COOLDOWN_UNTIL = 0.0  # Reset cooldown on verified success
+                            state.synthesis_mode = "gemini"
                             return text.strip()
             elif res.status_code == 429:
                 logger.warning("Gemini API key daily quota exhausted (HTTP 429); engaging 120s synthesis circuit breaker.")
                 _GEMINI_COOLDOWN_UNTIL = time.time() + 120.0
                 break
             elif res.status_code in (404, 500, 503):
-                logger.info(f"Gemini model {model} returned {res.status_code}, attempting next fallback model...")
+                logger.info("Gemini model %s returned %s, attempting next fallback model...", model, res.status_code)
                 continue
+        except asyncio.TimeoutError:
+            logger.warning("Gemini model %s timed out after %.1fs", model, per_model_timeout)
+            continue
         except Exception as err:
-            logger.debug(f"Gemini model {model} attempt error: {err}")
+            logger.debug("Gemini model %s attempt error: %s", model, err)
             continue
 
+    state.synthesis_mode = "template_fallback"
     return None
 
 
@@ -758,11 +842,16 @@ async def synthesize_response(state: OrchestratorState) -> None:
         weather_is_fallback = (
             getattr(state.weather_report, "is_fallback", False)
             or getattr(state.weather_report, "data_mode", "") == "FALLBACK_SNAPSHOT"
+            or (state.weather_report.provenance and getattr(state.weather_report.provenance, "data_mode", "") == "FALLBACK_SNAPSHOT")
+            or (state.weather_report.evidence_ledger_entry and state.weather_report.evidence_ledger_entry.data_mode == "FALLBACK_SNAPSHOT")
         )
 
     pfz_is_fallback = False
     if state.pfz_report:
-        pfz_is_fallback = state.pfz_report.data_mode == "FALLBACK_SNAPSHOT"
+        pfz_is_fallback = (
+            getattr(state.pfz_report, "data_mode", "") == "FALLBACK_SNAPSHOT"
+            or (state.pfz_report.provenance and getattr(state.pfz_report.provenance, "data_mode", "") == "FALLBACK_SNAPSHOT")
+        )
 
     sat_ts = state.pfz_report.satellite_timestamp if state.pfz_report else None
 
@@ -990,6 +1079,11 @@ async def synthesize_response(state: OrchestratorState) -> None:
         if pfz_is_fallback or weather_is_fallback:
             rec += "\n\n[Data Provenance: Operating on verified offline snapshot. All safety limits, geofences, and boundary alarms remain fully protective.]"
 
+    if state.evidence_gaps:
+        for gap in state.evidence_gaps:
+            evidence.append(f"SERVICE NOTE: {gap}")
+        rec += f"\n\n[Advisory Note: {'; '.join(state.evidence_gaps)}]"
+
     state.recommendation = rec
     state.evidence_and_reasoning = evidence
 
@@ -997,12 +1091,28 @@ async def synthesize_response(state: OrchestratorState) -> None:
     gemini_used = False
     if GEMINI_API_KEY:
         try:
-            gemini_text = await _call_gemini_synthesis(state, evidence)
+            gemini_text = await asyncio.wait_for(
+                _call_gemini_synthesis(state, evidence, max_synthesis_budget=GEMINI_SYNTHESIS_BUDGET_SECONDS),
+                timeout=GEMINI_SYNTHESIS_BUDGET_SECONDS,
+            )
             if gemini_text:
                 state.recommendation = gemini_text
+                state.synthesis_mode = "gemini"
                 gemini_used = True
+            else:
+                logger.info("Gemini synthesis returned None; using template synthesis.")
+                state.synthesis_mode = "template_fallback"
+        except asyncio.TimeoutError:
+            logger.warning(
+                "Gemini synthesis timed out past %ss budget; using template synthesis.",
+                GEMINI_SYNTHESIS_BUDGET_SECONDS,
+            )
+            state.synthesis_mode = "template_fallback"
         except Exception as e:
-            logger.warning(f"Google Gemini synthesis bypassed: {e}")
+            logger.warning("Google Gemini synthesis bypassed (%s); using template synthesis.", e)
+            state.synthesis_mode = "template_fallback"
+    else:
+        state.synthesis_mode = "template_fallback"
 
     # 4. Build GeoJSON Map Payload
     features = []
@@ -1102,7 +1212,9 @@ async def run_orchestrator(request: ChatRequest) -> ChatResponse:
     """
     Main asynchronous pipeline coordinating:
     Planner -> Parallel Specialist Agents -> Deterministic Safety Circuit Breaker -> Synthesis Agent.
+    Enforces 15s data stage budget, 25s synthesis budget, and 45s hard global deadline.
     """
+    t_total_start = time.perf_counter()
     state = OrchestratorState(
         conversation_id=request.conversation_id or f"session_{int(time.time())}",
         query=request.message,
@@ -1111,25 +1223,62 @@ async def run_orchestrator(request: ChatRequest) -> ChatResponse:
     # 1. Planner Decomposition
     plan_execution(request, state)
 
-    # 2. Parallel Specialist Execution
-    tasks = []
+    # 2. Phase 1: Data Specialists (Weather, Ocean, Productivity) <= 15s
+    t_data_start = time.perf_counter()
+    phase1_tasks = []
     if "WeatherHazardAgent" in state.required_agents:
-        tasks.append(run_weather_hazard_agent(state))
+        phase1_tasks.append(run_weather_hazard_agent(state))
     if "OceanAnalyticsAgent" in state.required_agents:
-        tasks.append(run_ocean_analytics_agent(state))
-    if "GeospatialNavigationAgent" in state.required_agents:
-        tasks.append(run_geospatial_navigation_agent(state))
+        phase1_tasks.append(run_ocean_analytics_agent(state))
     if "ProductivityDiagnosticAgent" in state.required_agents:
-        tasks.append(run_productivity_diagnostic_agent(state))
+        phase1_tasks.append(run_productivity_diagnostic_agent(state))
 
-    if tasks:
-        await asyncio.gather(*tasks)
+    if phase1_tasks:
+        try:
+            p1_res = await asyncio.wait_for(asyncio.gather(*phase1_tasks, return_exceptions=True), timeout=15.0)
+            for r in p1_res:
+                if isinstance(r, Exception):
+                    logger.warning("Phase 1 task error: %s", r)
+        except asyncio.TimeoutError:
+            logger.warning("Data stage (Phase 1) exceeded 15.0s budget; continuing with available telemetry.")
+            state.evidence_gaps.append("Data acquisition exceeded stage deadline; answer completed from available telemetry.")
+
+    # Phase 2: Geospatial & Navigation Agent (runs after Phase 1 data agents)
+    # Evaluates top PFZ candidate (or explicit target) with live wave height and wind from weather report
+    if "GeospatialNavigationAgent" in state.required_agents:
+        try:
+            await asyncio.wait_for(run_geospatial_navigation_agent(state), timeout=5.0)
+        except asyncio.TimeoutError:
+            logger.warning("GeospatialNavigationAgent exceeded timeout; continuing with available navigation data.")
+            state.evidence_gaps.append("Navigation routing calculation timed out.")
+        except Exception as e:
+            logger.warning("GeospatialNavigationAgent error: %s", e)
+            state.evidence_gaps.append("Navigation routing calculation unavailable.")
+
+    data_stage_ms = (time.perf_counter() - t_data_start) * 1000.0
 
     # 3. Deterministic Safety Circuit Breaker
     enforce_safety_circuit_breaker(state)
 
-    # 4. Multilingual Synthesis & Map Generation
-    await synthesize_response(state)
+    # 4. Multilingual Synthesis & Map Generation (Synthesis Stage <= 25s)
+    t_synth_start = time.perf_counter()
+    try:
+        await asyncio.wait_for(synthesize_response(state), timeout=25.0)
+    except asyncio.TimeoutError:
+        logger.warning("Synthesis stage exceeded 25.0s budget; falling back to template synthesis.")
+        state.synthesis_mode = "template_fallback"
+    synthesis_ms = (time.perf_counter() - t_synth_start) * 1000.0
+
+    total_ms = (time.perf_counter() - t_total_start) * 1000.0
+    logger.info(
+        "CHAT_TIMING: harbour=%s data_stage_ms=%.1f synthesis_ms=%.1f models_attempted=%s synthesis_mode=%s total_ms=%.1f",
+        state.harbour.id,
+        data_stage_ms,
+        synthesis_ms,
+        state.models_attempted,
+        state.synthesis_mode or "template_fallback",
+        total_ms,
+    )
 
     weather_data_mode = "LIVE"
     weather_timestamp = None
@@ -1163,4 +1312,5 @@ async def run_orchestrator(request: ChatRequest) -> ChatResponse:
         pfz_data_mode=pfz_data_mode,
         satellite_timestamp=satellite_timestamp,
         weather_timestamp=weather_timestamp,
+        synthesis_mode=state.synthesis_mode or "template_fallback",
     )

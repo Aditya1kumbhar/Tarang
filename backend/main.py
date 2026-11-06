@@ -6,13 +6,13 @@ dashboard summaries, and maritime safety overrides with strict security guardrai
 
 import asyncio
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import datetime, time as dt_time, timedelta, timezone
 import hashlib
 import json
 import logging
 from pathlib import Path
 import time
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, status
 from fastapi.exceptions import RequestValidationError
@@ -47,6 +47,7 @@ from backend.config import (
     ALLOW_DEV_LOGIN,
     AUTH_SECRET,
     AUTHORIZED_EMAILS,
+    DASHBOARD_TIMEOUT_SECONDS,
     ENVIRONMENT,
     GOOGLE_CLIENT_ID,
     IMBL_FILE,
@@ -66,10 +67,16 @@ from backend.schemas.models import (
     VesselType,
 )
 from backend.tools.geospatial_tool import check_geofence
+from backend.tools.marine_cache import (
+    compute_pfz_zones_sync_fallback,
+    marine_cache,
+)
 from backend.tools.ocean_pfz_tool import compute_pfz_zones, load_harbours_dict
+from backend.tools.satellite_erddap import fetch_chl_grid, fetch_sst_grid
 from backend.tools.weather_marine_tool import (
     assess_vessel_safety,
     calculate_sea_venture_safety_index,
+    fetch_live_marine_and_weather,
     get_fallback_marine_and_weather,
     get_weather_marine_report,
 )
@@ -77,13 +84,77 @@ from backend.tools.weather_marine_tool import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("orca_api")
 
+_warmup_task: Optional[asyncio.Task] = None
+
+
+def _get_tomorrow_0600_ist_utc() -> datetime:
+    """Returns UTC datetime corresponding to tomorrow 06:00 IST."""
+    now_utc = datetime.now(timezone.utc)
+    ist_tz = timezone(timedelta(hours=5, minutes=30))
+    now_ist = now_utc.astimezone(ist_tz)
+    tomorrow_ist_date = (now_ist + timedelta(days=1)).date()
+    tomorrow_0600_ist = datetime.combine(tomorrow_ist_date, dt_time(6, 0), tzinfo=ist_tz)
+    return tomorrow_0600_ist.astimezone(timezone.utc)
+
+
+async def _warm_all_harbours_background() -> None:
+    """
+    Non-blocking background warmup for all 12 harbours:
+    (a) fetch_live_marine_and_weather for current hour and tomorrow 06:00 IST (exact chat cache keys)
+    (b) fetch_sst_grid and fetch_chl_grid for each harbour's bounding box (populating 6h ERDDAP caches).
+    Periodic refresh: every 10 minutes, re-runs weather warmup for current and tomorrow 06:00 IST keys.
+    Warmup failures are logged, never fatal, and do not delay application startup.
+    """
+    harbours = list(load_harbours_dict().values())
+    logger.info("Starting background cache warmup for %d harbours...", len(harbours))
+    tomorrow_dt = _get_tomorrow_0600_ist_utc()
+
+    for h in harbours:
+        try:
+            await asyncio.gather(
+                fetch_live_marine_and_weather(h.lat, h.lon, target_dt=None),
+                fetch_live_marine_and_weather(h.lat, h.lon, target_dt=tomorrow_dt),
+                fetch_sst_grid(h.lat, h.lon),
+                fetch_chl_grid(h.lat, h.lon),
+                return_exceptions=True,
+            )
+        except Exception as e:
+            logger.warning("Initial cache warmup failed for harbour '%s': %s", h.id, e)
+
+    logger.info("Initial background cache warmup completed for %d harbours.", len(harbours))
+
+    while True:
+        try:
+            await asyncio.sleep(600)  # 10 minutes
+            t_dt = _get_tomorrow_0600_ist_utc()
+            logger.info("Running 10-minute periodic weather cache refresh for all 12 harbours...")
+            for h in harbours:
+                try:
+                    await asyncio.gather(
+                        fetch_live_marine_and_weather(h.lat, h.lon, target_dt=None),
+                        fetch_live_marine_and_weather(h.lat, h.lon, target_dt=t_dt),
+                        return_exceptions=True,
+                    )
+                except Exception as e:
+                    logger.warning("Periodic weather cache refresh failed for harbour '%s': %s", h.id, e)
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            logger.warning("Periodic cache refresh loop encountered error: %s", e)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global _warmup_task
     logger.info("Initializing ORCA Multi-Agent Maritime Backend (Environment: %s)...", ENVIRONMENT)
     load_harbours_dict()
+    marine_cache.start_background_tasks()
+    _warmup_task = asyncio.create_task(_warm_all_harbours_background())
     logger.info("Harbour caches pre-warmed successfully. CORS allowlist: %s", ALLOWED_ORIGINS)
     yield
+    if _warmup_task and not _warmup_task.done():
+        _warmup_task.cancel()
+    marine_cache.stop_background_tasks()
     logger.info("Shutting down ORCA Backend.")
 
 
@@ -434,46 +505,147 @@ async def list_harbours(request: Request, current_user: UserSession = Depends(ge
     return list(harbours_dict.values())
 
 
-@app.get(
-    "/api/v1/dashboard-summary",
-    response_model=DashboardSummaryResponse,
-    summary="Get immediate harbour dashboard snapshot",
-    tags=["Dashboard"],
-)
-async def get_dashboard_summary(
-    request: Request,
-    harbour_id: HarbourID = Query(HarbourID.RAMESWARAM, description="Target harbour identifier"),
-    vessel_type: VesselType = Query(VesselType.COUNTRY_CRAFT, description="Vessel type"),
-    current_user: UserSession = Depends(get_current_user),
+_LAST_DASHBOARD_SUMMARIES: Dict[Tuple[str, str], DashboardSummaryResponse] = {}
+
+
+def _build_fallback_dashboard_summary(
+    harbour: HarbourInfo, vessel_type: VesselType
 ) -> DashboardSummaryResponse:
-    """
-    Retrieves an immediate snapshot of live marine weather, top PFZ zone,
-    geofence status, and map payload for dashboard views without full chat reasoning.
-    Strictly validates harbour_id and vessel_type against allowlists (INPUT_VALIDATION).
-    """
-    harbours = load_harbours_dict()
-    harbour = harbours.get(harbour_id.value)
-    if not harbour:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Harbour '{harbour_id.value}' not found in registry."
+    """Builds a deterministic fallback dashboard summary without raising exceptions."""
+    metrics = get_fallback_marine_and_weather(harbour.lat, harbour.lon)
+    safety_status, advisory, is_kal, is_light, cb_trig = assess_vessel_safety(metrics, vessel_type)
+    idx, verdict = calculate_sea_venture_safety_index(metrics, vessel_type)
+    now_utc_str = datetime.now(timezone.utc).isoformat()
+    weather = WeatherHazardReport(
+        harbour_id=harbour.id,
+        harbour_name=harbour.name,
+        latitude=harbour.lat,
+        longitude=harbour.lon,
+        vessel_type=vessel_type,
+        wave_height_m=metrics["wave_height_m"],
+        wind_speed_kmh=metrics["wind_speed_kmh"],
+        wind_gusts_kmh=metrics["wind_gusts_kmh"],
+        wave_direction_deg=metrics["wave_direction_deg"],
+        wave_period_s=metrics["wave_period_s"],
+        swell_wave_height_m=metrics["swell_wave_height_m"],
+        swell_wave_period_s=metrics["swell_wave_period_s"],
+        ocean_current_velocity_ms=metrics["ocean_current_velocity_ms"],
+        cape_j_kg=metrics["cape_j_kg"],
+        weather_code=metrics["weather_code"],
+        safety_status=safety_status,
+        sea_venture_safety_index=idx,
+        risk_verdict=verdict,
+        advisory_message=advisory,
+        is_kallakkadal_risk=is_kal,
+        is_lightning_risk=is_light,
+        circuit_breaker_triggered=cb_trig,
+        provenance={
+            "source_dataset": metrics["source"],
+            "timestamp_utc": now_utc_str,
+            "coordinates": [harbour.lat, harbour.lon],
+            "confidence_score": 0.82,
+            "data_mode": "FALLBACK_SNAPSHOT",
+            "reasoning_trace": "Deterministic climatological Indian Ocean baseline",
+        },
+        evidence_ledger_entry={
+            "parameter_name": "Significant Wave Height & Coastal Surface Wind",
+            "source_sensor": "Climatological Regional Baseline",
+            "platform_mission": "Verified Regional Cartography Snapshot",
+            "timestamp_utc": now_utc_str,
+            "spatial_resolution": "5.0 km coastal grid",
+            "confidence_tier": "Medium",
+            "data_mode": "FALLBACK_SNAPSHOT",
+            "freshness_age_minutes": 120.0,
+            "station_id": f"IN-{harbour.id.upper()[:4]}-MET",
+            "anomaly_note": "Deterministic vessel safety engine evaluated from offline baseline",
+        },
+    )
+    pfz_report = compute_pfz_zones_sync_fallback(harbour)
+    top_pfz = pfz_report.top_recommendation
+    geofence = check_geofence(harbour.lon, harbour.lat)
+
+    safety_override = None
+    if weather.safety_status == SafetyLevel.RED_ALERT or geofence.alert_level == "CRITICAL":
+        safety_override = get_safety_override_banner("RED_ALERT", "en")
+    elif weather.safety_status == SafetyLevel.AMBER or geofence.alert_level == "WARNING":
+        safety_override = get_safety_override_banner("AMBER", "en")
+
+    map_features = [
+        {
+            "type": "Feature",
+            "geometry": {"type": "Point", "coordinates": [harbour.lon, harbour.lat]},
+            "properties": {
+                "entity": "harbour",
+                "id": harbour.id,
+                "name": harbour.name,
+                "local_name": harbour.local_name,
+                "state": harbour.state,
+            },
+        }
+    ]
+    if top_pfz:
+        map_features.append(
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [top_pfz.longitude, top_pfz.latitude],
+                },
+                "properties": {
+                    "entity": "pfz_hotspot",
+                    "pfz_score": top_pfz.pfz_score,
+                    "bearing": top_pfz.bearing_cardinal,
+                    "distance_km": top_pfz.distance_km,
+                    "distance_nm": top_pfz.distance_nm,
+                    "sst_c": top_pfz.sst_c,
+                    "chla_mg_m3": top_pfz.chla_mg_m3,
+                    "rationale": top_pfz.biological_rationale,
+                },
+            }
         )
 
-    # 1 & 2. Concurrently fetch Weather and Top PFZ Zone
-    weather, pfz_report = await asyncio.gather(
-        get_weather_marine_report(
+    evidence_entries = []
+    if weather.evidence_ledger_entry:
+        evidence_entries.append(weather.evidence_ledger_entry)
+    if top_pfz and top_pfz.evidence_ledger_entry:
+        evidence_entries.append(top_pfz.evidence_ledger_entry)
+
+    return DashboardSummaryResponse(
+        harbour=harbour,
+        weather=weather,
+        top_pfz=top_pfz,
+        geofence=geofence,
+        safety_override_banner=safety_override,
+        map_payload={"type": "FeatureCollection", "features": map_features},
+        evidence_ledger=evidence_entries,
+        weather_data_mode="FALLBACK_SNAPSHOT",
+        pfz_data_mode="FALLBACK_SNAPSHOT",
+        satellite_timestamp=None,
+        weather_timestamp=now_utc_str,
+    )
+
+
+async def _compute_dashboard_summary_impl(
+    harbour: HarbourInfo, vessel_type: VesselType
+) -> DashboardSummaryResponse:
+    # 1 & 2. Read from shared marine data cache (cache-first, bounded warm if cold)
+    cached_entry = await marine_cache.get_or_refresh_harbour(harbour, max_refresh_timeout=12.0)
+    weather = cached_entry.weather_by_vessel.get(vessel_type.value)
+    if not weather:
+        weather = await get_weather_marine_report(
             lat=harbour.lat,
             lon=harbour.lon,
             harbour_id=harbour.id,
             harbour_name=harbour.name,
             vessel_type=vessel_type,
-        ),
-        compute_pfz_zones(harbour_id=harbour.id, max_candidates=1),
-    )
-    top_pfz = pfz_report.top_recommendation
+        )
+        cached_entry.weather_by_vessel[vessel_type.value] = weather
+
+    pfz_report = cached_entry.pfz_report
+    top_pfz = pfz_report.top_recommendation if pfz_report else None
 
     # 3. Geofence Check
-    geofence = check_geofence(harbour.lon, harbour.lat)
+    geofence = cached_entry.geofence or check_geofence(harbour.lon, harbour.lat)
 
     # 4. Maritime Safety Override Banner
     safety_override = None
@@ -523,11 +695,15 @@ async def get_dashboard_summary(
     if top_pfz and top_pfz.evidence_ledger_entry:
         evidence_entries.append(top_pfz.evidence_ledger_entry)
 
-    weather_data_mode = weather.evidence_ledger_entry.data_mode if weather.evidence_ledger_entry else "LIVE"
-    weather_timestamp = weather.evidence_ledger_entry.timestamp_utc if weather.evidence_ledger_entry else None
+    weather_data_mode = cached_entry.weather_data_mode
+    if weather and weather.evidence_ledger_entry:
+        weather_data_mode = weather.evidence_ledger_entry.data_mode
+        weather_timestamp = weather.evidence_ledger_entry.timestamp_utc
+    else:
+        weather_timestamp = cached_entry.weather_timestamp
 
-    pfz_data_mode = getattr(pfz_report, "data_mode", "LIVE_SATELLITE")
-    satellite_timestamp = getattr(pfz_report, "satellite_timestamp", None)
+    pfz_data_mode = cached_entry.pfz_data_mode
+    satellite_timestamp = cached_entry.satellite_timestamp
     if not satellite_timestamp and top_pfz and top_pfz.evidence_ledger_entry:
         satellite_timestamp = top_pfz.evidence_ledger_entry.timestamp_utc
 
@@ -547,6 +723,53 @@ async def get_dashboard_summary(
 
 
 @app.get(
+    "/api/v1/dashboard-summary",
+    response_model=DashboardSummaryResponse,
+    summary="Get immediate harbour dashboard snapshot",
+    tags=["Dashboard"],
+)
+async def get_dashboard_summary(
+    request: Request,
+    harbour_id: HarbourID = Query(HarbourID.RAMESWARAM, description="Target harbour identifier"),
+    vessel_type: VesselType = Query(VesselType.COUNTRY_CRAFT, description="Vessel type"),
+    current_user: UserSession = Depends(get_current_user),
+) -> DashboardSummaryResponse:
+    """
+    Retrieves an immediate snapshot of live marine weather, top PFZ zone,
+    geofence status, and map payload for dashboard views without full chat reasoning.
+    Strictly validates harbour_id and vessel_type against allowlists (INPUT_VALIDATION).
+    Enforces DASHBOARD_TIMEOUT_SECONDS deadline and returns last good summary on timeout.
+    """
+    harbours = load_harbours_dict()
+    harbour = harbours.get(harbour_id.value)
+    if not harbour:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Harbour '{harbour_id.value}' not found in registry."
+        )
+
+    summary_key = (harbour.id, vessel_type.value)
+    try:
+        summary = await asyncio.wait_for(
+            _compute_dashboard_summary_impl(harbour, vessel_type),
+            timeout=DASHBOARD_TIMEOUT_SECONDS,
+        )
+        _LAST_DASHBOARD_SUMMARIES[summary_key] = summary
+        return summary
+    except asyncio.TimeoutError:
+        logger.warning(
+            "Dashboard summary for %s (%s) exceeded %ss timeout",
+            harbour.id,
+            vessel_type.value,
+            DASHBOARD_TIMEOUT_SECONDS,
+        )
+        if summary_key in _LAST_DASHBOARD_SUMMARIES:
+            logger.info("Returning last successful dashboard summary for %s (%s)", harbour.id, vessel_type.value)
+            return _LAST_DASHBOARD_SUMMARIES[summary_key]
+        return _build_fallback_dashboard_summary(harbour, vessel_type)
+
+
+@app.get(
     "/api/v1/district-board",
     response_model=DistrictBoardResponse,
     summary="Get coast-wide district authority surveillance table",
@@ -560,16 +783,36 @@ async def get_district_board(
     """
     Returns immediate status, 0-100 Sea-Venture Safety Index, boundary clearance,
     and active advisories across all 12 Indian landing centres.
+    Reads from shared marine cache when available, falling back to deterministic regional baseline.
     """
     harbours = list_harbours_sync()
     summaries: List[DistrictHarbourSummary] = []
 
     for h in harbours:
-        metrics = get_fallback_marine_and_weather(h.lat, h.lon)
-        safety_status, advisory, _, _, cb_triggered = assess_vessel_safety(metrics, vessel_type)
-        safety_index, risk_verdict = calculate_sea_venture_safety_index(metrics, vessel_type)
+        cached_entry = marine_cache.get_entry(h.id)
+        cached_weather = (
+            cached_entry.weather_by_vessel.get(vessel_type.value)
+            if cached_entry
+            else None
+        )
 
-        geofence = check_geofence(h.lon, h.lat)
+        if cached_weather:
+            safety_status = cached_weather.safety_status
+            advisory = cached_weather.advisory_message
+            cb_triggered = cached_weather.circuit_breaker_triggered
+            safety_index = cached_weather.sea_venture_safety_index
+            risk_verdict = cached_weather.risk_verdict
+            wave_h = cached_weather.wave_height_m
+            wind_spd = cached_weather.wind_speed_kmh
+            geofence = cached_entry.geofence or check_geofence(h.lon, h.lat)
+        else:
+            metrics = get_fallback_marine_and_weather(h.lat, h.lon)
+            safety_status, advisory, _, _, cb_triggered = assess_vessel_safety(metrics, vessel_type)
+            safety_index, risk_verdict = calculate_sea_venture_safety_index(metrics, vessel_type)
+            wave_h = metrics["wave_height_m"]
+            wind_spd = metrics["wind_speed_kmh"]
+            geofence = check_geofence(h.lon, h.lat)
+
         if geofence.is_violation or geofence.alert_level == "CRITICAL":
             safety_index = max(safety_index, 92)
             risk_verdict = "EXTREME"
@@ -587,8 +830,8 @@ async def get_district_board(
                 safety_index=safety_index,
                 risk_verdict=risk_verdict,
                 safety_status=safety_status,
-                wave_height_m=metrics["wave_height_m"],
-                wind_speed_kmh=metrics["wind_speed_kmh"],
+                wave_height_m=wave_h,
+                wind_speed_kmh=wind_spd,
                 nearest_boundary_distance_nm=geofence.distance_nm,
                 active_advisory=advisory,
                 circuit_breaker_triggered=cb_triggered,
@@ -599,6 +842,7 @@ async def get_district_board(
         timestamp_utc=datetime.now(timezone.utc).isoformat(),
         total_landing_centres=len(summaries),
         harbours=summaries,
+        data_mode="BASELINE",
     )
 
 

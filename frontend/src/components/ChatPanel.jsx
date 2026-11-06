@@ -167,6 +167,9 @@ export default function ChatPanel({
   safetyStatus = 'GREEN',
   theme = 'chart',
   provenanceInfo = null,
+  refreshFailed = false,
+  refreshDegraded = false,
+  lastUpdatedTime = '',
   onViewMap = null,
 }) {
   const [inputText, setInputText] = useState('');
@@ -315,8 +318,8 @@ export default function ChatPanel({
   };
 
   const isChartTheme = theme === 'chart';
-  const currentScore = liveWeather?.sea_venture_safety_index ?? (safetyStatus === 'RED_ALERT' ? 92 : safetyStatus === 'AMBER' ? 35 : 12);
-  const currentVerdict = liveWeather?.risk_verdict ?? (safetyStatus === 'RED_ALERT' ? 'EXTREME' : safetyStatus === 'AMBER' ? 'MODERATE' : 'LOW');
+  const currentScore = liveWeather?.sea_venture_safety_index ?? null;
+  const currentVerdict = liveWeather?.risk_verdict ?? null;
 
   return (
     <div className={`flex flex-col h-full border-l transition-colors select-none ${
@@ -366,6 +369,20 @@ export default function ChatPanel({
             )}
           </div>
         </div>
+
+        {refreshDegraded && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] font-medium bg-[#FF9F0A]/10 text-[#FF9F0A] border border-[#FF9F0A]/20 shadow-xs">
+            <AlertTriangle className="w-3.5 h-3.5 text-[#FF9F0A] shrink-0" />
+            <span>Last updated {lastUpdatedTime || 'earlier'}, refresh degraded, showing last live data.</span>
+          </div>
+        )}
+
+        {refreshFailed && !refreshDegraded && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] font-medium bg-[#FF9F0A]/10 text-[#FF9F0A] border border-[#FF9F0A]/20 shadow-xs">
+            <AlertTriangle className="w-3.5 h-3.5 text-[#FF9F0A] shrink-0" />
+            <span>Last updated {lastUpdatedTime || 'earlier'}. Refresh failed, retrying.</span>
+          </div>
+        )}
 
         {/* Context Selectors Grid */}
         <div className="grid grid-cols-3 gap-2 text-xs">
@@ -445,7 +462,11 @@ export default function ChatPanel({
           <div className="flex items-center gap-3.5">
             {/* Luminous Risk Score Anchor */}
             <div className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center text-center p-2 transition-all ${
-              currentScore >= 76
+              currentScore === null
+                ? isChartTheme
+                  ? 'bg-black/[0.04] border border-black/[0.08] text-[#86868b]'
+                  : 'bg-white/[0.04] border border-white/[0.08] text-[#A1A1A6]'
+                : currentScore >= 76
                 ? 'xdr-jewel-red'
                 : currentScore >= 51
                 ? 'xdr-jewel-amber'
@@ -454,28 +475,34 @@ export default function ChatPanel({
                 : 'xdr-jewel-emerald'
             }`}>
               <span className="font-mono font-bold text-2xl leading-none tabular-nums tracking-tight">
-                {currentScore}
+                {currentScore !== null ? currentScore : '--'}
               </span>
               <span className="text-[9px] uppercase tracking-[0.06em] font-mono opacity-80 mt-0.5">/100</span>
             </div>
 
             <div>
               <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-semibold uppercase tracking-[0.06em] px-2.5 py-0.5 rounded-full ${
-                  currentVerdict === 'EXTREME'
-                    ? 'xdr-jewel-red'
-                    : currentVerdict === 'HIGH' || currentVerdict === 'MODERATE'
-                    ? 'xdr-jewel-amber'
-                    : 'xdr-jewel-emerald'
-                }`}>
-                  {currentVerdict} RISK
-                </span>
+                {currentVerdict ? (
+                  <span className={`text-[10px] font-semibold uppercase tracking-[0.06em] px-2.5 py-0.5 rounded-full ${
+                    currentVerdict === 'EXTREME'
+                      ? 'xdr-jewel-red'
+                      : currentVerdict === 'HIGH' || currentVerdict === 'MODERATE'
+                      ? 'xdr-jewel-amber'
+                      : 'xdr-jewel-emerald'
+                  }`}>
+                    {currentVerdict} RISK
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.06em] px-2.5 py-0.5 rounded-full xdr-pill text-[#86868b] dark:text-[#A1A1A6]">
+                    STANDBY
+                  </span>
+                )}
                 <span className="text-[11px] font-normal tracking-[-0.01em] text-[#858B95] dark:text-[#A1A1A6]">
                   {vesselType === 'country_craft' ? 'Country Boat' : 'Trawler (45ft)'}
                 </span>
               </div>
               <p className={`text-[11px] mt-1 font-normal tracking-[-0.01em] ${isChartTheme ? 'text-[#1D1D1F]' : 'text-[#E1E1E6]'}`}>
-                Departure: <strong>04:30 - 11:30 IST</strong> • Return-by: <strong>13:00 IST</strong>
+                Typical: Departure <strong>04:30 - 11:30 IST</strong> • Return-by <strong>13:00 IST</strong>
               </p>
             </div>
           </div>
@@ -484,7 +511,7 @@ export default function ChatPanel({
           <button
             onClick={() => {
               const latestMsg = messages.filter((m) => m.role === 'assistant').slice(-1)[0];
-              const textToRead = latestMsg?.recommendation || latestMsg?.content || `${selectedHarbour?.name || 'Harbour'}: Sea-Venture Safety Index is ${currentScore} out of 100, verdict is ${currentVerdict} risk.`;
+              const textToRead = latestMsg?.recommendation || latestMsg?.content || `${selectedHarbour?.name || 'Harbour'}: Sea-Venture Safety Index is ${currentScore !== null ? currentScore : 'unavailable'} out of 100.`;
               handleSpeak(textToRead, 9999);
             }}
             className={`xdr-pill px-3 py-2 rounded-full text-xs font-medium gap-1.5 shrink-0 flex items-center transition active:scale-[0.96] ${

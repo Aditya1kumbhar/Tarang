@@ -61,11 +61,11 @@ async def fetch_sst_grid(
     lon: float,
     box_deg: float = 1.5,
     client: Optional[httpx.AsyncClient] = None,
-    timeout: float = 3.5,
+    timeout: float = 1.8,
 ) -> SatelliteGridResult:
     """
     Fetches NOAA Coral Reef Watch 5km daily satellite Sea Surface Temperature (SST) via ERDDAP.
-    Queries primary CoastWatch cluster (noaacrwsstDaily) with automatic fallback to NOAA_DHW.
+    Queries primary CoastWatch cluster (noaacrwsstDaily) with fast 1.8s timeout and fallback.
     """
     lat_min, lat_max, lon_min, lon_max = _compute_bbox(lat, lon, box_deg)
     cache_key = (round(lat_min, 2), round(lat_max, 2), round(lon_min, 2), round(lon_max, 2))
@@ -152,11 +152,11 @@ async def fetch_chl_grid(
     lon: float,
     box_deg: float = 1.5,
     client: Optional[httpx.AsyncClient] = None,
-    timeout: float = 3.5,
+    timeout: float = 1.8,
 ) -> SatelliteGridResult:
     """
     Fetches NOAA VIIRS 9km near-real-time gap-filled daily Chlorophyll-a via ERDDAP.
-    Queries primary CoastWatch cluster (noaacwNPPN20VIIRSDINEOFDaily) with automatic fallback.
+    Queries primary CoastWatch cluster (noaacwNPPN20VIIRSDINEOFDaily) with fast 1.8s timeout and fallback.
     Critical: Includes altitude constraint [(0)] as 2nd axis to satisfy 4-axis grid.
     """
     lat_min, lat_max, lon_min, lon_max = _compute_bbox(lat, lon, box_deg)

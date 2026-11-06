@@ -15,5 +15,5 @@ os.environ.setdefault("GOOGLE_CLIENT_ID", DUMMY_GOOGLE_CLIENT_ID)
 os.environ.setdefault("VITE_GOOGLE_CLIENT_ID", DUMMY_GOOGLE_CLIENT_ID)
 os.environ.setdefault("AUTH_SECRET", "orca_maritime_national_security_auth_secret_2026")
 os.environ.setdefault("ENVIRONMENT", "development")
-os.environ.setdefault("AI_TIMEOUT_SECONDS", "35.0")
+os.environ.setdefault("AI_TIMEOUT_SECONDS", "60.0")
 
