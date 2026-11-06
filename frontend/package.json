@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:audit": "node audit-no-undef.cjs",
+    "test:smoke": "node test-runtime-smoke.mjs"
   },
   "dependencies": {
     "geist": "^1.8.2",
@@ -19,6 +21,7 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "jsdom": "^31.0.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "vite": "^5.4.11"
