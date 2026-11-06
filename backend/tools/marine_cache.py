@@ -293,12 +293,18 @@ class MarineDataCache:
             return fallback_entry
 
     async def warm_all_harbours(self, timeout_per_harbour: float = 12.0) -> None:
-        """Pre-warms all 12 registered Indian landing centres."""
+        """Pre-warms all 12 registered Indian landing centres with bounded concurrency."""
         harbours = list(load_harbours_dict().values())
         logger.info("Starting pre-warming of Marine Data Cache for %d harbours...", len(harbours))
         t_start = asyncio.get_running_loop().time()
 
-        tasks = [self.warm_harbour(h, timeout=timeout_per_harbour) for h in harbours]
+        sem = asyncio.Semaphore(2)
+
+        async def _bounded_warm(h: HarbourInfo) -> HarbourCacheEntry:
+            async with sem:
+                return await self.warm_harbour(h, timeout=timeout_per_harbour)
+
+        tasks = [_bounded_warm(h) for h in harbours]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         successful = sum(1 for r in results if isinstance(r, HarbourCacheEntry))

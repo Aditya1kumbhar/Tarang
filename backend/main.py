@@ -84,76 +84,13 @@ from backend.tools.weather_marine_tool import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("orca_api")
 
-_warmup_task: Optional[asyncio.Task] = None
-
-
-def _get_tomorrow_0600_ist_utc() -> datetime:
-    """Returns UTC datetime corresponding to tomorrow 06:00 IST."""
-    now_utc = datetime.now(timezone.utc)
-    ist_tz = timezone(timedelta(hours=5, minutes=30))
-    now_ist = now_utc.astimezone(ist_tz)
-    tomorrow_ist_date = (now_ist + timedelta(days=1)).date()
-    tomorrow_0600_ist = datetime.combine(tomorrow_ist_date, dt_time(6, 0), tzinfo=ist_tz)
-    return tomorrow_0600_ist.astimezone(timezone.utc)
-
-
-async def _warm_all_harbours_background() -> None:
-    """
-    Non-blocking background warmup for all 12 harbours:
-    (a) fetch_live_marine_and_weather for current hour and tomorrow 06:00 IST (exact chat cache keys)
-    (b) fetch_sst_grid and fetch_chl_grid for each harbour's bounding box (populating 6h ERDDAP caches).
-    Periodic refresh: every 10 minutes, re-runs weather warmup for current and tomorrow 06:00 IST keys.
-    Warmup failures are logged, never fatal, and do not delay application startup.
-    """
-    harbours = list(load_harbours_dict().values())
-    logger.info("Starting background cache warmup for %d harbours...", len(harbours))
-    tomorrow_dt = _get_tomorrow_0600_ist_utc()
-
-    for h in harbours:
-        try:
-            await asyncio.gather(
-                fetch_live_marine_and_weather(h.lat, h.lon, target_dt=None),
-                fetch_live_marine_and_weather(h.lat, h.lon, target_dt=tomorrow_dt),
-                fetch_sst_grid(h.lat, h.lon),
-                fetch_chl_grid(h.lat, h.lon),
-                return_exceptions=True,
-            )
-        except Exception as e:
-            logger.warning("Initial cache warmup failed for harbour '%s': %s", h.id, e)
-
-    logger.info("Initial background cache warmup completed for %d harbours.", len(harbours))
-
-    while True:
-        try:
-            await asyncio.sleep(600)  # 10 minutes
-            t_dt = _get_tomorrow_0600_ist_utc()
-            logger.info("Running 10-minute periodic weather cache refresh for all 12 harbours...")
-            for h in harbours:
-                try:
-                    await asyncio.gather(
-                        fetch_live_marine_and_weather(h.lat, h.lon, target_dt=None),
-                        fetch_live_marine_and_weather(h.lat, h.lon, target_dt=t_dt),
-                        return_exceptions=True,
-                    )
-                except Exception as e:
-                    logger.warning("Periodic weather cache refresh failed for harbour '%s': %s", h.id, e)
-        except asyncio.CancelledError:
-            break
-        except Exception as e:
-            logger.warning("Periodic cache refresh loop encountered error: %s", e)
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _warmup_task
     logger.info("Initializing ORCA Multi-Agent Maritime Backend (Environment: %s)...", ENVIRONMENT)
     load_harbours_dict()
     marine_cache.start_background_tasks()
-    _warmup_task = asyncio.create_task(_warm_all_harbours_background())
     logger.info("Harbour caches pre-warmed successfully. CORS allowlist: %s", ALLOWED_ORIGINS)
     yield
-    if _warmup_task and not _warmup_task.done():
-        _warmup_task.cancel()
     marine_cache.stop_background_tasks()
     logger.info("Shutting down ORCA Backend.")
 

@@ -553,6 +553,7 @@ export default function App() {
           <DistrictAuthorityBoard
             vesselType={vesselType}
             theme={themeMode}
+            initialHarbours={harbours}
             onSelectHarbour={(harbourId) => {
               const h = harbours.find((item) => item.id === harbourId);
               if (h) setSelectedHarbour(h);
