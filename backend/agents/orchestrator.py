@@ -676,6 +676,34 @@ def _get_gemini_client() -> httpx.AsyncClient:
     return _GEMINI_CLIENT
 
 
+def _verdict_guard_ok(text: str, risk_verdict: str) -> bool:
+    """
+    Deterministic consistency check for LLM synthesis output.
+    Returns False when the text states an overall verdict that contradicts
+    the deterministic risk_verdict, so the caller can fall back safely.
+    Colour verdicts (GREEN, AMBER, bare RED) are always a contradiction,
+    because the only verdict vocabulary is the risk word itself.
+    """
+    import re
+
+    if not text:
+        return False
+    if re.search(r"\bGREEN\b", text, flags=re.IGNORECASE):
+        return False
+    if re.search(r"\bAMBER\b", text, flags=re.IGNORECASE):
+        return False
+    if re.search(r"\bRED\b(?!_ALERT)", text, flags=re.IGNORECASE):
+        return False
+    expected = (risk_verdict or "").strip().upper()
+    for match in re.finditer(r"\b(LOW|MODERATE|HIGH|EXTREME)\s+Risk\b", text, flags=re.IGNORECASE):
+        if match.group(1).upper() != expected:
+            return False
+    for match in re.finditer(r"\bVerdict:?\s*(LOW|MODERATE|HIGH|EXTREME)\b", text, flags=re.IGNORECASE):
+        if match.group(1).upper() != expected:
+            return False
+    return True
+
+
 def _build_synthesis_prompts(
     state: OrchestratorState,
     evidence: List[str],
@@ -1195,10 +1223,15 @@ async def synthesize_response(state: OrchestratorState) -> None:
                 _call_nugen_synthesis(state, evidence, max_synthesis_budget=NUGEN_SYNTHESIS_BUDGET_SECONDS),
                 timeout=NUGEN_SYNTHESIS_BUDGET_SECONDS,
             )
-            if nugen_text:
+            if nugen_text and _verdict_guard_ok(nugen_text, state.risk_verdict):
                 state.recommendation = nugen_text
                 state.synthesis_mode = "nugen"
                 nugen_used = True
+            elif nugen_text:
+                logger.warning(
+                    "SYNTHESIS_VERDICT_GUARD rejected Nugen text (verdict mismatch vs %s); falling back to secondary provider.",
+                    state.risk_verdict,
+                )
             else:
                 logger.info("Nugen synthesis returned None; falling back to secondary provider.")
         except asyncio.TimeoutError:
@@ -1217,10 +1250,16 @@ async def synthesize_response(state: OrchestratorState) -> None:
                     _call_gemini_synthesis(state, evidence, max_synthesis_budget=GEMINI_SYNTHESIS_BUDGET_SECONDS),
                     timeout=GEMINI_SYNTHESIS_BUDGET_SECONDS,
                 )
-                if gemini_text:
+                if gemini_text and _verdict_guard_ok(gemini_text, state.risk_verdict):
                     state.recommendation = gemini_text
                     state.synthesis_mode = "gemini"
                     gemini_used = True
+                elif gemini_text:
+                    logger.warning(
+                        "SYNTHESIS_VERDICT_GUARD rejected Gemini text (verdict mismatch vs %s); using template synthesis.",
+                        state.risk_verdict,
+                    )
+                    state.synthesis_mode = "template_fallback"
                 else:
                     logger.info("Gemini synthesis returned None; using template synthesis.")
                     state.synthesis_mode = "template_fallback"
