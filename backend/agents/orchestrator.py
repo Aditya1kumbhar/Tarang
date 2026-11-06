@@ -12,7 +12,7 @@ from datetime import datetime, time as dt_time, timedelta, timezone
 import logging
 import re
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import httpx
 
@@ -27,6 +27,9 @@ from backend.config import (
     GEMINI_MODEL,
     GEMINI_SYNTHESIS_BUDGET_SECONDS,
     NM_TO_M,
+    NUGEN_API_KEY,
+    NUGEN_MODEL_ID,
+    NUGEN_SYNTHESIS_BUDGET_SECONDS,
 )
 from backend.schemas.models import (
     AgentTrace,
@@ -673,26 +676,14 @@ def _get_gemini_client() -> httpx.AsyncClient:
     return _GEMINI_CLIENT
 
 
-async def _call_gemini_synthesis(
+def _build_synthesis_prompts(
     state: OrchestratorState,
     evidence: List[str],
-    max_synthesis_budget: float = GEMINI_SYNTHESIS_BUDGET_SECONDS,
-) -> Optional[str]:
+) -> Tuple[str, str]:
     """
-    Synthesize marine advisory using Google Gemini API with high-intelligence reasoning.
-    Grounds LLM synthesis in deterministic physical observations and safety circuit breakers.
-    Enforces a strict synthesis budget (GEMINI_SYNTHESIS_BUDGET_SECONDS) and at most 2 models attempted.
+    Construct standardized system instructions and user prompt for LLM synthesis.
+    Shared between Nugen and Gemini providers to guarantee prompt parity.
     """
-    global _GEMINI_COOLDOWN_UNTIL
-    if time.time() < _GEMINI_COOLDOWN_UNTIL:
-        logger.info("Gemini API in 429 quota cooldown period; using deterministic localized synthesis.")
-        state.synthesis_mode = "template_fallback"
-        return None
-
-    if not GEMINI_API_KEY:
-        state.synthesis_mode = "template_fallback"
-        return None
-
     lang_names = {
         "ta": "Tamil",
         "ml": "Malayalam",
@@ -731,6 +722,114 @@ async def _call_gemini_synthesis(
         f"Preferred Response Language: {lang_name}\n\n"
         "Provide your authoritative, insightful, and practical maritime response to the fisher:"
     )
+
+    return system_instruction, user_prompt
+
+
+async def _call_nugen_synthesis(
+    state: OrchestratorState,
+    evidence: List[str],
+    max_synthesis_budget: float = NUGEN_SYNTHESIS_BUDGET_SECONDS,
+) -> Optional[str]:
+    """
+    Synthesize marine advisory using Nugen Aligned Model Inference API.
+    POSTs OpenAI-compatible chat completion payload to https://api.nugen.in/api/v3/inference/chat/completions.
+    Returns Optional[str], never raises.
+    """
+    if not NUGEN_API_KEY or not NUGEN_MODEL_ID:
+        return None
+
+    state.models_attempted.append(NUGEN_MODEL_ID)
+
+    try:
+        system_instruction, user_prompt = _build_synthesis_prompts(state, evidence)
+        payload = {
+            "model": NUGEN_MODEL_ID,
+            "messages": [
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": user_prompt},
+            ],
+            "max_tokens": 1024,
+            "temperature": 0.3,
+            "stream": False,
+        }
+        headers = {
+            "Authorization": f"Bearer {NUGEN_API_KEY}",
+            "Content-Type": "application/json",
+        }
+
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(max_synthesis_budget, connect=2.0)
+        ) as client:
+            res = await asyncio.wait_for(
+                client.post(
+                    "https://api.nugen.in/api/v3/inference/chat/completions",
+                    headers=headers,
+                    json=payload,
+                ),
+                timeout=max_synthesis_budget,
+            )
+
+        if res.status_code == 200:
+            data = res.json()
+            conf = data.get("confidence_score")
+            choices = data.get("choices")
+            if conf is None and choices and isinstance(choices, list) and isinstance(choices[0], dict):
+                conf = choices[0].get("confidence_score")
+            if conf is not None:
+                logger.info("NUGEN_CONFIDENCE: model=%s confidence=%s", NUGEN_MODEL_ID, conf)
+
+            if choices and isinstance(choices, list):
+                first_choice = choices[0]
+                if isinstance(first_choice, dict):
+                    message = first_choice.get("message")
+                    if isinstance(message, dict):
+                        content = message.get("content")
+                        if isinstance(content, str):
+                            text = content.strip()
+                            if text:
+                                # Anti-vibe hygiene: strictly strip em dashes and any unicode emojis
+                                text = text.replace("—", " - ").replace("–", " - ")
+                                text = re.sub(
+                                    r"[\U00010000-\U0010ffff\u2600-\u27bf\u2300-\u23ff\u2b50\u2b55]",
+                                    "",
+                                    text,
+                                )
+                                return text.strip() or None
+        else:
+            logger.info("Nugen inference returned status %s", res.status_code)
+            return None
+    except asyncio.TimeoutError:
+        logger.warning("Nugen synthesis timed out after %.1fs", max_synthesis_budget)
+        return None
+    except Exception as err:
+        logger.debug("Nugen synthesis error: %s", err)
+        return None
+
+    return None
+
+
+async def _call_gemini_synthesis(
+    state: OrchestratorState,
+    evidence: List[str],
+    max_synthesis_budget: float = GEMINI_SYNTHESIS_BUDGET_SECONDS,
+) -> Optional[str]:
+    """
+    Synthesize marine advisory using Google Gemini API with high-intelligence reasoning.
+    Grounds LLM synthesis in deterministic physical observations and safety circuit breakers.
+    Enforces a strict synthesis budget (GEMINI_SYNTHESIS_BUDGET_SECONDS) and at most 2 models attempted.
+    """
+    global _GEMINI_COOLDOWN_UNTIL
+    if time.time() < _GEMINI_COOLDOWN_UNTIL:
+        logger.info("Gemini API in 429 quota cooldown period; using deterministic localized synthesis.")
+        state.synthesis_mode = "template_fallback"
+        return None
+
+    if not GEMINI_API_KEY:
+        state.synthesis_mode = "template_fallback"
+        return None
+
+    system_instruction, user_prompt = _build_synthesis_prompts(state, evidence)
 
     # Cascade restricted to at most 2 models
     models_to_try = [
@@ -1087,32 +1186,54 @@ async def synthesize_response(state: OrchestratorState) -> None:
     state.recommendation = rec
     state.evidence_and_reasoning = evidence
 
-    # 3. Dynamic Google Gemini Flash Synthesis (when key available)
-    gemini_used = False
-    if GEMINI_API_KEY:
+    # 3. Dynamic LLM Synthesis (Nugen aligned model -> Gemini Flash -> Template fallback)
+    nugen_used = False
+    if NUGEN_API_KEY and NUGEN_MODEL_ID:
         try:
-            gemini_text = await asyncio.wait_for(
-                _call_gemini_synthesis(state, evidence, max_synthesis_budget=GEMINI_SYNTHESIS_BUDGET_SECONDS),
-                timeout=GEMINI_SYNTHESIS_BUDGET_SECONDS,
+            nugen_text = await asyncio.wait_for(
+                _call_nugen_synthesis(state, evidence, max_synthesis_budget=NUGEN_SYNTHESIS_BUDGET_SECONDS),
+                timeout=NUGEN_SYNTHESIS_BUDGET_SECONDS,
             )
-            if gemini_text:
-                state.recommendation = gemini_text
-                state.synthesis_mode = "gemini"
-                gemini_used = True
+            if nugen_text:
+                state.recommendation = nugen_text
+                state.synthesis_mode = "nugen"
+                nugen_used = True
             else:
-                logger.info("Gemini synthesis returned None; using template synthesis.")
-                state.synthesis_mode = "template_fallback"
+                logger.info("Nugen synthesis returned None; falling back to secondary provider.")
         except asyncio.TimeoutError:
             logger.warning(
-                "Gemini synthesis timed out past %ss budget; using template synthesis.",
-                GEMINI_SYNTHESIS_BUDGET_SECONDS,
+                "Nugen synthesis timed out past %ss budget; falling back to secondary provider.",
+                NUGEN_SYNTHESIS_BUDGET_SECONDS,
             )
-            state.synthesis_mode = "template_fallback"
         except Exception as e:
-            logger.warning("Google Gemini synthesis bypassed (%s); using template synthesis.", e)
+            logger.warning("Nugen synthesis bypassed (%s); falling back to secondary provider.", e)
+
+    gemini_used = False
+    if not nugen_used:
+        if GEMINI_API_KEY:
+            try:
+                gemini_text = await asyncio.wait_for(
+                    _call_gemini_synthesis(state, evidence, max_synthesis_budget=GEMINI_SYNTHESIS_BUDGET_SECONDS),
+                    timeout=GEMINI_SYNTHESIS_BUDGET_SECONDS,
+                )
+                if gemini_text:
+                    state.recommendation = gemini_text
+                    state.synthesis_mode = "gemini"
+                    gemini_used = True
+                else:
+                    logger.info("Gemini synthesis returned None; using template synthesis.")
+                    state.synthesis_mode = "template_fallback"
+            except asyncio.TimeoutError:
+                logger.warning(
+                    "Gemini synthesis timed out past %ss budget; using template synthesis.",
+                    GEMINI_SYNTHESIS_BUDGET_SECONDS,
+                )
+                state.synthesis_mode = "template_fallback"
+            except Exception as e:
+                logger.warning("Google Gemini synthesis bypassed (%s); using template synthesis.", e)
+                state.synthesis_mode = "template_fallback"
+        else:
             state.synthesis_mode = "template_fallback"
-    else:
-        state.synthesis_mode = "template_fallback"
 
     # 4. Build GeoJSON Map Payload
     features = []
@@ -1185,21 +1306,30 @@ async def synthesize_response(state: OrchestratorState) -> None:
         "features": features
     }
 
+    synth_model = "deterministic_engine"
+    synth_citations = ["ORCA Synthesis Engine"]
+    synth_summary = f"Generated {len(evidence)} evidence points and {len(features)} map features in language '{lang}'."
+
+    if nugen_used:
+        synth_model = NUGEN_MODEL_ID
+        synth_citations = ["Nugen Inference API", "ORCA Marine Reasoning Engine"]
+        synth_summary = f"Synthesized via Nugen aligned model ({NUGEN_MODEL_ID}) in language '{lang}' with {len(evidence)} evidence points."
+    elif gemini_used:
+        synth_model = GEMINI_MODEL
+        synth_citations = ["Google Gemini API", "ORCA Marine Reasoning Engine"]
+        synth_summary = f"Synthesized via Google Gemini ({GEMINI_MODEL}) in language '{lang}' with {len(evidence)} evidence points."
+
     t_latency = (time.perf_counter() - t_start) * 1000.0
     state.agent_traces.append(
         AgentTrace(
             agent_name="SynthesisExplainabilityAgent",
-            task_description="Multilingual evidence synthesis with Google Gemini and interactive GeoJSON map payload generation",
+            task_description="Multilingual evidence synthesis with Nugen/Gemini and interactive GeoJSON map payload generation",
             latency_ms=round(t_latency, 2),
             status="COMPLETED",
-            input_payload={"language": lang, "status": state.safety_status.value, "model": GEMINI_MODEL if gemini_used else "deterministic_engine"},
-            output_summary=(
-                f"Synthesized via Google Gemini ({GEMINI_MODEL}) in language '{lang}' with {len(evidence)} evidence points."
-                if gemini_used
-                else f"Generated {len(evidence)} evidence points and {len(features)} map features in language '{lang}'."
-            ),
+            input_payload={"language": lang, "status": state.safety_status.value, "model": synth_model},
+            output_summary=synth_summary,
             confidence_score=1.0,
-            citations=["Google Gemini API", "ORCA Marine Reasoning Engine"] if gemini_used else ["ORCA Synthesis Engine"],
+            citations=synth_citations,
         )
     )
 

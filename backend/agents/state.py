@@ -71,6 +71,6 @@ class OrchestratorState(BaseModel):
     map_payload: Dict[str, Any] = Field(
         default_factory=lambda: {"type": "FeatureCollection", "features": []}
     )
-    synthesis_mode: Optional[str] = None
+    synthesis_mode: Optional[str] = None  # 'nugen', 'gemini' or 'template_fallback'
     evidence_gaps: List[str] = Field(default_factory=list)
     models_attempted: List[str] = Field(default_factory=list)

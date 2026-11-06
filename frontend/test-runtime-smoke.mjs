@@ -131,6 +131,7 @@ async function main() {
   }
 
   console.log('\nALL RUNTIME SMOKE CHECKS PASSED: Zero render errors, zero recovery screens triggered.');
+  process.exit(0);
 }
 
 main().catch((err) => {

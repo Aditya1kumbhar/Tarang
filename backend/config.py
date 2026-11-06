@@ -91,6 +91,9 @@ FALLBACK_GRID_FILE = DATA_DIR / "fallback" / "indian_ocean_grid.json"
 # API Keys & LLM settings
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3-flash-preview")
+NUGEN_API_KEY = os.getenv("NUGEN_API_KEY", "").strip()
+NUGEN_MODEL_ID = os.getenv("NUGEN_MODEL_ID", "").strip()
+NUGEN_SYNTHESIS_BUDGET_SECONDS = float(os.getenv("NUGEN_SYNTHESIS_BUDGET_SECONDS", "12.0"))
 DEFAULT_HARBOUR_ID = "rameswaram"
 AI_TIMEOUT_SECONDS = float(os.getenv("AI_TIMEOUT_SECONDS", "60.0"))
 GEMINI_SYNTHESIS_BUDGET_SECONDS = float(os.getenv("GEMINI_SYNTHESIS_BUDGET_SECONDS", "12.0"))
