@@ -33,11 +33,18 @@
 - `components/AgentTraceDrawer.jsx`: Multi-agent DAG execution timeline, sub-second latency meters, Evidence Ledger viewer.
 - `components/SafetyAlertBanner.jsx`: Non-overridable Red/Amber maritime safety advisory banner.
 
-### Verification (`tests/`)
+### Verification (`tests/` & `frontend/`)
 - `conftest.py`: Syntactically valid dummy auth credentials and test environment initialization (`GOOGLE_CLIENT_ID`, `VITE_GOOGLE_CLIENT_ID`, `AUTH_SECRET`, `ENVIRONMENT=development`, `AI_TIMEOUT_SECONDS=45.0`) with `os.environ.setdefault` guarding CI and isolated runners.
 - `test_tools.py`: 33 unit tests covering deterministic marine tools, safety index tiers, 10 language script detectors, Part A2 48-hr Open-Meteo hourly selector series, Part B4 ERDDAP finite differences and 0.15° merge, and satellite mock success/fallback tests.
 - `test_api.py`: 48 integration tests covering all 8 official SIH queries, 4 extended scenarios, security hardening, rate limiting, dedicated Google authentication barrier tests, and clean subprocess fail-closed 503 regression probes.
 - `test_reliability_fix.py`: 7 reliability tests covering Work Packages A, B, C, D, and E (DAG specialist sequencing, cold cache with hanging upstreams, warm cache with upstreams down, Gemini hang falling back to template, partial tool failure with named gap, weather 8s timeout + ERDDAP failure inside 60s, and District Board 12 centres with baseline data_mode).
+- `frontend/audit-no-undef.cjs`: AST & token static audit across all 8 frontend source files ensuring zero missing React hook imports or undefined identifier references.
+- `frontend/test-runtime-smoke.mjs`: Headless JSDOM production bundle runtime smoke test executing the compiled `dist/` bundle across unauthenticated (`LoginPage`) and authenticated (`Operational Console`) states, verifying 0 runtime errors and 0 ErrorBoundary recovery screens.
+
+### Production Outage Hotfix (Commit 898a3dd & 8cf9263)
+- **Root Cause & Fix:** In `frontend/src/App.jsx`, line 46 declared `useRef(null)` without importing `useRef` from `'react'`, throwing `ReferenceError: useRef is not defined` during the first render and causing `ErrorBoundary` to show the "ORCA Interface Recovery" fallback screen. Corrected import in commit `898a3dd` to `import React, { useState, useEffect, useCallback, useRef } from 'react';`.
+- **Runtime Verification Gate:** Verified via AST audit script (`audit-no-undef.cjs`, 8/8 files passed) and headless JSDOM runtime smoke test (`test-runtime-smoke.mjs`), confirming `<LoginPage />` and the Operational Console mount with zero unhandled exceptions.
+- **Production Bundle:** Deployed and verified live on Render: `assets/index-BO0SK15P.js` (392.33 kB) and `assets/index-CCFpcTRv.css`.
 
 ### Production Deployment Assets
 - `Dockerfile`: Multi-stage build (Node 22 builder -> Python 3.11-slim non-root runtime) serving both SPA and REST API.
