@@ -43,6 +43,9 @@ logger = logging.getLogger("orca_marine_cache")
 PFZ_WARM_BUDGET_SECONDS = 25.0
 FALLBACK_REFRESH_MIN_AGE_SECONDS = 120.0
 FLEET_WARM_GAP_SECONDS = 2.0
+PFZ_RECOMPUTE_INTERVAL_SECONDS = 21600.0
+WEATHER_REFRESH_INTERVAL_SECONDS = 1800.0
+VIP_HARBOUR_IDS = ("rameswaram",)
 
 
 @dataclass
@@ -59,6 +62,7 @@ class HarbourCacheEntry:
     pfz_data_mode: str = "LIVE_SATELLITE"
     weather_timestamp: Optional[str] = None
     satellite_timestamp: Optional[str] = None
+    pfz_computed_at: Optional[datetime] = None
 
 
 class MarineDataCache:
@@ -74,6 +78,7 @@ class MarineDataCache:
         self._bg_tasks: List[asyncio.Task] = []
         self._is_warmed: bool = False
         self._refresh_inflight: set = set()
+        self._requested_harbour_ids: set = set()
 
     def is_warmed(self) -> bool:
         return self._is_warmed
@@ -176,6 +181,7 @@ class MarineDataCache:
             pfz_data_mode="FALLBACK_SNAPSHOT",
             weather_timestamp=datetime.now(timezone.utc).isoformat(),
             satellite_timestamp=None,
+            pfz_computed_at=None,
         )
 
     async def warm_harbour(
@@ -203,7 +209,10 @@ class MarineDataCache:
                 harbour_name=harbour.name,
                 vessel_type=VesselType.MECHANIZED_TRAWLER,
             )
-            pfz_task = compute_pfz_zones(harbour_id=harbour.id, max_candidates=3)
+
+            # Determine existing entry or fallback baseline early
+            existing = self.get_entry(harbour.id)
+            fallback = self.create_fallback_entry(harbour) if existing is None else existing
 
             # Independent bounded legs: a slow satellite (PFZ) fetch must not
             # discard good live weather, and a weather failure must not block PFZ.
@@ -213,25 +222,39 @@ class MarineDataCache:
                 except Exception as leg_err:
                     return leg_err
 
-            weather_results = await _bounded_leg(
-                asyncio.gather(
-                    weather_task_cc,
-                    weather_task_trawler,
-                    return_exceptions=True,
-                ),
-                timeout,
+            # PFZ Recompute Guard: Skip compute_pfz_zones if existing PFZ is younger than 21600s
+            skip_pfz = False
+            pfz_computed_at = None
+            if (
+                existing is not None
+                and existing.pfz_report is not None
+                and existing.pfz_computed_at is not None
+            ):
+                age_pfz = (datetime.now(timezone.utc) - existing.pfz_computed_at).total_seconds()
+                if age_pfz < PFZ_RECOMPUTE_INTERVAL_SECONDS:
+                    skip_pfz = True
+                    res_pfz = existing.pfz_report
+                    pfz_computed_at = existing.pfz_computed_at
+
+            weather_coro = asyncio.gather(
+                weather_task_cc,
+                weather_task_trawler,
+                return_exceptions=True,
             )
+            if skip_pfz:
+                weather_results = await _bounded_leg(weather_coro, timeout)
+            else:
+                pfz_task = compute_pfz_zones(harbour_id=harbour.id, max_candidates=3)
+                weather_results, res_pfz = await asyncio.gather(
+                    _bounded_leg(weather_coro, timeout),
+                    _bounded_leg(pfz_task, PFZ_WARM_BUDGET_SECONDS),
+                )
+
             if isinstance(weather_results, (list, tuple)):
                 res_cc, res_tr = weather_results
             else:
                 res_cc = weather_results
                 res_tr = weather_results
-
-            res_pfz = await _bounded_leg(pfz_task, PFZ_WARM_BUDGET_SECONDS)
-
-            # Determine existing entry or fallback baseline
-            existing = self.get_entry(harbour.id)
-            fallback = self.create_fallback_entry(harbour) if existing is None else existing
 
             weather_by_vessel: Dict[str, WeatherHazardReport] = {}
             weather_data_mode = "LIVE"
@@ -270,10 +293,13 @@ class MarineDataCache:
                 pfz_report = res_pfz
                 pfz_data_mode = getattr(res_pfz, "data_mode", "LIVE_SATELLITE")
                 satellite_ts = getattr(res_pfz, "satellite_timestamp", None)
+                if not skip_pfz:
+                    pfz_computed_at = datetime.now(timezone.utc)
             else:
                 pfz_report = fallback.pfz_report or compute_pfz_zones_sync_fallback(harbour)
                 pfz_data_mode = fallback.pfz_data_mode
                 satellite_ts = fallback.satellite_timestamp
+                pfz_computed_at = existing.pfz_computed_at if existing else None
 
             geofence = check_geofence(harbour.lon, harbour.lat)
 
@@ -289,6 +315,7 @@ class MarineDataCache:
                 pfz_data_mode=pfz_data_mode,
                 weather_timestamp=weather_ts,
                 satellite_timestamp=satellite_ts,
+                pfz_computed_at=pfz_computed_at,
             )
             async with self._lock:
                 self._entries[harbour.id.lower()] = entry
@@ -342,6 +369,37 @@ class MarineDataCache:
             t_elapsed,
         )
 
+    async def warm_vip_harbours(self, timeout_per_harbour: float = 12.0) -> None:
+        """Pre-warms designated VIP harbours sequentially on startup."""
+        harbours_dict = load_harbours_dict()
+        vip_harbours = [
+            harbours_dict[hid]
+            for hid in VIP_HARBOUR_IDS
+            if hid in harbours_dict
+        ]
+        logger.info("Starting VIP pre-warming of Marine Data Cache for %d harbours...", len(vip_harbours))
+        t_start = asyncio.get_running_loop().time()
+
+        successful = 0
+        for index, h in enumerate(vip_harbours):
+            if index > 0:
+                await asyncio.sleep(FLEET_WARM_GAP_SECONDS)
+            try:
+                entry = await self.warm_harbour(h, timeout=timeout_per_harbour)
+            except Exception as err:
+                logger.warning("VIP warm failed for harbour %s: %s", h.id, err)
+                continue
+            if isinstance(entry, HarbourCacheEntry):
+                successful += 1
+        t_elapsed = asyncio.get_running_loop().time() - t_start
+        self._is_warmed = True
+        logger.info(
+            "Marine Data Cache pre-warming complete: %d/%d harbours ready in %.2fs",
+            successful,
+            len(vip_harbours),
+            t_elapsed,
+        )
+
     async def get_or_refresh_harbour(
         self,
         harbour: HarbourInfo,
@@ -353,6 +411,7 @@ class MarineDataCache:
         2. If cold/missing, returns the deterministic fallback snapshot immediately
            and schedules ONE background warm; the caller never waits on the network.
         """
+        self._requested_harbour_ids.add(harbour.id.lower())
         entry = self.get_entry(harbour.id)
         if entry is not None and len(entry.weather_by_vessel) > 0 and entry.pfz_report is not None:
             # Stale-while-revalidate: a fallback entry older than the minimum
@@ -415,37 +474,35 @@ class MarineDataCache:
         loop = asyncio.get_running_loop()
 
         async def _initial_warm_and_weather_loop():
-            # Initial warming at startup
+            # Initial warming at startup: VIP harbours only (timeout_per_harbour=12.0)
             try:
-                await self.warm_all_harbours(timeout_per_harbour=12.0)
+                await self.warm_vip_harbours(timeout_per_harbour=12.0)
             except Exception as e:
                 logger.warning("Initial cache warming background task error: %s", e)
 
-            # Weather refresh cadence: every 10 minutes (600 seconds)
+            # Weather refresh cadence: at most every 1800 seconds (30 minutes)
+            # Refreshes VIP harbours and any recently requested harbours (timeout_per_harbour=20.0)
+            # Note: Legacy _satellite_daily_loop (timeout_per_harbour=15.0) retired for efficiency.
             while True:
                 try:
-                    await asyncio.sleep(600)
-                    logger.info("Running 10-minute periodic weather cache refresh for all harbours...")
-                    await self.warm_all_harbours(timeout_per_harbour=20.0)
+                    await asyncio.sleep(WEATHER_REFRESH_INTERVAL_SECONDS)
+                    harbours_dict = load_harbours_dict()
+                    target_ids = set(VIP_HARBOUR_IDS) | self._requested_harbour_ids
+                    targets = [harbours_dict[hid] for hid in target_ids if hid in harbours_dict]
+                    logger.info("Running periodic weather cache refresh for %d active harbours...", len(targets))
+                    for idx, h in enumerate(targets):
+                        if idx > 0:
+                            await asyncio.sleep(FLEET_WARM_GAP_SECONDS)
+                        try:
+                            await self.warm_harbour(h, timeout=20.0)  # timeout_per_harbour=20.0
+                        except Exception as refresh_err:
+                            logger.warning("Periodic refresh failed for harbour %s: %s", h.id, refresh_err)
                 except asyncio.CancelledError:
                     break
                 except Exception as e:
                     logger.warning("Periodic weather cache refresh error: %s", e)
 
-        async def _satellite_daily_loop():
-            # Satellite ERDDAP grid refresh: daily cadence (24 hours)
-            while True:
-                try:
-                    await asyncio.sleep(86400)
-                    logger.info("Running daily ERDDAP satellite grid refresh...")
-                    await self.warm_all_harbours(timeout_per_harbour=15.0)
-                except asyncio.CancelledError:
-                    break
-                except Exception as e:
-                    logger.warning("Periodic satellite cache refresh error: %s", e)
-
         self._bg_tasks.append(loop.create_task(_initial_warm_and_weather_loop()))
-        self._bg_tasks.append(loop.create_task(_satellite_daily_loop()))
         logger.info("Marine Data Cache background warming tasks scheduled.")
 
     def stop_background_tasks(self) -> None:

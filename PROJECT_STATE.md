@@ -151,3 +151,12 @@ font files took 0.5 s to serve. warm_all_harbours now warms strictly one
 harbour at a time with a FLEET_WARM_GAP_SECONDS (2.0 s) breather between
 harbours, and one harbour's failure no longer stops the fleet. New tests:
 tests/test_fleet_warm_serialization.py (2 tests). Suite: 114 passed.
+
+## 2026-11-07 efficiency and background warm elimination
+
+Production operates on Render free tier (0.1 vCPU, 512 MB RAM) where a 12-harbour full-fleet warm took 1691.99 s, exhausting CPU cycles and causing 49.047% uptime.
+- Fix 1 (backend/tools/marine_cache.py): Replaced full-fleet startup warming with `warm_vip_harbours` targeting only Rameswaram (`VIP_HARBOUR_IDS = ("rameswaram",)`), logging completion in the same format (`Marine Data Cache pre-warming complete: %d/%d harbours ready in %.2fs`). Replaced the perpetual 600s 12-harbour loop with a 1800s periodic refresh warming only VIP harbours plus on-demand requested harbours (`_requested_harbour_ids`). Completely deleted redundant `_satellite_daily_loop` and its task registration.
+- Fix 2 (backend/tools/marine_cache.py): Introduced 6-hour PFZ recompute guard (`PFZ_RECOMPUTE_INTERVAL_SECONDS = 21600.0`) tracking `pfz_computed_at` on `HarbourCacheEntry`. When a harbour's PFZ zones are younger than 21600 seconds, `compute_pfz_zones` is skipped during periodic warms while live weather is refreshed.
+- Fix 3 (backend/main.py): Dashboard summary path `_compute_dashboard_summary_impl` is now strictly cache-only: missing weather is retrieved from the deterministic fallback entry rather than triggering an inline blocking `get_weather_marine_report` network call.
+- Fix 4 (frontend): Raised polling intervals in `frontend/src/App.jsx` (active harbour panel) and `frontend/src/components/DistrictAuthorityBoard.jsx` from 30000 ms to 120000 ms (2 minutes).
+- Tests: Added `tests/test_efficiency.py` (5 tests proving startup VIP warm, periodic active harbour loop, cache-only dashboard summaries, 21600s PFZ guard, and single on-demand warm on cache miss). Full test suite: 119 passed (114 baseline + 5 new).

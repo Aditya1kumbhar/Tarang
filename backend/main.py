@@ -569,14 +569,10 @@ async def _compute_dashboard_summary_impl(
     cached_entry = await marine_cache.get_or_refresh_harbour(harbour, max_refresh_timeout=12.0)
     weather = cached_entry.weather_by_vessel.get(vessel_type.value)
     if not weather:
-        weather = await get_weather_marine_report(
-            lat=harbour.lat,
-            lon=harbour.lon,
-            harbour_id=harbour.id,
-            harbour_name=harbour.name,
-            vessel_type=vessel_type,
-        )
-        cached_entry.weather_by_vessel[vessel_type.value] = weather
+        fallback_entry = marine_cache.create_fallback_entry(harbour)
+        weather = fallback_entry.weather_by_vessel.get(vessel_type.value)
+        if weather:
+            cached_entry.weather_by_vessel[vessel_type.value] = weather
 
     pfz_report = cached_entry.pfz_report
     top_pfz = pfz_report.top_recommendation if pfz_report else None

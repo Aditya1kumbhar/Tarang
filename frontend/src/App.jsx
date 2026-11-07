@@ -220,13 +220,13 @@ export default function App() {
     }
   }, [currentUser]);
 
-  // Periodic 30s background refresh loop for the active harbour
+  // Periodic 120s background refresh loop for the active harbour
   useEffect(() => {
     if (!selectedHarbour || !currentUser) return;
     fetchDashboardSummary(selectedHarbour.id, vesselType);
     const interval = setInterval(() => {
       fetchDashboardSummary(selectedHarbour.id, vesselType);
-    }, 30000);
+    }, 120000);
     return () => clearInterval(interval);
   }, [selectedHarbour, vesselType, fetchDashboardSummary, currentUser]);
 

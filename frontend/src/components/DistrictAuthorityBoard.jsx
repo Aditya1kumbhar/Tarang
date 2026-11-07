@@ -56,7 +56,7 @@ export default function DistrictAuthorityBoard({
     fetchBoardData();
     const interval = setInterval(() => {
       if (active) fetchBoardData();
-    }, 30000);
+    }, 120000);
     return () => {
       active = false;
       clearInterval(interval);
