@@ -141,3 +141,13 @@
 - Fix 1 (backend/config.py): AI_TIMEOUT_SECONDS default 60.0 -> 45.0 (the documented server guarantee; the frontend keeps its 75 s patience, giving 30 s of network and render headroom). NUGEN_SYNTHESIS_BUDGET_SECONDS and GEMINI_SYNTHESIS_BUDGET_SECONDS defaults 12.0 -> 8.0 each, so the provider chain (16 s) leaves real headroom inside the synthesis stage for the deterministic template.
 - Fix 2 (backend/agents/orchestrator.py): the synthesis gate now spends only the time remaining under GLOBAL_CHAT_DEADLINE_SECONDS (45.0) minus a 2.0 s response-assembly margin, capped at SYNTHESIS_STAGE_BUDGET_SECONDS (20.0); if less than 1.0 s remains it skips the AI call entirely. If synthesis is cut before it can write any recommendation, a rescue advisory is issued from the deterministic safety evaluation (harbour name, risk verdict, Sea Venture Safety Index), so the user always receives a non-empty answer in the shared verdict vocabulary instead of a dead timeout.
 - Tests: tests/conftest.py AI_TIMEOUT_SECONDS pin aligned 60.0 -> 45.0; new tests/test_chat_deadline_guarantee.py (3 tests: contract defaults, both providers hanging still returns the template answer, synthesis killed early still returns the rescue advisory). Full suite: 112 passed.
+
+## 2026-11-07 fleet warm serialization fix
+
+Production logs (Render, 2026-11-07 20:53-20:55 IST) showed a chat data stage
+taking 115 s while warm_all_harbours warmed harbours two at a time and a
+dashboard burst hit the 0.1 vCPU free instance; in the same window even static
+font files took 0.5 s to serve. warm_all_harbours now warms strictly one
+harbour at a time with a FLEET_WARM_GAP_SECONDS (2.0 s) breather between
+harbours, and one harbour's failure no longer stops the fleet. New tests:
+tests/test_fleet_warm_serialization.py (2 tests). Suite: 114 passed.
