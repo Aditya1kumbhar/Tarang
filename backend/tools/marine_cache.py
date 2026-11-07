@@ -42,6 +42,7 @@ logger = logging.getLogger("orca_marine_cache")
 
 PFZ_WARM_BUDGET_SECONDS = 25.0
 FALLBACK_REFRESH_MIN_AGE_SECONDS = 120.0
+FLEET_WARM_GAP_SECONDS = 2.0
 
 
 @dataclass
@@ -308,21 +309,30 @@ class MarineDataCache:
             return fallback_entry
 
     async def warm_all_harbours(self, timeout_per_harbour: float = 12.0) -> None:
-        """Pre-warms all 12 registered Indian landing centres with bounded concurrency."""
+        """Pre-warms all 12 registered Indian landing centres strictly one at a time.
+
+        Production runs on a fraction of one CPU. Warming harbours in parallel
+        saturated the instance and starved live chat requests (2026-11-07
+        production logs: a chat data stage took 115 s during background warming
+        while static files took 0.5 s to serve). Fleet warming is therefore
+        sequential, with a short breather between harbours, so a live request
+        always finds a mostly idle event loop.
+        """
         harbours = list(load_harbours_dict().values())
         logger.info("Starting pre-warming of Marine Data Cache for %d harbours...", len(harbours))
         t_start = asyncio.get_running_loop().time()
 
-        sem = asyncio.Semaphore(2)
-
-        async def _bounded_warm(h: HarbourInfo) -> HarbourCacheEntry:
-            async with sem:
-                return await self.warm_harbour(h, timeout=timeout_per_harbour)
-
-        tasks = [_bounded_warm(h) for h in harbours]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        successful = sum(1 for r in results if isinstance(r, HarbourCacheEntry))
+        successful = 0
+        for index, h in enumerate(harbours):
+            if index > 0:
+                await asyncio.sleep(FLEET_WARM_GAP_SECONDS)
+            try:
+                entry = await self.warm_harbour(h, timeout=timeout_per_harbour)
+            except Exception as err:
+                logger.warning("Fleet warm failed for harbour %s: %s", h.id, err)
+                continue
+            if isinstance(entry, HarbourCacheEntry):
+                successful += 1
         t_elapsed = asyncio.get_running_loop().time() - t_start
         self._is_warmed = True
         logger.info(
