@@ -128,3 +128,10 @@
 - Package C also raised the periodic background cache warming budget to 20.0s and added stale-while-revalidate auto-healing on read for fallback entries.
 - Package D introduced automated test coverage across `tests/test_verdict_guard.py` and `tests/test_marine_cache_legs.py` (11 new tests, 106 total).
 
+
+## 2026-11-07 chat timeout and live-data budget fix
+- Problem 1: on a cache miss, get_or_refresh_harbour blocked the chat request up to 12 s waiting on a live refresh and cancelled the warm mid-flight; after a free-tier sleep/wake the cache is empty, so first questions at cold harbours stacked this wait with the other pipeline budgets and died with the pipeline timeout message.
+- Fix 1 (backend/tools/marine_cache.py): a cache miss now serves the deterministic fallback snapshot immediately, stores it, and schedules ONE background warm (timeout 20.0) behind the existing _refresh_inflight guard; the caller never waits on the network.
+- Problem 2: the satellite PFZ fetch in compute_pfz_zones allowed only 1.8 s per ERDDAP grid and 2.5 s overall, so NOAA CoastWatch ERDDAP fetches failed almost every time and harbours stayed on FALLBACK data.
+- Fix 2 (backend/tools/ocean_pfz_tool.py): per-grid timeout raised to 10.0 s and overall budget to 20.0 s, inside the existing 25 s PFZ warm-leg budget.
+- Tests: 109 passed (106 baseline + tests/test_cache_miss_nowait.py (2) + tests/test_erddap_fetch_budget.py (1)).
