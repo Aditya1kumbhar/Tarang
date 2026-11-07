@@ -340,8 +340,8 @@ class MarineDataCache:
         """
         Cache-first entry resolver:
         1. If harbour is already cached, returns immediately in <0.1ms without any network calls.
-        2. If cold/missing, triggers at most one bounded refresh (max 15s data budget).
-        3. If refresh fails or times out, returns deterministic fallback snapshot.
+        2. If cold/missing, returns the deterministic fallback snapshot immediately
+           and schedules ONE background warm; the caller never waits on the network.
         """
         entry = self.get_entry(harbour.id)
         if entry is not None and len(entry.weather_by_vessel) > 0 and entry.pfz_report is not None:
@@ -371,17 +371,34 @@ class MarineDataCache:
                     self._refresh_inflight.discard(key)
             return entry
 
-        logger.info("Cache miss for harbour '%s'; triggering bounded refresh (max %.1fs)...", harbour.id, max_refresh_timeout)
-        try:
-            return await asyncio.wait_for(
-                self.warm_harbour(harbour, timeout=max_refresh_timeout),
-                timeout=max_refresh_timeout,
-            )
-        except asyncio.TimeoutError:
-            logger.warning("Cache refresh for '%s' timed out (%.1fs); using fallback snapshot.", harbour.id, max_refresh_timeout)
-            fallback = self.create_fallback_entry(harbour)
-            self.set_entry(fallback)
-            return fallback
+        # Cache miss: NEVER block the caller on a live refresh. Serve the
+        # deterministic fallback snapshot immediately and heal the entry
+        # with ONE background warm (same in-flight guard as the
+        # stale-while-revalidate path above). A slow satellite fetch can
+        # no longer push a chat request past its time budget.
+        logger.info(
+            "Cache miss for harbour '%s'; serving fallback snapshot immediately and scheduling background warm...",
+            harbour.id,
+        )
+        fallback = self.create_fallback_entry(harbour)
+        self.set_entry(fallback)
+        key = harbour.id.lower()
+        if key not in self._refresh_inflight:
+            self._refresh_inflight.add(key)
+
+            async def _bg_warm(h=harbour, k=key):
+                try:
+                    await self.warm_harbour(h, timeout=20.0)
+                except Exception:
+                    pass
+                finally:
+                    self._refresh_inflight.discard(k)
+
+            try:
+                asyncio.create_task(_bg_warm())
+            except RuntimeError:
+                self._refresh_inflight.discard(key)
+        return fallback
 
     def start_background_tasks(self) -> None:
         """Starts periodic background warming and refresh loops."""
