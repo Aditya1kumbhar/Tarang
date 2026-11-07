@@ -60,6 +60,14 @@ from backend.tools.weather_marine_tool import (
 
 logger = logging.getLogger(__name__)
 
+# Chat deadline contract: the server guarantees an answer within
+# GLOBAL_CHAT_DEADLINE_SECONDS (backend/config.py AI_TIMEOUT_SECONDS carries
+# the same default; the frontend waits 75 s). The synthesis gate below spends
+# only the time remaining under this deadline, minus an assembly margin.
+GLOBAL_CHAT_DEADLINE_SECONDS = 45.0
+SYNTHESIS_STAGE_BUDGET_SECONDS = 20.0
+RESPONSE_ASSEMBLY_MARGIN_SECONDS = 2.0
+
 # Compass 16-point degree mappings
 CARDINAL_TO_DEG: Dict[str, float] = {
     "N": 0.0, "NNE": 22.5, "NE": 45.0, "ENE": 67.5,
@@ -1382,7 +1390,7 @@ async def run_orchestrator(request: ChatRequest) -> ChatResponse:
     """
     Main asynchronous pipeline coordinating:
     Planner -> Parallel Specialist Agents -> Deterministic Safety Circuit Breaker -> Synthesis Agent.
-    Enforces 15s data stage budget, 25s synthesis budget, and 45s hard global deadline.
+    Enforces 15s data stage budget, a synthesis budget bounded by the remaining global deadline, and a 45s hard global deadline.
     """
     t_total_start = time.perf_counter()
     state = OrchestratorState(
@@ -1430,13 +1438,35 @@ async def run_orchestrator(request: ChatRequest) -> ChatResponse:
     # 3. Deterministic Safety Circuit Breaker
     enforce_safety_circuit_breaker(state)
 
-    # 4. Multilingual Synthesis & Map Generation (Synthesis Stage <= 25s)
+    # 4. Multilingual Synthesis & Map Generation (bounded by the global deadline)
     t_synth_start = time.perf_counter()
-    try:
-        await asyncio.wait_for(synthesize_response(state), timeout=25.0)
-    except asyncio.TimeoutError:
-        logger.warning("Synthesis stage exceeded 25.0s budget; falling back to template synthesis.")
+    elapsed_before_synthesis = t_synth_start - t_total_start
+    remaining_budget = GLOBAL_CHAT_DEADLINE_SECONDS - elapsed_before_synthesis - RESPONSE_ASSEMBLY_MARGIN_SECONDS
+    synthesis_budget = min(SYNTHESIS_STAGE_BUDGET_SECONDS, remaining_budget)
+    if synthesis_budget < 1.0:
+        logger.warning(
+            "Global chat deadline nearly exhausted before synthesis (elapsed %.1fs); issuing the deterministic safety advisory without an AI call.",
+            elapsed_before_synthesis,
+        )
         state.synthesis_mode = "template_fallback"
+    else:
+        try:
+            await asyncio.wait_for(synthesize_response(state), timeout=synthesis_budget)
+        except asyncio.TimeoutError:
+            logger.warning("Synthesis stage exceeded %.1fs budget; falling back to template synthesis.", synthesis_budget)
+            state.synthesis_mode = "template_fallback"
+    if not state.recommendation:
+        # Guarantee a non-empty answer: even if synthesis was cut before it
+        # could write its template, the deterministic safety evaluation above
+        # still supports a plain advisory in the shared verdict vocabulary.
+        state.recommendation = (
+            f"Maritime advisory for {state.harbour.name}: risk verdict {state.risk_verdict}. "
+            f"Sea Venture Safety Index {state.sea_venture_safety_index}/100 for your vessel class, "
+            "from the deterministic safety evaluation on the latest available telemetry. "
+            "The detailed reasoning stage exceeded its time budget; please re-ask in a few minutes for the full analysis."
+        )
+        if not state.synthesis_mode:
+            state.synthesis_mode = "template_fallback"
     synthesis_ms = (time.perf_counter() - t_synth_start) * 1000.0
 
     total_ms = (time.perf_counter() - t_total_start) * 1000.0
