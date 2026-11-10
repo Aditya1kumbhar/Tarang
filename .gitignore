@@ -31,3 +31,8 @@ Thumbs.db
 *.db-wal
 .idea/
 .vscode/
+
+# Local AI editor workspace (never commit)
+.agents/
+.antigravityignore
+.geminiignore
