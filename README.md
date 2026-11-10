@@ -1,5 +1,8 @@
 # ORCA Marine EcOsystem Reasoning with Collaborative Agents
 ### Autonomous Marine Intelligence & Decision-Support Platform
+- **Live app:** https://tarang-0v0t.onrender.com (Google sign-in, email allowlist)
+- **Demo film (PCCOE IGC 2026 Indradhanu, Round 2):** https://youtu.be/vCWhOiF7k-4
+- **Team:** RISE-A2S1, PCCOE International Grand Challenge 2026, theme AI for Climate Change (SDG 13). The explanatory AI writer is an open model (Qwen 2.5 1.5B Instruct) domain-aligned on the Nugen platform using the team's own marine corpus.
 - **Organization:** Indian Space Research Organisation (ISRO), Department of Space
 - **Focus:** Marine Intelligence, Fisher Decision Support & Coastal Disaster Management
 - **Product Tagline:** Autonomous Marine Intelligence & Decision-Support Platform for Indian Fisheries, Coastal Authorities, and Disaster Management
